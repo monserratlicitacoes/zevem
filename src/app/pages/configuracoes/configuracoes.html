@@ -1,0 +1,266 @@
+<div class="page">
+  <div class="page-header">
+    <h1>Configurações</h1>
+    <p>Esses dados personalizam os cálculos e recomendações do seu planejamento.</p>
+  </div>
+
+  <div class="acoes-iniciais">
+    <button class="btn-acao-inicial" [class.btn-desabilitado]="limitePessoasAtingido" (click)="abrirNovaPessoa()"
+      [title]="limitePessoasAtingido ? 'Limite de ' + 2 + ' pessoas cadastradas atingido' : ''">
+      <span class="acao-icone">
+        <svg viewBox="0 0 20 20" fill="none" width="16" height="16"><circle cx="10" cy="6.5" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </span>
+      Cadastrar Usuário
+      <app-video-badge />
+    </button>
+    <button class="btn-acao-inicial" (click)="abrirNovoCartao()">
+      <span class="acao-icone">
+        <svg viewBox="0 0 20 20" fill="none" width="16" height="16"><rect x="2.5" y="5" width="15" height="10" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 8.5h15" stroke="currentColor" stroke-width="1.6"/></svg>
+      </span>
+      Cadastrar Cartões
+      <app-video-badge />
+    </button>
+  </div>
+
+  @if (limitePessoasAtingido) {
+    <div class="aviso-limite">
+      <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.4"/><path d="M10 9v4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="6.5" r="0.9" fill="currentColor"/></svg>
+      Limite de 2 pessoas cadastradas atingido.
+    </div>
+  }
+
+  @if (carregando) {
+    <div class="cfg-loading">Carregando…</div>
+  } @else {
+
+    <!-- ── Pessoas ── -->
+    <app-minha-assinatura />
+
+    <div class="cfg-secao">
+      <div class="cfg-secao-header">
+        <span>Pessoas cadastradas</span>
+        <span class="badge-total">{{ pessoas.length }}</span>
+      </div>
+
+      @if (pessoas.length === 0) {
+        <div class="cfg-vazio">Nenhuma pessoa cadastrada ainda.</div>
+      } @else {
+        <div class="lista-itens">
+          @for (p of pessoas; track p.id) {
+            <div class="lista-card" (click)="editarPessoa(p)">
+              <div class="card-avatar">{{ iniciais(p.nome) }}</div>
+              <div class="card-info">
+                <span class="card-nome">{{ p.nome }}</span>
+                @if (p.email) { <span class="card-sub">{{ p.email }}</span> }
+                @if (p.telefone) {
+                  <span class="card-sub">
+                    {{ p.telefone }}
+                    @if (p.telefone_verificado) { <span class="selo-wpp ok">WhatsApp confirmado</span> }
+                    @else { <button type="button" class="selo-wpp" (click)="confirmarWhatsapp(p, $event)">Confirmar WhatsApp</button> }
+                  </span>
+                }
+                @if (codigoWpp?.pessoaId === p.id) {
+                  <span class="codigo-wpp" (click)="$event.stopPropagation()">
+                    Envie <strong>{{ codigoWpp!.mensagem }}</strong> deste número para o WhatsApp do Zevem{{ codigoWpp!.numero ? ' (' + codigoWpp!.numero + ')' : '' }}. Vale por 30 minutos.
+                    @if (codigoWpp!.link) { <a [href]="codigoWpp!.link" target="_blank" rel="noopener">Abrir no WhatsApp</a> }
+                  </span>
+                }
+                @if (erroWpp?.pessoaId === p.id) { <span class="codigo-wpp erro">{{ erroWpp!.texto }}</span> }
+              </div>
+              <button class="card-excluir" (click)="excluirPessoa(p, $event)" title="Excluir">
+                <svg viewBox="0 0 20 20" fill="none" width="11" height="11"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- ── Cartões ── -->
+    <div class="cfg-secao">
+      <div class="cfg-secao-header">
+        <span>Cartões cadastrados</span>
+        <span class="badge-total">{{ cartoes.length }}</span>
+      </div>
+
+      @if (cartoes.length === 0) {
+        <div class="cfg-vazio">Nenhum cartão cadastrado ainda.</div>
+      } @else {
+        <div class="lista-itens">
+          @for (c of cartoes; track c.id) {
+            <div class="lista-card lista-card-cartao" (click)="editarCartao(c)">
+              <div class="card-avatar card-avatar-cartao" [style.background]="banco(c.banco).cor" [style.color]="banco(c.banco).corTexto || '#fff'">
+                {{ banco(c.banco).sigla }}
+              </div>
+              <div class="card-info">
+                <span class="card-nome">{{ c.nome }}</span>
+                <span class="card-sub">
+                  {{ banco(c.banco).nome }}
+                  @if (c.ultimos_digitos) { · •••• {{ c.ultimos_digitos }} }
+                </span>
+                @if (c.dia_fechamento || c.dia_vencimento) {
+                  <span class="card-sub">
+                    @if (c.dia_fechamento) { Fecha dia {{ c.dia_fechamento }} }
+                    @if (c.dia_fechamento && c.dia_vencimento) { · }
+                    @if (c.dia_vencimento) { Vence dia {{ c.dia_vencimento }} }
+                  </span>
+                }
+              </div>
+              <button class="card-excluir" (click)="excluirCartao(c, $event)" title="Excluir">
+                <svg viewBox="0 0 20 20" fill="none" width="11" height="11"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <app-seguranca-conta />
+
+  }
+</div>
+
+<!-- ══ Modal: Pessoa ══ -->
+@if (modalPessoaAberto) {
+  <div class="modal-overlay" (click)="fecharModalPessoa()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>{{ editandoPessoaId ? 'Editar pessoa' : 'Cadastrar usuário' }}</h3>
+
+      @if (erroPessoa) {
+        <div class="modal-erro">
+          <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M10 2.5L18 16H2L10 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 8v3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="13.5" r="0.9" fill="currentColor"/></svg>
+          {{ erroPessoa }}
+        </div>
+      }
+
+      <form (ngSubmit)="salvarPessoa()">
+        <div class="secao">
+          <h4 class="secao-titulo">Identificação</h4>
+          <div class="campo campo-full">
+            <label>Nome completo <span class="obrig">*</span></label>
+            <input type="text" [(ngModel)]="formPessoa.nome" name="nome"
+              placeholder="Ex: Ricardo Barbosa"
+              [class.campo-erro]="enviadoPessoa && !formPessoa.nome" />
+            @if (enviadoPessoa && !formPessoa.nome) { <span class="msg-erro">Obrigatório</span> }
+          </div>
+          <div class="grid-2">
+            <div class="campo">
+              <label>Data de nascimento</label>
+              <input type="date" [(ngModel)]="formPessoa.data_nascimento" name="data_nascimento" />
+            </div>
+            <div class="campo">
+              <label>CPF</label>
+              <input type="text" [value]="formPessoa.cpf" (input)="onCpf($event)"
+                name="cpf" placeholder="000.000.000-00" maxlength="14" />
+            </div>
+          </div>
+        </div>
+
+        <div class="secao">
+          <h4 class="secao-titulo">Contato</h4>
+          <div class="grid-2">
+            <div class="campo">
+              <label>E-mail</label>
+              <input type="email" [(ngModel)]="formPessoa.email" name="email" placeholder="nome@email.com" />
+            </div>
+            <div class="campo">
+              <label>Telefone</label>
+              <input type="text" [value]="formPessoa.telefone" (input)="onTelefone($event)"
+                name="telefone" placeholder="(00) 00000-0000" maxlength="15" />
+            </div>
+          </div>
+        </div>
+
+        <div class="secao">
+          <h4 class="secao-titulo">Perfil de risco de renda</h4>
+          <div class="campo campo-full">
+            <label>Grau de risco de perda total da renda</label>
+            <select class="select-cinza" [(ngModel)]="formPessoa.risco_renda" name="risco_renda">
+              <option value="">Selecione</option>
+              @for (o of opcoesRisco; track o) { <option [value]="o">{{ o }}</option> }
+            </select>
+          </div>
+          <div class="campo campo-full">
+            <label>Facilidade para atingir o mesmo nível de renda em caso de demissão</label>
+            <select class="select-cinza" [(ngModel)]="formPessoa.facilidade_renda" name="facilidade_renda">
+              <option value="">Selecione</option>
+              @for (o of opcoesFacilidade; track o) { <option [value]="o">{{ o }}</option> }
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-acoes">
+          <button type="submit" class="btn-confirmar" [disabled]="salvandoPessoa">
+            {{ salvandoPessoa ? 'Salvando…' : (editandoPessoaId ? 'Salvar alterações' : 'Adicionar pessoa') }}
+          </button>
+          <button type="button" class="btn-cancelar" (click)="fecharModalPessoa()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══ Modal: Cartão ══ -->
+@if (modalCartaoAberto) {
+  <div class="modal-overlay" (click)="fecharModalCartao()">
+    <div class="modal modal-pequeno" (click)="$event.stopPropagation()">
+      <h3>{{ editandoCartaoId ? 'Editar cartão' : 'Cadastrar cartão' }}</h3>
+
+      @if (erroCartao) {
+        <div class="modal-erro">
+          <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M10 2.5L18 16H2L10 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 8v3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="13.5" r="0.9" fill="currentColor"/></svg>
+          {{ erroCartao }}
+        </div>
+      }
+
+      <form (ngSubmit)="salvarCartao()">
+        <div class="campo campo-full">
+          <label>Nome do cartão <span class="obrig">*</span></label>
+          <input type="text" [(ngModel)]="formCartao.nome" name="nome_cartao"
+            placeholder="Ex: Cartão Principal"
+            [class.campo-erro]="enviadoCartao && !formCartao.nome" />
+          @if (enviadoCartao && !formCartao.nome) { <span class="msg-erro">Obrigatório</span> }
+        </div>
+
+        <div class="campo campo-full">
+          <label>Últimos 4 dígitos</label>
+          <input type="text" inputmode="numeric" [value]="formCartao.ultimos_digitos" (input)="onUltimosDigitos($event)"
+            name="ultimos_digitos" placeholder="0000" maxlength="4" class="campo-digitos" />
+        </div>
+
+        <div class="grid-2 campo-dias">
+          <div class="campo">
+            <label>Dia de fechamento</label>
+            <input type="text" inputmode="numeric" maxlength="2" placeholder="Ex: 3" name="dia_fechamento"
+              [value]="formCartao.dia_fechamento ?? ''" (input)="onDiaCartao($event, 'dia_fechamento')" />
+          </div>
+          <div class="campo">
+            <label>Dia de vencimento</label>
+            <input type="text" inputmode="numeric" maxlength="2" placeholder="Ex: 10" name="dia_vencimento"
+              [value]="formCartao.dia_vencimento ?? ''" (input)="onDiaCartao($event, 'dia_vencimento')" />
+          </div>
+        </div>
+        <p class="dica-dias">Com esses dias o app avisa do fechamento e do vencimento da fatura e indica o melhor dia para comprar.</p>
+
+        <div class="campo campo-full">
+          <label>Banco</label>
+          <div class="bancos-grid">
+            @for (b of bancos; track b.id) {
+              <button type="button" class="banco-btn" [class.ativo]="formCartao.banco === b.id" (click)="selecionarBanco(b.id)" [title]="b.nome">
+                <span class="banco-selo" [style.background]="b.cor" [style.color]="b.corTexto || '#fff'">{{ b.sigla }}</span>
+                <span class="banco-nome">{{ b.nome }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="modal-acoes">
+          <button type="submit" class="btn-confirmar" [disabled]="salvandoCartao">
+            {{ salvandoCartao ? 'Salvando…' : (editandoCartaoId ? 'Salvar alterações' : 'Adicionar cartão') }}
+          </button>
+          <button type="button" class="btn-cancelar" (click)="fecharModalCartao()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

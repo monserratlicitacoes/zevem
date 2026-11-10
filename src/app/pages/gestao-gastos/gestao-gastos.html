@@ -1,0 +1,970 @@
+<div class="page">
+  <header class="page-header">
+    <div class="ph-icone">
+      <svg viewBox="0 0 20 20" fill="none" width="20" height="20"><path d="M3 16V9M8 16V4M13 16v-5M18 16H2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </div>
+    <div class="ph-texto">
+      <h1 class="titulo-video">Gestão de Pagamentos<app-video-badge /></h1>
+      <p>Acompanhe mês a mês receitas, gastos, dívidas e investimentos frente às metas.</p>
+    </div>
+    <div class="ph-acoes">
+      <!-- Ferramentas agrupadas num menu: Em suspenso, Importar fatura e Visão dos Parcelados -->
+      <div class="menu-ferramentas">
+        <button type="button" class="btn-ferramentas" [class.tem-pendentes]="suspensos.length" (click)="menuFerramentasAberto = !menuFerramentasAberto"
+          [attr.aria-expanded]="menuFerramentasAberto" aria-haspopup="menu">
+          <svg viewBox="0 0 20 20" fill="none" width="15" height="15" aria-hidden="true"><rect x="3" y="3" width="5.5" height="5.5" rx="1.3" stroke="currentColor" stroke-width="1.6"/><rect x="11.5" y="3" width="5.5" height="5.5" rx="1.3" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="11.5" width="5.5" height="5.5" rx="1.3" stroke="currentColor" stroke-width="1.6"/><rect x="11.5" y="11.5" width="5.5" height="5.5" rx="1.3" stroke="currentColor" stroke-width="1.6"/></svg>
+          Ferramentas
+          @if (suspensos.length) { <span class="contador-suspensos" [title]="suspensos.length + ' em suspenso'">{{ suspensos.length }}</span> }
+          <app-video-badge [video]="['Em suspenso', 'Importar Fatura ou Extrato', 'Visão dos Parcelados']" />
+          <svg class="mf-caret" [class.aberto]="menuFerramentasAberto" viewBox="0 0 20 20" fill="none" width="12" height="12" aria-hidden="true"><path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        @if (menuFerramentasAberto) {
+          <div class="mf-fundo" (click)="menuFerramentasAberto = false"></div>
+          <div class="mf-menu" role="menu">
+            <button type="button" role="menuitem" class="mf-item" [class.tem-pendentes]="suspensos.length" (click)="menuFerramentasAberto = false; abrirSuspensos()">
+              <svg viewBox="0 0 20 20" fill="none" width="15" height="15"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.7"/><path d="M8 7.5v5M12 7.5v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              <span class="mf-texto">Em suspenso</span>
+              @if (suspensos.length) { <span class="contador-suspensos">{{ suspensos.length }}</span> }
+              <app-video-badge video="Em suspenso" />
+            </button>
+            <button type="button" role="menuitem" class="mf-item" (click)="menuFerramentasAberto = false; abrirImportacao()">
+              <svg viewBox="0 0 20 20" fill="none" width="15" height="15"><rect x="2.5" y="4.5" width="15" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 8h15" stroke="currentColor" stroke-width="1.6"/><path d="M10 10.5v3.5M8.3 12.3 10 14l1.7-1.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="mf-texto">Importar fatura</span>
+              <app-video-badge video="Importar Fatura ou Extrato" />
+            </button>
+            <button type="button" role="menuitem" class="mf-item btn-parcelados" (click)="menuFerramentasAberto = false; abrirParcelados()">
+              <svg viewBox="0 0 20 20" fill="none" width="15" height="15" aria-hidden="true"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M6 11.5h2M9 11.5h2M12 11.5h2M6 14h2M9 14h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span class="mf-texto">Visão dos Parcelados</span>
+              <app-video-badge video="Visão dos Parcelados" />
+            </button>
+          </div>
+        }
+      </div>
+      <button type="button" class="btn-primario btn-lancar" (click)="abrirModal()">
+        <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Lançar gasto
+      </button>
+    </div>
+  </header>
+
+  @if (avisoSucesso) { <div class="toast-sucesso" role="status">✓ {{ avisoSucesso }}</div> }
+
+  @if (!resumoRecolhido) {
+    <section class="cards">
+      <div class="card-resumo card-mes" [class]="'card-resumo card-mes card-' + status(realizadoMes, metaMensal)">
+        <span class="cr-rotulo">Realizado × estimado em {{ nomeMesFoco }}</span>
+        <div class="cm-linha">
+          <div class="cm-valores">
+            <span class="cr-valor" [class.txt-estourou]="realizadoMes > metaMensal && metaMensal > 0">{{ moeda(realizadoMes) }}</span>
+            <span class="cm-de">de {{ moeda(metaMensal) }} estimado</span>
+          </div>
+          <span class="cm-pct">{{ percentualMes }}%</span>
+        </div>
+        <span class="barra"><span [style.width.%]="percentualMes > 100 ? 100 : percentualMes"></span></span>
+        <span class="cr-sub">
+          @if (metaMensal > realizadoMes) { Restam {{ moeda(metaMensal - realizadoMes) }} }
+          @else if (realizadoMes > metaMensal) { {{ moeda(realizadoMes - metaMensal) }} acima da meta }
+          @else { Exatamente na meta }
+        </span>
+      </div>
+      <div class="card-resumo" [class]="'card-resumo card-' + status(realizadoAcumulado, metaAcumulada)">
+        <span class="cr-rotulo">Acumulado jan–{{ abrevMesFoco }}</span>
+        <span class="cr-valor">{{ percentualAcumulado }}%</span>
+        <span class="cr-sub">{{ moeda(realizadoAcumulado) }} de {{ moeda(metaAcumulada) }}</span>
+      </div>
+      <div class="card-resumo" [class.card-estourou]="itensEstourados.length" [class.card-ok]="!itensEstourados.length">
+        <span class="cr-rotulo">Metas estouradas em {{ nomeMesFoco }}</span>
+        <span class="cr-valor">{{ itensEstourados.length }}</span>
+        <span class="cr-sub">
+          @if (itensEstourados.length) {
+            @for (i of itensEstourados.slice(0, 2); track i.gasto.id; let ult = $last) { {{ i.nome }}{{ ult ? '' : ', ' }} }
+            @if (itensEstourados.length > 2) { e +{{ itensEstourados.length - 2 }} }
+          } @else { Nenhum item acima da meta }
+        </span>
+      </div>
+    </section>
+  }
+
+  <div class="barra-acoes">
+    <div class="acoes-esq">
+      <button type="button" class="btn-link" (click)="alternarTodas()">{{ todasAbertas ? 'Recolher categorias' : 'Expandir categorias' }}</button>
+      <button type="button" class="btn-link" (click)="alternarResumo()" [attr.aria-expanded]="!resumoRecolhido">{{ resumoRecolhido ? 'Expandir resumo' : 'Recolher resumo' }}</button>
+    </div>
+    <!-- Seletor do mês à direita, alinhado à margem direita da tabela -->
+    <div class="seletor-mes">
+      <div class="sm-controle">
+        <button type="button" class="sm-seta" (click)="passoMes(-1)" title="Mês anterior" aria-label="Mês anterior">
+          <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M12.5 4.5 7 10l5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="sm-rotulo" (click)="abrirSeletor()" [attr.aria-expanded]="seletorAberto" title="Escolher o mês">
+          <span class="sm-textos">
+            <strong>{{ rotuloReferencia }}</strong>
+          </span>
+          <svg class="sm-caret" viewBox="0 0 20 20" fill="none" width="12" height="12"><path d="m5.5 8 4.5 4.5L14.5 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="sm-seta" (click)="passoMes(1)" title="Próximo mês" aria-label="Próximo mês">
+          <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M7.5 4.5 13 10l-5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <button type="button" class="sm-hoje" (click)="irParaHoje()" title="Ir para o mês atual">Hoje</button>
+
+      @if (seletorAberto) {
+        <div class="sm-fundo" (click)="seletorAberto = false"></div>
+        <div class="sm-popover" role="dialog" aria-label="Escolher mês">
+          <div class="sm-ano">
+            <button type="button" class="sm-seta" (click)="anoSeletor = anoSeletor - 1" aria-label="Ano anterior">
+              <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M12.5 4.5 7 10l5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <strong>{{ anoSeletor }}</strong>
+            <button type="button" class="sm-seta" (click)="anoSeletor = anoSeletor + 1" aria-label="Próximo ano">
+              <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M7.5 4.5 13 10l-5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="sm-meses">
+            @for (nome of mesesAbrev; track $index; let mes = $index) {
+              <button type="button" class="sm-mes"
+                [class.selecionado]="mesSeletorAbs(mes) === mesReferencia"
+                [class.atual]="mesSeletorAbs(mes) === hojeIdxPublico"
+                (click)="irParaMes(mesSeletorAbs(mes))">{{ nome }}</button>
+            }
+          </div>
+          <p class="sm-legenda"><span class="sm-ponto"></span> mês atual</p>
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (carregando) {
+    <p class="aviso">Carregando...</p>
+  } @else if (erro) {
+    <p class="aviso aviso-erro">{{ erro }}</p>
+  } @else if (!categorias.length) {
+    <p class="aviso">Cadastre seus itens e valores em <strong>Gastos</strong> para acompanhar aqui.</p>
+  } @else {
+    <div class="tabela-wrap">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th class="col-nome">Categoria</th>
+            <th class="col-meta">
+              <span class="th-meta">
+                <button type="button" class="btn-ajustar-metas" (click)="abrirAjusteMetas()"
+                  title="Ajustar metas pelo histórico: mensais pela média dos últimos 3 meses; eventuais pela projeção de 12 meses"
+                  aria-label="Ajustar metas pelo histórico">
+                  <svg viewBox="0 0 20 20" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 17 13 7M11 5l1-2.5L13 5l2.5 1L13 7l-1 2.5L11 7 8.5 6 11 5zM15.5 11.5l.6-1.5.6 1.5 1.5.6-1.5.6-.6 1.5-.6-1.5-1.5-.6 1.5-.6z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                Meta mensal
+              </span>
+            </th>
+            @for (col of colunas; track col; let i = $index) {
+              <th class="col-mes" [class.mes-foco]="i === mesFoco" [class.mes-futuro]="mesFuturo(i)" (click)="focarMes(i)" title="Ver o resumo deste mês">{{ rotuloColuna(i) }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Receitas: o que entrou em cada mês (clique para lançar) -->
+          <tr class="tr-receitas">
+            <td class="col-nome">
+              <span class="nome-linha"><span class="macro-nome">Receitas</span>
+                <button type="button" class="btn-mais" (click)="abrirReceitas(mesFoco); $event.stopPropagation()"
+                  [title]="'Lançar receita em ' + nomeMesFoco" aria-label="Lançar receita">+</button>
+              </span>
+            </td>
+            <td class="col-meta" title="Receita planejada em Recebimentos"><span class="contabil"><span>R$</span><span>{{ numero(receitaMeta) }}</span></span></td>
+            @for (v of receitasMes; track $index; let i = $index) {
+              <td class="col-mes cel-clicavel" [class.mes-foco]="i === mesFoco" [class.mes-futuro]="mesFuturo(i)"
+                [class.cel-selecionada]="painelReceita?.mes === i"
+                [title]="v ? moeda(v) + ' recebidos — clique para ver ou lançar' : 'Nada lançado — clique para lançar uma receita'"
+                (click)="abrirReceitas(i)">
+                <span class="valor-cel" [class.st-vazio]="!v" [class.st-receita]="v">{{ compacto(v) }}</span>
+              </td>
+            }
+          </tr>
+          <!-- Respiro entre o que entra e os blocos de saída -->
+          <tr class="tr-respiro" aria-hidden="true"><td [attr.colspan]="colunas.length + 2"></td></tr>
+
+          <!-- Gastos -->
+          <tr class="tr-macro" (click)="alternarMacro('gastos')" [attr.aria-expanded]="macrosAbertos.has('gastos')">
+            <td class="col-nome">
+              <span class="nome-linha"><span><span class="chevron" [class.aberto]="macrosAbertos.has('gastos')">›</span><span class="macro-nome">Gastos</span></span>
+                <button type="button" class="btn-mais" (click)="abrirModal(); $event.stopPropagation()" title="Lançar gasto" aria-label="Lançar gasto">+</button>
+              </span>
+            </td>
+            <td class="col-meta"><span class="contabil"><span>R$</span><span>{{ numero(metaMensal) }}</span></span></td>
+            @for (col of colunas; track col; let i = $index) {
+              @let tot = totalMes(i);
+              <td class="col-mes" [class.mes-foco]="i === mesFoco" [class.mes-futuro]="mesFuturo(i)" [title]="dicaCelula(tot, metaMensal)">
+                <span class="valor-cel" [class]="'valor-cel st-' + status(tot, metaMensal)">{{ compacto(tot) }}</span>
+              </td>
+            }
+          </tr>
+          @if (macrosAbertos.has('gastos')) {
+          @for (c of categorias; track c.id) {
+            <tr class="tr-categoria" (click)="alternar(c.id)" [attr.aria-expanded]="abertas.has(c.id)">
+              <td class="col-nome">
+                <span class="chevron" [class.aberto]="abertas.has(c.id)">›</span>
+                <span class="cat-nome">{{ c.label }}</span>
+                <span class="cat-qtd">{{ c.itens.length }}</span>
+              </td>
+              <td class="col-meta"><span class="contabil"><span>R$</span><span>{{ numero(c.meta) }}</span></span></td>
+              @for (v of c.meses; track $index; let i = $index) {
+                <td class="col-mes" [class.mes-foco]="i === mesFoco" [class.mes-futuro]="mesFuturo(i)" [title]="dicaCelula(v, c.meta)">
+                  <span class="valor-cel" [class]="'valor-cel st-' + statusCategoria(c, v)">{{ compacto(v) }}</span>
+                </td>
+              }
+            </tr>
+            @if (abertas.has(c.id)) {
+              @for (it of c.itens; track it.gasto.id) {
+                <tr class="tr-item">
+                  <td class="col-nome"><span class="item-nome" [title]="it.nome">{{ it.nome }}</span></td>
+                  <td class="col-meta" [class.meta-editavel]="!naoIdentificado(it)" [class.meta-editando]="editandoMeta === it"
+                    [title]="naoIdentificado(it) ? 'Sem meta' : (eventual(it) ? 'Meta anual (equivale a ' + moeda(it.meta) + '/mês) — clique para editar' : 'Meta mensal — clique para editar')"
+                    (click)="abrirEdicaoMeta(it)">
+                    @if (editandoMeta === it) {
+                      <input class="input-meta" type="text" appMascaraMoeda [(ngModel)]="valorMetaEditando" name="meta-item"
+                        [attr.aria-label]="(eventual(it) ? 'Meta anual de ' : 'Meta mensal de ') + it.nome"
+                        (keydown.enter)="salvarMeta(it)" (keydown.escape)="cancelarEdicaoMeta()" (blur)="salvarMeta(it)"
+                        (click)="$event.stopPropagation()" autofocus />
+                      @if (eventual(it)) { <span class="meta-ano meta-ano-edicao">por ano</span> }
+                    } @else if (metaItem(it)) {
+                      <span class="contabil">
+                        <span>R$</span>
+                        <span>{{ numero(metaItem(it)) }}@if (eventual(it)) {<span class="meta-ano">/ano</span>}</span>
+                      </span>
+                    } @else {
+                      <span class="contabil contabil-vazio">{{ naoIdentificado(it) ? '—' : 'definir' }}</span>
+                    }
+                    @if (erroMeta && editandoMeta === it) { <span class="erro-meta">{{ erroMeta }}</span> }
+                  </td>
+                  @for (v of it.meses; track $index; let i = $index) {
+                    <td
+                      class="col-mes cel-clicavel"
+                      [class.mes-foco]="i === mesFoco"
+                      [class.mes-futuro]="mesFuturo(i)"
+                      [class.cel-selecionada]="celula?.item === it && celula?.mes === i"
+                      [title]="dicaItem(it, i)"
+                      (click)="abrirCelula(it, i)"
+                    >
+                      <span class="valor-cel" [class]="'valor-cel st-' + statusCelula(it, i)">
+                        @if (statusCelula(it, i) === 'estourou') { <span class="icone-estouro" aria-label="Estourou">▲</span> }
+                        {{ compacto(v) }}
+                      </span>
+                      @if (v && metaItemMes(it, i)) {
+                        <span class="pct" [class.pct-ano]="eventual(it)">{{ percentual(realizadoItem(it, i), metaItemMes(it, i)) }}%</span>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            }
+          }
+          }
+
+          <!-- Dívidas -->
+          <tr class="tr-macro" (click)="alternarMacro('dividas')" [attr.aria-expanded]="macrosAbertos.has('dividas')">
+            <td class="col-nome"><span class="chevron" [class.aberto]="macrosAbertos.has('dividas')">›</span><span class="macro-nome">Dívidas</span><span class="cat-qtd">{{ linhasDividas.length }}</span></td>
+            <td class="col-meta"><span class="contabil"><span>R$</span><span>{{ numero(metaDividas) }}</span></span></td>
+            @for (col of colunas; track col; let i = $index) {
+              <td class="col-mes" [class.mes-foco]="i === mesFoco" [class.mes-futuro]="mesFuturo(i)">
+                <span class="valor-cel st-neutro" [class.st-vazio]="!totalDividasMes(i)">{{ compacto(totalDividasMes(i)) }}</span>
+              </td>
+            }
+          </tr>
+          @if (macrosAbertos.has('dividas')) {
+            @for (l of linhasDividas; track l.tipo + l.refId) {
+              <ng-container *ngTemplateOutlet="linhaPrevista; context: { $implicit: l }" />
+            }
+          }
+
+          <!-- Investimentos -->
+          @if (linhaInvestimento; as inv) {
+            <tr class="tr-macro" (click)="alternarMacro('investimentos')" [attr.aria-expanded]="macrosAbertos.has('investimentos')">
+              <td class="col-nome"><span class="chevron" [class.aberto]="macrosAbertos.has('investimentos')">›</span><span class="macro-nome">Investimentos</span></td>
+              <td class="col-meta"><span class="contabil"><span>R$</span><span>{{ numero(metaInvestimento) }}</span></span></td>
+              @for (col of colunas; track col; let i = $index) {
+                <td class="col-mes" [class.mes-foco]="i === mesFoco" [class.mes-futuro]="mesFuturo(i)">
+                  <span class="valor-cel st-neutro" [class.st-vazio]="!totalInvestimentoMes(i)">{{ compacto(totalInvestimentoMes(i)) }}</span>
+                </td>
+              }
+            </tr>
+            @if (macrosAbertos.has('investimentos')) {
+              <ng-container *ngTemplateOutlet="linhaPrevista; context: { $implicit: inv }" />
+            }
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td class="col-nome">Saldo</td>
+            <td class="col-meta" title="Receita planejada − metas de gastos, dívidas e investimentos">
+              <span class="contabil" [class]="'contabil saldo-' + statusSaldo(saldoMeta)"><span>R$</span><span>{{ numero(saldoMeta) }}</span></span>
+            </td>
+            @for (col of colunas; track col; let i = $index) {
+              @let sd = saldoMes(i);
+              <td class="col-mes" [class.mes-foco]="i === mesFoco" [class.mes-futuro]="mesFuturo(i)"
+                [title]="'Receitas ' + moeda(receitasMes[i]) + ' − gastos ' + moeda(totalMes(i)) + ' − dívidas ' + moeda(totalDividasMes(i)) + ' − investimentos ' + moeda(totalInvestimentoMes(i))">
+                <span class="valor-cel" [class]="'valor-cel st-' + statusSaldo(sd)">{{ sd < 0 ? '−' : '' }}{{ compacto(sd < 0 ? -sd : sd) }}</span>
+              </td>
+            }
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  }
+</div>
+
+<!-- Linha prevista: meta definida em outra tela (clique leva até lá), exceto Outras Dívidas;
+     cada mês vem com o previsto e pode ser ajustado -->
+<ng-template #linhaPrevista let-l>
+  <tr class="tr-item tr-prevista">
+    <td class="col-nome"><span class="item-nome" [title]="l.nome">{{ l.nome }}</span></td>
+    <td class="col-meta meta-editavel" [class.meta-editando]="l.tipo === 'outras_dividas' && editandoMetaOutras"
+      [title]="l.destino ? 'Definida na tela de ' + (l.tipo === 'investimento' ? 'Sonhos' : 'Dívidas') + ' — clique para abrir' : 'Meta mensal — clique para editar'"
+      (click)="abrirMetaOutras(l)">
+      @if (l.tipo === 'outras_dividas' && editandoMetaOutras) {
+        <input class="input-meta input-meta-outras" type="text" appMascaraMoeda [(ngModel)]="valorMetaOutras" name="meta-outras"
+          aria-label="Meta mensal de Outras Dívidas" (keydown.enter)="salvarMetaOutras(l)" (keydown.escape)="editandoMetaOutras = false"
+          (blur)="salvarMetaOutras(l)" (click)="$event.stopPropagation()" />
+      } @else if (l.meta) {
+        <span class="contabil"><span>R$</span><span>{{ numero(l.meta) }}@if (l.destino) {<span class="meta-link" aria-hidden="true">↗</span>}</span></span>
+      } @else {
+        <span class="contabil contabil-vazio">definir</span>
+      }
+    </td>
+    @for (p of l.previsto; track $index; let i = $index) {
+      <td class="col-mes cel-clicavel" [class.mes-foco]="i === mesFoco" [class.mes-futuro]="mesFuturo(i)"
+        [class.cel-selecionada]="editandoCel?.linha === l && editandoCel?.mes === i"
+        [title]="dicaLinha(l, i)" (click)="abrirEdicaoCel(l, i)">
+        @if (editandoCel?.linha === l && editandoCel?.mes === i) {
+          <input class="input-cel" type="text" appMascaraMoeda [(ngModel)]="valorCelEditando" name="ajuste-cel"
+            [attr.aria-label]="l.nome + ' em ' + rotuloMesAno(i)"
+            (keydown.enter)="salvarCel()" (keydown.escape)="cancelarEdicaoCel()" (blur)="salvarCel()" (click)="$event.stopPropagation()" />
+        } @else {
+          <span class="valor-cel st-neutro" [class.st-vazio]="!valorLinha(l, i)" [class.cel-ajustada]="ajustada(l, i)">{{ compacto(valorLinha(l, i)) }}</span>
+        }
+      </td>
+    }
+  </tr>
+</ng-template>
+
+@if (painelReceita) {
+  <div class="painel-fundo" (click)="fecharReceitas()"></div>
+  <aside class="painel" role="dialog" aria-label="Receitas do mês">
+    <header class="painel-topo">
+      <div>
+        <span class="painel-mes">{{ rotuloMesAno(painelReceita.mes) }}</span>
+        <h2>Receitas</h2>
+      </div>
+      <button type="button" class="painel-fechar" (click)="fecharReceitas()" aria-label="Fechar">×</button>
+    </header>
+
+    <div class="painel-resumo st-neutro">
+      <div><span>Planejado</span><strong>{{ moeda(receitaMeta) }}</strong></div>
+      <div><span>Recebido</span><strong>{{ moeda(totalReceitasPainel) }}</strong></div>
+      <div><span>Atingido</span><strong>{{ receitaMeta ? percentual(totalReceitasPainel, receitaMeta) + '%' : '—' }}</strong></div>
+    </div>
+
+    <form class="form-lanc" (ngSubmit)="salvarReceita()">
+      <div class="form-linha">
+        <label>Data<input type="date" name="rec-data" [(ngModel)]="novaReceita.data" required /></label>
+        <label>Valor (R$)<input type="text" appMascaraMoeda name="rec-valor" [(ngModel)]="novaReceita.valor" placeholder="0,00" required /></label>
+      </div>
+      <label>Descrição<input type="text" name="rec-desc" [(ngModel)]="novaReceita.descricao" placeholder="Ex: Salário" /></label>
+      @if (erroReceita) { <p class="erro">{{ erroReceita }}</p> }
+      <button type="submit" class="btn-primario" [disabled]="salvandoReceita">{{ salvandoReceita ? 'Lançando…' : 'Lançar receita' }}</button>
+    </form>
+
+    <h3 class="lista-titulo">Receitas do mês</h3>
+    @if (carregandoReceitas) {
+      <p class="aviso">Carregando...</p>
+    } @else if (!receitasLista.length) {
+      <p class="aviso">Nenhuma receita lançada neste mês.</p>
+    } @else {
+      <ul class="lista-lanc">
+        @for (l of receitasLista; track l.id) {
+          <li>
+            <span class="ll-data">{{ dataCurta(l.data) }}</span>
+            <span class="ll-desc"><span class="ll-desc-texto">{{ l.descricao || 'Sem descrição' }}</span></span>
+            <span class="ll-valor">{{ moeda(l.valor) }}</span>
+            <span class="ll-acoes">
+              <button type="button" class="ll-btn ll-btn-excluir" (click)="excluirReceita(l)" title="Excluir receita" aria-label="Excluir receita">
+                <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M4 6h12M8 6V4h4v2M6 6l.8 10h6.4L14 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </span>
+          </li>
+        }
+      </ul>
+    }
+  </aside>
+}
+
+@if (celula) {
+  <div class="painel-fundo" (click)="fecharPainel()"></div>
+  <aside class="painel" role="dialog" aria-label="Lançamentos do item">
+    <header class="painel-topo">
+      <div>
+        <span class="painel-mes">{{ rotuloMesAno(celula.mes) }}</span>
+        <h2>{{ celula.item.nome }}</h2>
+      </div>
+      <button type="button" class="painel-fechar" (click)="fecharPainel()" aria-label="Fechar">×</button>
+    </header>
+
+    <div class="painel-resumo" [class]="'painel-resumo st-' + painelStatus">
+      <div><span>{{ painelEventual ? 'Meta anual' : 'Meta' }}</span><strong>{{ painelMeta ? moeda(painelMeta) : 'Sem meta' }}</strong></div>
+      <div><span>{{ painelEventual ? 'Em 12 meses' : 'Realizado' }}</span><strong>{{ moeda(painelRealizado) }}</strong></div>
+      <div><span>Atingido</span><strong>{{ painelMeta ? percentual(painelRealizado, painelMeta) + '%' : '—' }}</strong></div>
+      @if (painelMeta) {
+        <span class="barra"><span [style.width.%]="percentual(painelRealizado, painelMeta) > 100 ? 100 : percentual(painelRealizado, painelMeta)"></span></span>
+      }
+      @if (painelJanela; as j) {
+        @if (j.limite) {
+          <p class="painel-orientacao" [class.painel-orientacao-alerta]="j.disponivel <= 0">
+            @if (j.disponivel > 0) { Ainda pode gastar <strong>{{ moeda(j.disponivel) }}</strong> neste item. }
+            @else { Evite gastar neste item até <strong>{{ evitarAte(celula.item, celula.mes) }}</strong>. }
+          </p>
+        }
+        @if (totalPainel) { <p class="painel-nota">Neste mês: {{ moeda(totalPainel) }}</p> }
+      }
+    </div>
+
+    <button type="button" class="novo-toggle" [class.aberto]="novoAberto" (click)="novoAberto = !novoAberto"
+      [attr.aria-expanded]="novoAberto" aria-controls="form-novo-lancamento">
+      <span class="novo-toggle-icone" aria-hidden="true">+</span>
+      Novo lançamento
+      <span class="novo-toggle-seta" aria-hidden="true">›</span>
+    </button>
+    @if (novoAberto) {
+    <form class="form-lanc" id="form-novo-lancamento" (ngSubmit)="salvarLancamento()">
+      <div class="form-linha">
+        <label>Data<input type="date" name="data" [(ngModel)]="novo.data" required /></label>
+        <label>{{ novo.repeticao.modo === 'parcelado' ? 'Valor total (R$)' : 'Valor (R$)' }}<input type="text" appMascaraMoeda name="valor" [(ngModel)]="novo.valor" placeholder="0,00" required /></label>
+      </div>
+      <label>Descrição<input type="text" name="descricao" [(ngModel)]="novo.descricao" placeholder="Ex: Posto Shell" /></label>
+      <app-repeticao-gasto nome="painel" [(repeticao)]="novo.repeticao" [data]="novo.data" [valor]="novo.valor" />
+      @if (erroLancamento) { <p class="erro">{{ erroLancamento }}</p> }
+      <button type="submit" class="btn-primario">{{ rotuloLancar(novo.repeticao, novo.data, novo.valor) }}</button>
+    </form>
+    }
+
+    <h3 class="lista-titulo">Lançamentos do mês</h3>
+    @if (carregandoLancamentos) {
+      <p class="aviso">Carregando...</p>
+    } @else if (erroLancamentos) {
+      <div class="erro-carga">
+        <p>{{ erroLancamentos }}</p>
+        <button type="button" class="btn-secundario btn-peq" (click)="carregarLancamentosCelula()">Tentar de novo</button>
+      </div>
+    } @else if (!lancamentos.length) {
+      <p class="aviso">Nenhum gasto lançado neste mês.</p>
+    } @else {
+      <ul class="lista-lanc">
+        @for (l of lancamentos; track l.id) {
+          @if (editandoId === l.id) {
+            <li class="ll-edicao">
+              <label>Categoria / item
+                <select [(ngModel)]="edicao.gastoId" name="ed-item">
+                  @for (c of categorias; track c.id) {
+                    <optgroup [label]="c.label">
+                      @for (it of c.itens; track it.gasto.id) { <option [ngValue]="it.gasto.id">{{ it.nome }}</option> }
+                    </optgroup>
+                  }
+                </select>
+              </label>
+              @if (l.recorrencia_grupo && edicao.gastoId !== l.gasto_id && (l.parcela ?? 0) < (l.total_parcelas ?? 0)) {
+                <label class="ed-seguintes">
+                  <input type="checkbox" [(ngModel)]="edicao.itemSeguintes" name="ed-seguintes" />
+                  Trocar também as parcelas seguintes ({{ (l.parcela ?? 0) + 1 }}/{{ l.total_parcelas }} a {{ l.total_parcelas }}/{{ l.total_parcelas }})
+                </label>
+              }
+              <div class="form-linha">
+                <label>Data<input type="date" [(ngModel)]="edicao.data" name="ed-data" /></label>
+                <label>Valor (R$)<input type="text" appMascaraMoeda [(ngModel)]="edicao.valor" name="ed-valor" (keydown.enter)="salvarEdicao(l)" /></label>
+              </div>
+              <label>Descrição<input type="text" [(ngModel)]="edicao.descricao" name="ed-desc" (keydown.enter)="salvarEdicao(l)" /></label>
+              @if (erroEdicao) { <p class="erro">{{ erroEdicao }}</p> }
+              <div class="ll-edicao-acoes">
+                <button type="button" class="btn-secundario btn-peq" (click)="cancelarEdicao()">Cancelar</button>
+                <button type="button" class="btn-primario btn-peq" (click)="salvarEdicao(l)">Salvar</button>
+              </div>
+            </li>
+          } @else {
+            <li [class.ll-pendente]="l.id! < 0">
+              <span class="ll-data">{{ dataCurta(l.data) }}</span>
+              <span class="ll-desc">
+                <span class="ll-desc-texto" (mouseenter)="dicaSeCortado($event, l.descricao || 'Sem descrição')">{{ l.descricao || 'Sem descrição' }}</span>
+                @if (l.recorrencia_grupo || l.origem === 'whatsapp' || l.origem === 'fatura') {
+                  <span class="ll-tags">
+                    @if (l.recorrencia_grupo) {
+                      <span class="tag-parcela" [title]="'Parcela ' + l.parcela + ' de ' + l.total_parcelas + ' (recorrência/parcelado)'">↻ {{ l.parcela }}/{{ l.total_parcelas }}</span>
+                    }
+                    @if (l.origem === 'whatsapp') { <span class="tag-whats">WhatsApp</span> }
+                    @if (l.origem === 'fatura') { <span class="tag-whats tag-fatura">Fatura</span> }
+                  </span>
+                }
+              </span>
+              <span class="ll-valor">{{ moeda(l.valor) }}</span>
+              <span class="ll-acoes">
+                <button type="button" class="ll-btn" (click)="editar(l)" title="Editar lançamento" aria-label="Editar lançamento">
+                  <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M13.5 3.5 16.5 6.5 7 16H4v-3l9.5-9.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                </button>
+                <button type="button" class="ll-btn ll-btn-excluir" (click)="pedirExclusao(l)" title="Excluir lançamento" aria-label="Excluir lançamento">
+                  <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M4 6h12M8 6V4h4v2M6 6l.8 10h6.4L14 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </span>
+            </li>
+            @if (confirmandoExclusao?.id === l.id) {
+              <li class="ll-confirmar" role="alertdialog" aria-label="Excluir parcela">
+                <div class="conf-cabecalho">
+                  <span class="conf-icone" aria-hidden="true">↻</span>
+                  <div>
+                    <strong>Excluir parcela {{ l.parcela }}/{{ l.total_parcelas }}?</strong>
+                    <p>Este gasto faz parte de uma recorrência ou parcelamento. Escolha o que excluir.</p>
+                  </div>
+                </div>
+                <button type="button" class="conf-opcao" (click)="excluirLancamento(l, false)">
+                  <span class="conf-opcao-titulo">Só esta parcela</span>
+                  <span class="conf-opcao-sub">Remove apenas a {{ l.parcela }}/{{ l.total_parcelas }}</span>
+                </button>
+                <button type="button" class="conf-opcao conf-opcao-perigo" (click)="excluirLancamento(l, true)">
+                  <span class="conf-opcao-titulo">Esta e as seguintes</span>
+                  <span class="conf-opcao-sub">Remove da {{ l.parcela }}/{{ l.total_parcelas }} até a {{ l.total_parcelas }}/{{ l.total_parcelas }}</span>
+                </button>
+                <button type="button" class="conf-cancelar" (click)="confirmandoExclusao = null">Cancelar</button>
+              </li>
+            }
+          }
+        }
+      </ul>
+    }
+  </aside>
+}
+
+@if (modalAberto) {
+  <div class="modal-fundo">
+    <form class="modal" role="dialog" aria-modal="true" aria-label="Lançar gasto" (ngSubmit)="salvarModal()">
+      <header class="modal-topo">
+        <h2>Lançar gasto</h2>
+        <button type="button" class="painel-fechar" (click)="fecharModal()" aria-label="Fechar">×</button>
+      </header>
+
+      <label class="campo campo-busca">
+        <span>Item</span>
+        <input
+          type="text" name="busca" autocomplete="off" placeholder="Digite para buscar: aluguel, combustível..."
+          [ngModel]="busca" (ngModelChange)="aoDigitarBusca($event)"
+          (focus)="sugestoesAbertas = true" (blur)="fecharSugestoesDepois()" (keydown)="teclaBusca($event)"
+          role="combobox" [attr.aria-expanded]="sugestoesAbertas" autofocus
+        />
+        @if (itemModal) { <span class="item-escolhido">{{ itemModal.categoria }} · {{ itemModal.item.gasto.classe || 'Sem classe' }}</span> }
+        @if (sugestoesAbertas && !itemModal) {
+          <ul class="sugestoes" role="listbox">
+            @for (o of sugestoes; track o.item.gasto.id; let i = $index) {
+              <li role="option" [class.ativa]="i === indiceSugestao" (mousedown)="escolherItem(o)" (mouseenter)="indiceSugestao = i">
+                <span class="sg-nome">{{ o.item.nome }}</span>
+                <span class="sg-cat">{{ o.categoria }}</span>
+              </li>
+            } @empty {
+              <li class="sg-vazio">Nenhum item encontrado. Cadastre-o em Gastos.</li>
+            }
+          </ul>
+        }
+      </label>
+
+      <div class="form-linha">
+        <label class="campo"><span>{{ modal.repeticao.modo === 'parcelado' ? 'Valor total (R$)' : 'Valor (R$)' }}</span><input type="text" appMascaraMoeda name="valor" placeholder="0,00" [(ngModel)]="modal.valor" /></label>
+        <label class="campo"><span>Data</span><input type="date" name="data" [(ngModel)]="modal.data" /></label>
+      </div>
+
+      <label class="campo"><span>Descrição (opcional)</span><input type="text" name="descricao" placeholder="Ex: Posto Shell" [(ngModel)]="modal.descricao" /></label>
+
+      <app-repeticao-gasto nome="modal" [(repeticao)]="modal.repeticao" [data]="modal.data" [valor]="modal.valor" />
+
+      @if (erroModal) { <p class="erro">{{ erroModal }}</p> }
+
+      <footer class="modal-acoes">
+        <button type="button" class="btn-secundario" (click)="fecharModal()">Cancelar</button>
+        <button type="submit" class="btn-primario" [disabled]="!itemModal">{{ rotuloLancar(modal.repeticao, modal.data, modal.valor) }}</button>
+      </footer>
+    </form>
+  </div>
+}
+
+@if (parcelados; as pq) {
+  <div class="modal-fundo" (click)="fecharParcelados()">
+    <section class="modal modal-parcelados" role="dialog" aria-modal="true" aria-label="Visão dos Parcelados" (click)="$event.stopPropagation()">
+      <header class="modal-topo">
+        <div>
+          <h2>Visão dos Parcelados</h2>
+          <p class="modal-sub">Todas as compras parceladas, somadas mês a mês: quanto do orçamento já está comprometido ao longo do tempo.</p>
+        </div>
+        <button type="button" class="painel-fechar" (click)="fecharParcelados()" aria-label="Fechar">×</button>
+      </header>
+
+      @if (pq.carregando) {
+        <p class="aviso">Carregando...</p>
+      } @else if (pq.erro) {
+        <p class="aviso aviso-erro">{{ pq.erro }}</p>
+      } @else if (!pq.meses.length) {
+        <p class="aviso">Nenhuma compra parcelada lançada ainda.</p>
+      } @else {
+        <div class="pq-resumo">
+          <div><span>Neste mês</span><strong>{{ moeda(parceladoMesAtual) }}</strong></div>
+          <div><span>A pagar daqui em diante</span><strong>{{ moeda(parceladoAPagar) }}</strong></div>
+          <div><span>Última parcela</span><strong class="pq-mes-txt">{{ ultimoMesParcelado }}</strong></div>
+        </div>
+
+        @if (temParceladosPassados) {
+          <label class="pq-passados">
+            <input type="checkbox" [(ngModel)]="pq.mostrarPassados" name="pq-passados" />
+            Mostrar meses anteriores
+          </label>
+        }
+
+        <ul class="pq-meses">
+          @for (m of mesesParceladosVisiveis; track m.idx) {
+            <li class="pq-mes" [class.pq-atual]="ehMesAtual(m)" [class.pq-passado]="m.idx < hojeIdxPublico">
+              <button type="button" class="pq-linha" (click)="alternarMesParcelado(m)" [attr.aria-expanded]="pq.abertos.has(m.idx)" [disabled]="!m.itens.length">
+                <span class="chevron" [class.aberto]="pq.abertos.has(m.idx)">›</span>
+                <span class="pq-rotulo">{{ m.rotulo }}@if (ehMesAtual(m)) { <span class="pq-tag-atual">atual</span> }</span>
+                <span class="pq-barra"><span [style.width.%]="m.total / maiorMesParcelado * 100"></span></span>
+                <span class="pq-qtd">{{ m.itens.length }} {{ m.itens.length === 1 ? 'parcela' : 'parcelas' }}</span>
+                <strong class="pq-total">{{ moeda(m.total) }}</strong>
+              </button>
+              @if (pq.abertos.has(m.idx) && m.itens.length) {
+                <ul class="pq-itens">
+                  @for (p of m.itens; track p.id) {
+                    <li>
+                      <span class="pq-desc">
+                        <span class="pq-desc-texto" [title]="p.descricao">{{ p.descricao }}</span>
+                        <span class="pq-item">{{ p.item }}{{ p.categoria ? ' · ' + p.categoria : '' }}</span>
+                      </span>
+                      @if (p.parcela && p.total_parcelas) {
+                        <span class="tag-parcela" [class.pq-ultima]="p.ultima" [title]="p.ultima ? 'Última parcela' : 'Parcela ' + p.parcela + ' de ' + p.total_parcelas">
+                          {{ p.parcela }}/{{ p.total_parcelas }}{{ p.ultima ? ' · última' : '' }}
+                        </span>
+                      } @else { <span></span> }
+                      <span class="pq-valor">{{ moeda(p.valor) }}</span>
+                    </li>
+                  }
+                </ul>
+                @if (m.terminam) {
+                  <p class="pq-terminam">{{ m.terminam }} {{ m.terminam === 1 ? 'compra termina' : 'compras terminam' }} neste mês.</p>
+                }
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+}
+
+@if (quadroSuspensosAberto) {
+  <div class="modal-fundo">
+    <section class="modal modal-largo" role="dialog" aria-modal="true" aria-label="Gastos em suspenso">
+      <header class="modal-topo">
+        <div>
+          <h2>Gastos em suspenso</h2>
+          <p class="modal-sub">Gastos que chegaram e não foram identificados automaticamente. Confira a sugestão e confirme.</p>
+        </div>
+        <button type="button" class="painel-fechar" (click)="fecharSuspensos()" aria-label="Fechar">×</button>
+      </header>
+
+      <div class="simulador">
+        <label class="campo">
+          <span>Simular mensagem do WhatsApp</span>
+          <div class="simulador-linha">
+            <input type="text" name="mensagemTeste" placeholder='Ex: "gastei 85,90 no mercado ontem" ou "uber 23"'
+              [(ngModel)]="mensagemTeste" (keydown.enter)="enviarMensagemTeste()" />
+            <button type="button" class="btn-primario" [disabled]="enviandoMensagem || !mensagemTeste.trim()" (click)="enviarMensagemTeste()">
+              {{ enviandoMensagem ? 'Enviando...' : 'Enviar' }}
+            </button>
+          </div>
+        </label>
+        @if (retornoMensagem) { <p class="simulador-retorno">{{ retornoMensagem }}</p> }
+      </div>
+
+      @if (carregandoSuspensos && !suspensos.length) {
+        <p class="aviso">Carregando...</p>
+      } @else if (!suspensos.length) {
+        <div class="suspensos-vazio">
+          <span>✓</span>
+          <p>Nenhum gasto em suspenso. Tudo foi identificado.</p>
+        </div>
+      } @else {
+        <ul class="lista-suspensos">
+          @for (s of suspensos; track s.id) {
+            <li class="suspenso" [class.ocupado]="ocupadoSuspensoId === s.id">
+              <div class="suspenso-topo">
+                <span class="suspenso-msg">“{{ s.texto_original }}”</span>
+                <span class="tag-whats" [class.tag-manual]="s.origem === 'manual'" [class.tag-fatura]="s.origem === 'fatura'">{{ rotuloOrigem(s) }}</span>
+              </div>
+              @if (s.aviso) { <p class="suspenso-aviso" role="note">⚠ {{ s.aviso }}</p> }
+              @if (parcelasRestantes(s) > 1) {
+                <p class="suspenso-parcela">↻ Parcela {{ s.parcela }}/{{ s.total_parcelas }}. Ao confirmar, lança {{ parcelasRestantes(s) }} parcelas ({{ s.parcela }}/{{ s.total_parcelas }} a {{ s.total_parcelas }}/{{ s.total_parcelas }}), uma por mês.</p>
+              }
+              <div class="suspenso-campos">
+                <div class="campo campo-item">
+                  <span class="campo-item-rotulo">
+                    <label [for]="'item-' + s.id">Categoria / item {{ s.gasto_sugerido_id ? '(sugestão)' : '' }}</label>
+                    @if (novoItemPara !== s.id) { <button type="button" class="btn-novo-item" (click)="abrirNovoItem(s)">+ Novo item</button> }
+                  </span>
+                  <select [id]="'item-' + s.id" [(ngModel)]="s.gasto_sugerido_id" [name]="'item-' + s.id" (ngModelChange)="marcarAlterado(s)" [class.sem-sugestao]="!s.gasto_sugerido_id" [title]="nomeItem(s.gasto_sugerido_id)">
+                    <option [ngValue]="null">Escolha o item…</option>
+                    @for (c of categorias; track c.id) {
+                      <optgroup [label]="c.label">
+                        @for (it of c.itens; track it.gasto.id) { <option [ngValue]="it.gasto.id">{{ it.nome }}</option> }
+                      </optgroup>
+                    }
+                  </select>
+                </div>
+                <label class="campo campo-valor"><span>Valor (R$)</span>
+                  <input type="text" appMascaraMoeda [(ngModel)]="s.valor" [name]="'valor-' + s.id" (ngModelChange)="marcarAlterado(s)" placeholder="0,00" />
+                </label>
+                <label class="campo campo-data"><span>Data</span>
+                  <input type="date" [(ngModel)]="s.data" [name]="'data-' + s.id" (ngModelChange)="marcarAlterado(s)" />
+                </label>
+                <label class="campo campo-desc"><span>Descrição</span>
+                  <input type="text" [(ngModel)]="s.descricao" [name]="'desc-' + s.id" (ngModelChange)="marcarAlterado(s)" [title]="s.descricao" />
+                </label>
+              </div>
+              @if (novoItemPara === s.id) {
+                <div class="novo-item" role="group" aria-label="Criar novo item">
+                  <strong>Novo item de orçamento</strong>
+                  <div class="novo-item-campos">
+                    <label class="campo"><span>Categoria</span>
+                      <select [(ngModel)]="novoItem.categoria" name="novo-item-categoria" [disabled]="criandoItem">
+                        <option value="" disabled>Escolha…</option>
+                        @for (c of categoriasParaNovoItem; track c.id) { <option [value]="c.id">{{ c.label }}</option> }
+                      </select>
+                    </label>
+                    <label class="campo"><span>Nome do item</span>
+                      <input type="text" name="novo-item-nome" placeholder="Ex: Claude" [(ngModel)]="novoItem.nome" [disabled]="criandoItem"
+                        (keydown.enter)="criarItem(s)" autofocus />
+                    </label>
+                    <label class="campo"><span>Classe</span>
+                      <select [(ngModel)]="novoItem.classe" name="novo-item-classe" [disabled]="criandoItem">
+                        @for (c of classesGasto; track c) { <option [value]="c">{{ c }}</option> }
+                      </select>
+                    </label>
+                  </div>
+                  @if (erroNovoItem) { <p class="erro">{{ erroNovoItem }}</p> }
+                  <div class="novo-item-acoes">
+                    <span class="novo-item-dica">A meta do item fica zerada; ajuste depois em Gastos.</span>
+                    <button type="button" class="btn-secundario btn-peq" (click)="cancelarNovoItem()" [disabled]="criandoItem">Cancelar</button>
+                    <button type="button" class="btn-primario btn-peq" (click)="criarItem(s)" [disabled]="criandoItem">{{ criandoItem ? 'Criando…' : 'Criar e selecionar' }}</button>
+                  </div>
+                </div>
+              }
+              @if (erroSuspenso[s.id]) { <p class="erro">{{ erroSuspenso[s.id] }}</p> }
+              <div class="suspenso-acoes">
+                <button type="button" class="btn-link-perigo" (click)="excluirSuspenso(s)">Excluir</button>
+                @if (alterados.has(s.id)) {
+                  <button type="button" class="btn-secundario btn-peq" (click)="salvarSuspenso(s)">Salvar edição</button>
+                }
+                <button type="button" class="btn-primario btn-peq" (click)="confirmarSuspenso(s)">✓ {{ parcelasRestantes(s) > 1 ? 'Lançar ' + parcelasRestantes(s) + ' parcelas' : s.aviso ? 'Lançar mesmo assim' : 'Confirmar lançamento' }}</button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+
+      <footer class="modal-acoes">
+        <button type="button" class="btn-secundario" (click)="fecharSuspensos()">Fechar</button>
+      </footer>
+    </section>
+  </div>
+}
+
+@if (importacaoAberta) {
+  <div class="modal-fundo">
+    <section class="modal" role="dialog" aria-modal="true" aria-label="Importar fatura do cartão">
+      <header class="modal-topo">
+        <div>
+          <h2>Importar fatura do cartão</h2>
+          <p class="modal-sub">As compras reconhecidas são lançadas na data da compra. As demais ficam em suspenso para você classificar.</p>
+          <p class="modal-sub">Privacidade: faturas em PDF são lidas por inteligência artificial (Anthropic). O arquivo não fica guardado: só os lançamentos extraídos.</p>
+        </div>
+        <button type="button" class="painel-fechar" (click)="fecharImportacao()" [disabled]="importando" aria-label="Fechar">×</button>
+      </header>
+
+      @if (!resumoImportacao) {
+        <label class="arquivo-fatura" [class.escolhido]="arquivoFatura" [class.ocupado]="importando">
+          <input type="file" accept=".pdf,.csv,.ofx,application/pdf,text/csv" (change)="escolherArquivo($event)" [disabled]="importando" />
+          <svg viewBox="0 0 20 20" fill="none" width="26" height="26" aria-hidden="true"><path d="M5 2.5h6.5L15 6v11.5H5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M11.5 2.5V6H15" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          @if (arquivoFatura) {
+            <strong>{{ arquivoFatura.name }}</strong>
+            <span>Clique para trocar o arquivo</span>
+          } @else {
+            <strong>Escolha o arquivo da fatura</strong>
+            <span>PDF, CSV ou OFX, baixado do app ou site do banco</span>
+          }
+        </label>
+        <p class="dica-importacao">
+          Compras parceladas lançam a parcela da fatura e as seguintes. Se uma compra com a mesma data, valor e
+          estabelecimento já estiver lançada, ela fica em suspenso com um aviso. Pagamentos e estornos são ignorados.
+        </p>
+        @if (importando) { <p class="aviso aviso-importando">Lendo a fatura… PDFs podem levar até um minuto.</p> }
+        @if (erroImportacao) { <p class="erro">{{ erroImportacao }}</p> }
+        <footer class="modal-acoes">
+          <button type="button" class="btn-secundario" (click)="fecharImportacao()" [disabled]="importando">Cancelar</button>
+          <button type="button" class="btn-primario" [disabled]="!arquivoFatura || importando" (click)="importarFatura()">{{ importando ? 'Importando…' : 'Importar' }}</button>
+        </footer>
+      } @else {
+        @let r = resumoImportacao;
+        <ul class="resumo-importacao">
+          <li class="ri-ok"><strong>{{ r.lancados }}</strong>
+            <span>{{ r.lancados === 1 ? 'compra lançada' : 'compras lançadas' }}@if (r.parcelas_lancadas > r.lancados) { ({{ r.parcelas_lancadas }} lançamentos, contando parcelas futuras)}</span></li>
+          <li class="ri-suspenso"><strong>{{ r.suspensos }}</strong>
+            <span>em suspenso para classificar@if (r.duplicados) { · {{ r.duplicados }} {{ r.duplicados === 1 ? 'possível repetida' : 'possíveis repetidas' }}}</span></li>
+          @if (r.ja_em_suspenso) { <li><strong>{{ r.ja_em_suspenso }}</strong><span>já estavam em suspenso de uma importação anterior</span></li> }
+          @if (r.ignorados) { <li><strong>{{ r.ignorados }}</strong><span>pagamentos, estornos e créditos ignorados</span></li> }
+        </ul>
+        <footer class="modal-acoes">
+          <button type="button" class="btn-secundario" (click)="fecharImportacao()">Fechar</button>
+          @if (r.suspensos) { <button type="button" class="btn-primario" (click)="revisarSuspensosDaImportacao()">Classificar {{ r.suspensos }} em suspenso</button> }
+        </footer>
+      }
+    </section>
+  </div>
+}
+
+@if (pedindoSenha) {
+  <div class="modal-fundo modal-fundo-senha">
+    <form class="modal modal-senha" role="dialog" aria-modal="true" aria-label="Senha do PDF" (ngSubmit)="enviarSenha()">
+      <header class="modal-topo">
+        <div class="senha-titulo">
+          <span class="senha-icone" aria-hidden="true">
+            <svg viewBox="0 0 20 20" fill="none" width="18" height="18"><rect x="4" y="9" width="12" height="8.5" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9" stroke="currentColor" stroke-width="1.6"/></svg>
+          </span>
+          <h2>PDF protegido por senha</h2>
+        </div>
+        <button type="button" class="painel-fechar" (click)="cancelarSenha()" [disabled]="importando" aria-label="Fechar">×</button>
+      </header>
+      <p class="modal-sub">Digite a senha para abrir a fatura. Em muitos bancos, ela é formada pelos primeiros dígitos do CPF do titular.</p>
+      <label class="campo">
+        <span>Senha</span>
+        <input type="password" name="senhaFatura" autocomplete="off" [(ngModel)]="senhaFatura" [disabled]="importando" autofocus
+          [attr.aria-invalid]="!!erroSenha" (ngModelChange)="erroSenha = ''" />
+      </label>
+      @if (erroSenha) { <p class="erro" role="alert">{{ erroSenha }}</p> }
+      @if (importando) { <p class="aviso aviso-importando">Abrindo e lendo a fatura…</p> }
+      <p class="dica-importacao">A senha é usada só para abrir este arquivo e não fica guardada.</p>
+      <footer class="modal-acoes">
+        <button type="button" class="btn-secundario" (click)="cancelarSenha()" [disabled]="importando">Cancelar</button>
+        <button type="submit" class="btn-primario" [disabled]="!senhaFatura || importando">{{ importando ? 'Abrindo…' : 'Abrir fatura' }}</button>
+      </footer>
+    </form>
+  </div>
+}
+
+@if (lote) {
+  <div class="modal-fundo modal-fundo-lote">
+    <section class="modal modal-lote" role="alertdialog" aria-modal="true" aria-labelledby="lote-pergunta">
+      <header class="modal-topo">
+        <h2>Lançar os outros também?</h2>
+        <button type="button" class="painel-fechar" (click)="recusarLote()" [disabled]="lancandoLote" aria-label="Fechar">×</button>
+      </header>
+      <p id="lote-pergunta" class="lote-pergunta">
+        Você tem mais {{ lote.outros.length }} {{ lote.outros.length === 1 ? 'lançamento' : 'lançamentos' }} dessa empresa.
+        Deseja lançar {{ lote.outros.length === 1 ? 'ele' : 'todos' }} na categoria <strong>{{ lote.categoria }} - {{ lote.item }}</strong>?
+      </p>
+      <div class="lote-cabecalho">
+        <label class="lote-marcar-todos">
+          <input type="checkbox" [checked]="todosMarcadosLote" [indeterminate]="!todosMarcadosLote && marcadosLote.length > 0"
+            (change)="marcarTodosLote($any($event.target).checked)" [disabled]="lancandoLote" />
+          {{ todosMarcadosLote ? 'Desmarcar todos' : 'Marcar todos' }}
+        </label>
+        <span class="lote-contagem">{{ marcadosLote.length }} de {{ lote.outros.length }} marcados</span>
+      </div>
+      <ul class="lote-lista">
+        @for (s of lote.outros; track s.id) {
+          <li [class.lote-desmarcado]="!selecionadosLote.has(s.id)">
+            <input type="checkbox" class="lote-check" [id]="'lote-' + s.id" [checked]="selecionadosLote.has(s.id)"
+              (change)="marcarLote(s, $any($event.target).checked)" [disabled]="lancandoLote"
+              [attr.aria-label]="'Lançar ' + s.descricao + (s.data ? ' de ' + dataCurta(s.data) : '')" />
+            <label class="lote-data" [for]="'lote-' + s.id">{{ s.data ? dataCurta(s.data) : '—' }}</label>
+            <label class="lote-desc" [for]="'lote-' + s.id" [title]="s.descricao">
+              {{ s.descricao }}
+              @if (parcelasRestantes(s) > 1) { <span class="tag-parcela">↻ {{ s.parcela }}/{{ s.total_parcelas }}</span> }
+            </label>
+            <label class="lote-valor" [for]="'lote-' + s.id">{{ s.valor ? moedaCentavos(s.valor) : 'sem valor' }}</label>
+          </li>
+        }
+      </ul>
+      <p class="lote-total">Total marcado: <strong>{{ moedaCentavos(totalLote) }}</strong>
+        @if (!todosMarcadosLote) { <span class="lote-nota">&nbsp;· os desmarcados continuam em suspenso</span> }</p>
+      @if (lote.comAviso) {
+        <p class="suspenso-aviso">⚠ {{ lote.comAviso }} {{ lote.comAviso === 1 ? 'outro lançamento dessa empresa tem' : 'outros lançamentos dessa empresa têm' }} aviso de possível repetição e {{ lote.comAviso === 1 ? 'ficou' : 'ficaram' }} de fora. Confira na lista.</p>
+      }
+      @if (erroLote) { <p class="erro" role="alert">{{ erroLote }}</p> }
+      <footer class="modal-acoes">
+        <button type="button" class="btn-secundario" (click)="recusarLote()" [disabled]="lancandoLote">Não, só este</button>
+        <button type="button" class="btn-primario" (click)="confirmarLote()" [disabled]="lancandoLote || !marcadosLote.length" autofocus>
+          {{ lancandoLote ? 'Lançando…' : todosMarcadosLote ? 'Sim, lançar ' + (lote.outros.length === 1 ? 'ele' : 'todos') : 'Lançar ' + marcadosLote.length + (marcadosLote.length === 1 ? ' marcado' : ' marcados') }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}
+
+<!-- Ajuste automático das metas pelo histórico: prévia antes de aplicar -->
+@if (ajusteMetas; as aj) {
+  <div class="modal-fundo" (click)="fecharAjusteMetas()">
+    <section class="modal modal-largo modal-ajuste" role="dialog" aria-modal="true" aria-label="Ajustar metas pelo histórico" (click)="$event.stopPropagation()">
+      <header class="modal-topo">
+        <div>
+          <h2>Ajustar metas pelo histórico</h2>
+          <p class="modal-sub"><strong>Mensais:</strong> média dos últimos 3 meses fechados, sem contar os meses zerados.
+            <strong>Eventuais:</strong> projeção do consumo atual para os próximos 12 meses (meta anual). O mês em andamento não entra.</p>
+        </div>
+        <button type="button" class="painel-fechar" (click)="fecharAjusteMetas()" aria-label="Fechar">×</button>
+      </header>
+
+      @if (aj.carregando) {
+        <p class="aviso">Calculando…</p>
+      } @else if (!aj.itens.length && !aj.erro) {
+        <p class="aviso">Ainda não há gastos lançados em meses fechados para calcular as metas.</p>
+      } @else {
+        <div class="ajuste-wrap">
+          <table class="ajuste-tabela">
+            <thead>
+              <tr>
+                <th class="aj-check"><input type="checkbox" aria-label="Marcar todos"
+                  [checked]="todosAjusteMarcados"
+                  (change)="marcarTodosAjuste($any($event.target).checked)" /></th>
+                <th class="aj-item">Item</th>
+                <th class="aj-num">Meta atual</th>
+                <th class="aj-num">Sugerida</th>
+                <th class="aj-base">Como foi calculada</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of aj.itens; track s.id) {
+                <tr [class.aj-igual]="s.sugerido === s.atual">
+                  <td class="aj-check"><input type="checkbox" [(ngModel)]="s.aplicar" [disabled]="s.sugerido === s.atual" [attr.aria-label]="'Aplicar a ' + s.nome" /></td>
+                  <td class="aj-item">
+                    <span class="aj-nome">{{ s.nome }}</span>
+                    <span class="aj-cat">{{ s.categoriaNome }} · {{ s.classe }}</span>
+                  </td>
+                  <td class="aj-num">{{ s.atual ? moeda(s.atual) : '—' }}@if (s.atual && s.classe.startsWith('Eventual')) {<small>/ano</small>}</td>
+                  <td class="aj-num aj-sugerida" [class.aj-sobe]="s.sugerido > s.atual" [class.aj-desce]="s.sugerido < s.atual">
+                    {{ moeda(s.sugerido) }}@if (s.classe.startsWith('Eventual')) {<small>/ano</small>}
+                  </td>
+                  <td class="aj-base">{{ s.sugerido === s.atual ? 'Já está igual ao histórico' : baseAjuste(s) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+      @if (aj.erro) { <p class="aviso aviso-erro">{{ aj.erro }}</p> }
+
+      <footer class="modal-acoes">
+        <button type="button" class="btn-secundario" (click)="fecharAjusteMetas()" [disabled]="aplicandoAjuste">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="aplicarAjusteMetas()" [disabled]="!qtdAjusteSelecionados || aplicandoAjuste">
+          {{ aplicandoAjuste ? 'Aplicando…' : 'Aplicar ' + qtdAjusteSelecionados + (qtdAjusteSelecionados === 1 ? ' meta' : ' metas') }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}

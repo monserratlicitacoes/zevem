@@ -1,0 +1,19 @@
+@if (auth.isLoggedIn) {
+  <div class="app-shell">
+    <app-sidebar />
+    <div class="app-shell-main">
+      <div class="app-shell-body">
+        <main class="app-shell-content">
+          <router-outlet />
+        </main>
+        <app-video-panel />
+      </div>
+    </div>
+  </div>
+  <!-- Avisos de acesso só depois do vídeo de boas-vindas -->
+  @if (boasVindas.resolvido() && !boasVindas.aberto()) { <app-comunicado-acesso /> }
+  @if (layout.anuncioPlanejador()) { <app-anuncio-planejador (fechar)="layout.anuncioPlanejador.set(false)" /> }
+  @if (boasVindas.aberto(); as sessao) { <app-boas-vindas [sessao]="sessao" /> }
+} @else {
+  <router-outlet />
+}

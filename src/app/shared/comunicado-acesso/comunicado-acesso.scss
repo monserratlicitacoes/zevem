@@ -1,0 +1,25 @@
+.fundo {
+  position: fixed; inset: 0; z-index: 1090; background: rgba(5, 38, 26, .45);
+  display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; padding: 16px;
+}
+.aviso {
+  position: relative; width: min(480px, 100%); max-height: 90vh; overflow-y: auto;
+  background: #fff; border-radius: 16px; box-shadow: 0 24px 60px rgba(5, 38, 26, .3);
+}
+.fechar {
+  position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 50%; border: none;
+  background: rgba(255, 255, 255, .9); color: #05261a; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.imagem { display: block; width: 100%; max-height: 240px; object-fit: cover; }
+.corpo { padding: 22px 24px 20px; display: flex; flex-direction: column; gap: 10px; }
+h2 { font-size: 18px; font-weight: 800; color: #05261a; padding-right: 24px; }
+p { font-size: 13px; color: #40534a; line-height: 1.55; white-space: pre-line; }
+.acoes { display: flex; gap: 8px; margin-top: 6px; }
+.principal, .secundario { border-radius: 10px; padding: 10px 16px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
+.principal { background: #b8f15a; color: #05261a; &:hover { background: #c8f67a; } }
+.secundario { background: #edf1e9; color: #40534a; }
+small { font-size: 11px; color: #5c6f66; }
+.selo-previa {
+  background: #05261a; color: #b8f15a; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 5px 12px;
+  letter-spacing: .02em; box-shadow: 0 4px 14px rgba(0, 0, 0, .2);
+}

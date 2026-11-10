@@ -1,0 +1,1013 @@
+$verde: #2f9e44;
+$verde-claro: #e6f6e9;
+$ambar: #d48806;
+$ambar-claro: #fff4dc;
+$vermelho: #d63a3a;
+$vermelho-claro: #fde8e8;
+// Rosa elétrico: números que estouraram a meta e ações de exclusão (o vermelho fica só para erros).
+// Em números pequenos usa-se o tom mais escuro, para leitura sobre fundo claro.
+$rosa: #ff2e63;
+$rosa-texto: #d61e4c;
+$rosa-claro: #fff0f3;
+$rosa-claro: #fff0f3;
+$lima: #0b3d2e;
+$lima-claro: #e6f8d2;
+// Identidade: o lima brilhante é cor de destaque sobre o verde profundo e de fundo de botões;
+// sobre fundo claro, textos de destaque usam o verde floresta ($lima).
+$lima-marca: #b8f15a;
+$profundo: #05261a;
+$borda: #dde5d9;
+$texto: #05261a;
+$suave: #5c6f66;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.page {
+  padding: 32px 36px 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  gap: 16px;
+}
+// margin + o gap de 16px da .page = 24px até o conteúdo, igual às outras páginas
+// (seletor mais específico que o padrão global de .page-header, que usa margin-bottom: 24px)
+.page > .page-header { margin-bottom: 8px; }
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap; // com a tela estreita, os botões descem em vez de espremer o título
+  align-items: center;
+  gap: 12px 16px;
+  > button { white-space: nowrap; }
+}
+.ph-acoes {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  > button { white-space: nowrap; }
+}
+
+.ph-icone {
+  width: 46px;
+  height: 46px;
+  background: $lima-claro;
+  color: $lima;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ph-texto {
+  flex: 1 1 260px;
+  min-width: 0;
+  h1 { font-size: 22px; font-weight: 700; color: $texto; }
+  p  { font-size: 13px; color: $suave; margin-top: 2px; }
+}
+
+// ── Seletor do mês de referência ──
+
+.seletor-mes {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sm-controle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #fff;
+  border: 1px solid $borda;
+  border-radius: 10px;
+  padding: 2px;
+}
+
+.sm-seta {
+  width: 24px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent; border-radius: 8px;
+  color: $suave; cursor: pointer;
+  &:hover { background: #edf1e9; color: $texto; }
+  &:focus-visible { outline: 2px solid $lima-marca; outline-offset: 1px; }
+}
+
+.sm-rotulo {
+  display: flex; align-items: center; gap: 6px;
+  height: 28px; box-sizing: border-box;
+  width: 94px; // fixa: o nome do mês muda de tamanho, mas as setas e o "Hoje" não se mexem
+  padding: 0 8px;
+  border: none; background: transparent; border-radius: 8px;
+  color: $texto; cursor: pointer; font-family: inherit; text-align: left;
+  &:hover { background: #edf1e9; }
+  &:focus-visible { outline: 2px solid $lima-marca; outline-offset: 1px; }
+  .sm-caret { color: $suave; margin-left: auto; }
+}
+.sm-textos {
+  display: flex; flex-direction: column; line-height: 1.2;
+  strong { font-size: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+}
+
+.sm-hoje {
+  height: 34px; padding: 0 12px;
+  border: 1px solid $borda; border-radius: 10px; background: #fff;
+  font-family: inherit; font-size: 12px; font-weight: 700; color: $lima;
+  cursor: pointer;
+  &:hover { background: #edf1e9; }
+}
+
+.sm-fundo { position: fixed; inset: 0; z-index: 40; }
+
+.sm-popover {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 41; // seletor fica à direita: abre para a esquerda
+  width: 280px;
+  background: #fff; border: 1px solid $borda; border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(5, 38, 26, .16);
+  padding: 12px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.sm-ano {
+  display: flex; align-items: center; justify-content: space-between;
+  strong { font-size: 16px; font-weight: 700; color: $texto; }
+}
+.sm-meses {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+}
+.sm-mes {
+  position: relative;
+  height: 38px; border: 1px solid transparent; border-radius: 9px;
+  background: #f7f8f5; color: $texto;
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  &:hover { background: #e9f0e4; }
+  // Mês atual: pontinho lima
+  &.atual::after {
+    content: ''; position: absolute; top: 6px; right: 7px;
+    width: 6px; height: 6px; border-radius: 50%; background: #39d353;
+  }
+  // Mês escolhido: verde profundo com sublinhado lima (padrão das abas selecionadas)
+  &.selecionado { background: #05261a; color: #f7f8f5; box-shadow: inset 0 -3px 0 $lima-marca; }
+}
+.sm-legenda {
+  margin: 0; font-size: 11px; color: $suave; display: flex; align-items: center; gap: 6px;
+}
+.sm-ponto { width: 6px; height: 6px; border-radius: 50%; background: #39d353; display: inline-block; }
+
+// ── Cards ─────────────────────────────────────────────────────
+.cards {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.card-resumo {
+  // Cards do topo em verde profundo, números em lima (estourou: rosa elétrico)
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(11, 61, 46, .55) 0%, rgba(11, 61, 46, 0) 60%),
+    $profundo;
+  border: 1px solid rgba(184, 241, 90, .12);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  box-shadow: 0 6px 18px rgba(5, 38, 26, .18);
+
+  .cr-valor { color: $lima-marca; }
+  .barra { background: rgba(247, 248, 245, .14); span { background: $lima-marca; } }
+  &.card-estourou { .cr-valor { color: $rosa; } .barra span { background: $rosa; } }
+}
+
+.cr-rotulo { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: rgba(247, 248, 245, .62); }
+.cr-valor { font-size: 22px; font-weight: 600; color: $texto; font-variant-numeric: tabular-nums; }
+.cr-sub { font-size: 12px; color: rgba(247, 248, 245, .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.txt-estourou { color: $rosa !important; }
+
+.barra {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: #edf1e9;
+  overflow: hidden;
+  margin-top: 4px;
+  span { display: block; height: 100%; background: $suave; border-radius: inherit; transition: width .3s; }
+}
+
+// ── Barra de ações / legenda ─────────────────────────────────
+.barra-acoes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.btn-link {
+  border: none; background: none; color: $lima; font-weight: 600; font-size: 13px; cursor: pointer; padding: 0;
+  &:hover { text-decoration: underline; }
+}
+
+.legenda {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  font-size: 12px; color: $suave;
+  span { display: inline-flex; align-items: center; gap: 6px; }
+}
+.legenda-dica { font-style: italic; }
+.pt { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.pt-ok { background: $verde; }
+.pt-estourou { background: $rosa; }
+
+.aviso { color: $suave; font-size: 13px; padding: 16px 0; }
+.aviso-erro { color: $vermelho; }
+
+// ── Tabela ────────────────────────────────────────────────────
+.tabela-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid $borda;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(5, 38, 26, .05);
+}
+
+.tabela {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  // Um tamanho só para todo o texto da tabela (cabeçalho, linhas e rodapé)
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+
+  // Linhas altas e arejadas; separação só horizontal e fina
+  th, td { padding: 6px 12px; border-bottom: 1px solid #eef2eb; white-space: nowrap; }
+
+  // Cabeçalho limpo: títulos em caixa normal, escuros e em negrito
+  thead th {
+    position: sticky; top: 0; z-index: 2;
+    background: #fafcf8; color: $profundo; border-bottom: 1px solid $borda;
+    font-size: 11px; font-weight: 700;
+    text-align: center;
+    padding-top: 8px; padding-bottom: 8px;
+  }
+  thead th.col-nome { text-align: left; z-index: 3; }
+  thead th.col-mes { cursor: pointer; &:hover { background: #f1f6ed; } }
+  // Mês em foco: cabeçalho em lima claro com texto verde floresta
+  // Mês em foco: cabeçalho em verde floresta, texto branco
+  thead th.mes-foco { background: $lima; color: #fff; }
+
+  // Saldo: faixa branca acima (igual ao respiro entre Receitas e Gastos) e uma linha fina logo abaixo dela
+  tfoot td {
+    position: sticky; bottom: 0; z-index: 2;
+    background: #f7f8f5; font-weight: 600; border-top: 10px solid #fff;
+    box-shadow: inset 0 1px 0 $borda;
+  }
+  tfoot td.col-nome { z-index: 3; }
+  tfoot td.col-meta { box-shadow: inset 0 1px 0 $borda, 2px 0 0 #c3cfbf, 6px 0 8px -4px rgba(5, 38, 26, .18); }
+  tfoot td.col-mes { box-shadow: inset 0 1px 0 $borda, inset 1px 0 0 #eef2eb; }
+}
+
+.col-nome {
+  position: sticky; left: 0; z-index: 1;
+  background: inherit;
+  width: 280px; min-width: 280px; max-width: 280px;
+  box-sizing: border-box;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+// Meta fica travada ao lado do nome ao rolar para os lados.
+.col-meta {
+  position: sticky; left: 280px; z-index: 1;
+  width: 110px; min-width: 110px; box-sizing: border-box;
+  text-align: right; font-weight: 600; color: $texto;
+  // Coluna da meta em destaque: tom esverdeado mais marcado e uma linha separando dos meses
+  background: #e9f0e4;
+  box-shadow: 2px 0 0 #c3cfbf, 6px 0 8px -4px rgba(5, 38, 26, .18);
+}
+.tabela thead th.col-meta { z-index: 3; background: #e1e9db; color: $profundo; }
+.tabela tfoot td.col-meta { z-index: 3; background: #dde6d6; }
+.tr-categoria td.col-meta { background: #e3ebdd; }
+// Meses: valores centralizados, com uma linha vertical discreta entre um mês e outro
+.col-mes { text-align: center; min-width: 92px; box-shadow: inset 1px 0 0 #eef2eb; }
+// Mês em foco: a coluna inteira ganha um véu lima bem claro, sem bordas
+// Coluna do mês em foco: véu verde floresta por cima da cor de cada linha, com linhas finas dos lados
+td.mes-foco {
+  background-color: rgba(11, 61, 46, .07);
+  box-shadow: inset 1px 0 0 rgba(11, 61, 46, .35), inset -1px 0 0 rgba(11, 61, 46, .35);
+}
+.tr-categoria td.mes-foco { background-color: rgba(11, 61, 46, .08); }
+.tr-item:not(.tr-prevista) td.mes-foco { background-color: rgba(11, 61, 46, .07); }
+.mes-futuro .valor-cel { opacity: .45; }
+thead th.mes-futuro:not(.mes-foco) { color: #8a9d92; }
+
+.tr-categoria {
+  background: #eef4e8;
+  cursor: pointer;
+  td { font-weight: 500; }
+  td.col-nome { background: #eef4e8; padding-left: 22px; }
+}
+
+// Linha sob o mouse (categoria ou item): mesmo tom da coluna de meta. A célula do mês em foco
+// fica um pouco mais escura, para a coluna continuar contínua.
+.tr-categoria:hover td:not(.mes-foco) { background-color: #e0eada; }
+.tr-item:hover td:not(.mes-foco) { background-color: #f3f6f0; }
+.tr-categoria:hover td.mes-foco,
+.tr-item:hover td.mes-foco { background-color: rgba(11, 61, 46, .14); }
+// Categorias em verde claro; itens brancos por baixo delas
+.tr-item {
+  background: #fff;
+  td.col-nome { background: #fff; padding-left: 50px; font-weight: 400; color: #40534a; }
+}
+tfoot td.col-nome { background: #f7f8f5; }
+
+.chevron {
+  display: inline-block; width: 16px; margin-right: 8px;
+  color: #8a9d92; font-size: 16px; line-height: 1; text-align: center;
+  transition: transform .15s;
+  &.aberto { transform: rotate(90deg); }
+}
+.cat-nome { color: $texto; font-weight: 600; }
+.cat-qtd {
+  margin-left: 8px; font-size: 11px; font-weight: 600;
+  background: #edf1e9; color: $suave; border-radius: 999px; padding: 1px 7px;
+}
+.item-nome { display: inline-block; max-width: 210px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+
+.cel-clicavel {
+  cursor: pointer;
+  &:hover { background-color: #ecf8de; box-shadow: inset 0 0 0 1px $lima; }
+}
+.cel-selecionada { box-shadow: inset 0 0 0 2px $lima !important; background-color: #ecf8de; }
+
+.valor-cel { display: inline-flex; align-items: center; gap: 3px; }
+.valor-cel.st-vazio { color: #c3cfbf; }
+.valor-cel.st-ok { color: $verde; }
+.valor-cel.st-estourou { color: $rosa-texto; }
+.valor-cel.st-neutro { color: #40534a; }
+.icone-estouro { font-size: 8px; }
+.pct { display: block; font-size: 10px; color: #8a9d92; line-height: 1; }
+// No mês em foco o percentual fica mais escuro, para ler bem sobre o véu verde da coluna
+td.mes-foco .pct { color: #40534a; font-weight: 600; }
+
+
+// ── Painel lateral de lançamentos ────────────────────────────
+.painel-fundo {
+  position: fixed; inset: 0; background: rgba(5, 38, 26, .25); z-index: 990;
+}
+.painel {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 991;
+  width: min(380px, 100vw);
+  background: #fff;
+  box-shadow: -8px 0 24px rgba(5, 38, 26, .12);
+  padding: 22px;
+  display: flex; flex-direction: column; gap: 14px;
+  overflow-y: auto;
+  box-sizing: border-box;
+
+  h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: $suave; }
+}
+.painel-topo {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  h2 { font-size: 18px; font-weight: 700; color: $texto; margin-top: 2px; }
+}
+.painel-mes { display: block; font-size: 12px; font-weight: 600; color: $lima; &::first-letter { text-transform: uppercase; } }
+.painel-fechar {
+  border: none; background: #edf1e9; width: 30px; height: 30px; border-radius: 8px;
+  font-size: 18px; cursor: pointer; color: $suave;
+  &:hover { color: $texto; }
+}
+
+.painel-resumo {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  background: #f7f8f5; border-radius: 10px; padding: 12px;
+  div { display: flex; flex-direction: column; gap: 2px; }
+  span { font-size: 11px; color: $suave; font-weight: 600; }
+  strong { font-size: 16px; color: $texto; }
+  .barra { grid-column: 1 / -1; }
+  &.st-ok { background: $verde-claro; strong { color: $verde; } .barra span { background: $verde; } }
+  &.st-estourou { background: $rosa-claro; strong { color: $rosa-texto; } .barra span { background: $rosa; } }
+}
+
+.form-lanc {
+  display: flex; flex-direction: column; gap: 10px;
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: $suave; flex: 1; }
+  input {
+    border: 1px solid $borda; border-radius: 8px; padding: 9px 10px; font-size: 14px; color: $texto;
+    width: 100%; min-width: 0; box-sizing: border-box;
+    &:focus { outline: none; border-color: $lima; box-shadow: 0 0 0 3px rgba(184, 241, 90, .15); }
+  }
+}
+.form-linha { display: flex; gap: 10px; > label { min-width: 0; } }
+.erro { color: $vermelho; font-size: 12px; }
+.btn-primario {
+  background: $lima-marca; color: $profundo; border: none; border-radius: 10px; padding: 10px 14px;
+  font-weight: 700; font-size: 14px; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(184, 241, 90, .28);
+  transition: background .15s, transform .15s, box-shadow .15s;
+  &:hover:not(:disabled) { background: #c8f67a; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184, 241, 90, .38); }
+  &:disabled { opacity: .6; cursor: default; }
+}
+
+.lista-titulo { margin-top: 4px; }
+.lista-lanc {
+  list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column;
+  li {
+    display: grid; grid-template-columns: 38px 1fr auto 56px; align-items: center; gap: 8px;
+    // Data, descrição e valor no mesmo tamanho do texto da tabela
+    padding: 8px 0; border-bottom: 1px solid #edf1e9; font-size: 11px;
+  }
+}
+.ll-data { color: $suave; font-weight: 600; }
+.ll-desc { color: $texto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+// Descrição em uma linha, ocupando toda a largura; o que não couber vira "…" (texto completo no hover).
+.ll-desc-texto { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+// Etiquetas (parcela, origem) descem para a linha de baixo.
+.ll-tags {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  .tag-parcela, .tag-whats { margin-left: 0; }
+}
+.ll-valor { font-weight: 600; }
+.ll-excluir {
+  border: none; background: none; color: #8a9d92; font-size: 16px; cursor: pointer;
+  &:hover { color: $rosa; }
+}
+.tag-whats {
+  margin-left: 6px; font-size: 10px; font-weight: 600; color: #128c7e; background: #e3f7f3;
+  border-radius: 999px; padding: 1px 6px;
+}
+
+@media (max-width: 1100px) {
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .card-mes { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .page { padding: 20px 16px; overflow-y: auto; }
+  .cards { grid-template-columns: 1fr; }
+  .tabela-wrap { min-height: 360px; }
+}
+
+// ── Botão, aviso e modal "Lançar gasto" ──────────────────────
+.btn-lancar { display: inline-flex; align-items: center; gap: 6px; }
+.btn-secundario {
+  position: relative; // selo de vídeo no canto
+  background: #fff; color: $texto; border: 1px solid $borda; border-radius: 9px; padding: 10px 14px;
+  font-weight: 600; font-size: 14px; cursor: pointer;
+  &:hover { background: #f7f8f5; }
+}
+.toast-sucesso {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1010;
+  background: $verde; color: #fff; font-weight: 600; font-size: 13px;
+  padding: 10px 18px; border-radius: 10px; box-shadow: 0 8px 20px rgba(5, 38, 26, .18);
+}
+
+.modal-fundo {
+  position: fixed; inset: 0; z-index: 1000; background: rgba(5, 38, 26, .35);
+  display: flex; align-items: flex-start; justify-content: center; padding: 8vh 16px 16px;
+}
+.modal {
+  width: min(460px, 100%); background: #fff; border-radius: 16px; padding: 22px;
+  box-shadow: 0 20px 50px rgba(5, 38, 26, .25);
+  display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;
+  max-height: 84vh; overflow-y: auto;
+}
+.modal-topo { display: flex; justify-content: space-between; align-items: center; h2 { font-size: 18px; font-weight: 700; color: $texto; } }
+
+.campo {
+  display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0;
+  > span { font-size: 12px; font-weight: 600; color: $suave; }
+  input {
+    border: 1px solid $borda; border-radius: 9px; padding: 10px 11px; font-size: 14px; color: $texto; width: 100%; box-sizing: border-box;
+    &:focus { outline: none; border-color: $lima; box-shadow: 0 0 0 3px rgba(184, 241, 90, .15); }
+  }
+}
+.campo-busca { position: relative; }
+.item-escolhido { font-size: 11px !important; font-weight: 600 !important; color: $lima !important; }
+.sugestoes {
+  position: absolute; top: 66px; left: 0; right: 0; z-index: 5;
+  list-style: none; margin: 0; padding: 4px; background: #fff;
+  border: 1px solid $borda; border-radius: 10px; box-shadow: 0 10px 24px rgba(5, 38, 26, .14);
+  max-height: 260px; overflow-y: auto;
+  li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 7px; cursor: pointer; font-size: 13px; }
+  li.ativa { background: #ecf8de; }
+}
+.sg-nome { color: $texto; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sg-cat { color: $suave; font-size: 11px; white-space: nowrap; }
+.sg-vazio { color: $suave; cursor: default !important; }
+
+.modal-acoes { display: flex; justify-content: flex-end; gap: 10px; }
+
+// ── Editar / excluir lançamento ──────────────────────────────
+.ll-acoes { display: flex; justify-content: flex-end; gap: 2px; }
+.ll-btn {
+  width: 26px; height: 26px; border: none; background: none; border-radius: 7px;
+  color: #8a9d92; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  &:hover { background: #edf1e9; color: $texto; }
+  &.ll-btn-excluir:hover { background: $rosa-claro; color: $rosa; }
+}
+.ll-pendente { opacity: .6; .ll-acoes { visibility: hidden; } }
+.tag-rec { margin-left: 4px; color: $lima; font-weight: 700; }
+.lista-lanc li.ll-edicao, .lista-lanc li.ll-confirmar {
+  display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+  background: #f7f8f5; border-radius: 10px; padding: 10px; margin: 4px 0; border-bottom: none;
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: $suave; flex: 1; }
+  input {
+    border: 1px solid $borda; border-radius: 8px; padding: 8px 9px; font-size: 13px; color: $texto; min-width: 0;
+    &:focus { outline: none; border-color: $lima; }
+  }
+}
+.lista-lanc li.ll-confirmar {
+  background: #fff; border: 1px solid #ffd0db; box-shadow: 0 6px 16px rgba(255, 46, 99, .08);
+  padding: 14px; gap: 8px;
+}
+.conf-cabecalho {
+  display: flex; gap: 10px; align-items: flex-start; margin-bottom: 4px;
+  strong { display: block; font-size: 14px; font-weight: 700; color: $texto; }
+  p { font-size: 12px; color: $suave; margin-top: 2px; line-height: 1.35; }
+}
+.conf-icone {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
+  background: $rosa-claro; color: $rosa; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.conf-opcao {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%;
+  text-align: left; padding: 9px 12px; border-radius: 10px; cursor: pointer;
+  background: #fff; border: 1px solid $borda; transition: background .12s, border-color .12s;
+  &:hover { background: #f7f8f5; border-color: #c3cfbf; }
+  &.conf-opcao-perigo {
+    background: $rosa; border-color: $rosa;
+    .conf-opcao-titulo, .conf-opcao-sub { color: #fff; }
+    &:hover { filter: brightness(.95); background: $rosa; }
+  }
+}
+.conf-opcao-titulo { font-size: 13px; font-weight: 700; color: $texto; }
+.conf-opcao-sub { font-size: 11px; color: $suave; }
+.conf-cancelar {
+  align-self: center; border: none; background: none; color: $suave; font-weight: 600; font-size: 12px;
+  cursor: pointer; padding: 4px 8px; margin-top: 2px;
+  &:hover { color: $texto; text-decoration: underline; }
+}
+.ll-edicao-acoes { display: flex; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+.btn-peq { padding: 6px 10px !important; font-size: 12px !important; }
+.btn-perigo {
+  background: $rosa; color: #fff; border: none; border-radius: 9px; font-weight: 600; cursor: pointer;
+  &:hover { filter: brightness(.95); }
+}
+
+// ── Gastos em suspenso ───────────────────────────────────────
+.btn-suspensos {
+  display: inline-flex; align-items: center; gap: 6px;
+  &.tem-pendentes { border-color: #f5c46b; background: $ambar-claro; color: #8a5a00; }
+}
+.contador-suspensos {
+  min-width: 20px; height: 20px; border-radius: 999px; background: $ambar; color: #fff;
+  font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; padding: 0 6px;
+}
+.modal-largo { width: min(1240px, 100%); max-height: 90vh; }
+.modal-sub { font-size: 12px; color: $suave; margin-top: 2px; }
+.simulador {
+  background: #f7f8f5; border: 1px dashed #c3cfbf; border-radius: 12px; padding: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.simulador-linha { display: flex; gap: 8px; input { flex: 1; } button { white-space: nowrap; } }
+.simulador-retorno { font-size: 12px; font-weight: 600; color: $lima; }
+
+.suspensos-vazio {
+  text-align: center; padding: 28px 0; color: $suave;
+  span { display: inline-flex; width: 44px; height: 44px; border-radius: 50%; background: $verde-claro; color: $verde; font-size: 20px; font-weight: 700; align-items: center; justify-content: center; }
+  p { margin-top: 8px; font-size: 13px; }
+}
+.lista-suspensos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.suspenso {
+  border: 1px solid $borda; border-left: 4px solid $ambar; border-radius: 12px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 10px; transition: opacity .15s;
+  &.ocupado { opacity: .5; pointer-events: none; }
+}
+.suspenso-topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.suspenso-msg { font-size: 13px; font-weight: 600; color: $texto; font-style: italic; }
+.tag-manual { color: $suave !important; background: #edf1e9 !important; }
+.tag-fatura { color: #0b3d2e !important; background: $lima-claro !important; }
+.suspenso-aviso {
+  font-size: 12px; font-weight: 600; color: #8a5a00; background: $ambar-claro;
+  border: 1px solid #f3dca6; border-radius: 8px; padding: 7px 10px; margin: 0;
+}
+.suspenso-parcela { font-size: 12px; font-weight: 600; color: $lima; margin: 0; }
+.suspenso-campos {
+  display: grid; grid-template-columns: minmax(0, 2.6fr) minmax(0, .8fr) minmax(0, 1fr) minmax(0, 2.4fr); gap: 10px;
+  select {
+    border: 1px solid $borda; border-radius: 9px; padding: 10px 8px; font-size: 13px; color: $texto; background: #fff; width: 100%;
+    &:focus { outline: none; border-color: $lima; box-shadow: 0 0 0 3px rgba(184, 241, 90, .15); }
+    &.sem-sugestao { border-color: #f5c46b; background: #fffaf0; }
+  }
+}
+.suspenso-acoes { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.btn-link-perigo {
+  border: none; background: none; color: $rosa-texto; font-weight: 600; font-size: 12px; cursor: pointer; margin-right: auto; padding: 0;
+  &:hover { text-decoration: underline; }
+}
+@media (max-width: 900px) {
+  .suspenso-campos { grid-template-columns: 1fr 1fr; }
+  .campo-item, .campo-desc { grid-column: 1 / -1; }
+}
+
+.tag-parcela {
+  margin-left: 6px; font-size: 10px; font-weight: 700; color: #0b3d2e; background: $lima-claro;
+  border-radius: 999px; padding: 1px 7px; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+
+.erro-carga {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  background: $vermelho-claro; border-radius: 10px; padding: 12px;
+  p { color: $vermelho; font-size: 13px; font-weight: 600; }
+}
+
+.meta-ano { font-size: 10px; font-weight: 600; color: $suave; margin-left: 2px; }
+.pct-ano { color: #7c8aa0; }
+.painel-nota {
+  grid-column: 1 / -1; font-size: 11px; color: $suave; font-weight: 500; line-height: 1.35;
+}
+.painel-nota-mes { font-weight: 600; color: $texto; }
+// Orientação do item eventual: uma frase só (quanto ainda pode gastar ou até quando evitar).
+.painel-resumo .painel-orientacao {
+  grid-column: 1 / -1; margin: 2px 0 0; font-size: 13px; font-weight: 600; color: $texto; line-height: 1.35;
+  strong { font-size: inherit; color: inherit; font-weight: 700; }
+}
+
+.acoes-esq { display: flex; align-items: center; gap: 16px; }
+
+// Card único do mês: realizado × estimado e o percentual
+.card-resumo.card-mes {
+  .cm-linha { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .cm-valores { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
+  .cm-de { font-size: 13px; font-weight: 600; color: rgba(247, 248, 245, .7); white-space: nowrap; }
+  .cm-pct { font-size: 26px; font-weight: 600; color: $lima-marca; font-variant-numeric: tabular-nums; line-height: 1; }
+  .cr-valor { color: $lima-marca; }
+  &.card-estourou .cm-pct { color: $rosa; }
+}
+
+// Itens sem negrito; só as linhas de categoria (e o total) ficam em destaque.
+.tr-item {
+  .col-meta, .valor-cel, .valor-cel.st-estourou { font-weight: 400; }
+}
+
+// Padrão contábil: "R$" encostado à esquerda e o valor à direita.
+.contabil { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.contabil > span:first-child { color: #8a9d92; font-weight: 500; }
+.contabil-vazio { justify-content: flex-end; color: #c3cfbf; }
+.tabela thead th { font-weight: 600; }
+.cat-nome { font-weight: 600; }
+// Altura fixa: linhas com e sem percentual ficam alinhadas.
+.tr-item td { height: 32px; padding-top: 2px; padding-bottom: 2px; box-sizing: border-box; }
+.tr-categoria td { height: 32px; padding-top: 4px; padding-bottom: 4px; box-sizing: border-box; }
+
+// ── Importar fatura ──────────────────────────────────────────
+.btn-importar { display: inline-flex; align-items: center; gap: 6px; }
+.arquivo-fatura {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  border: 1.5px dashed #c3cfbf; border-radius: 12px; padding: 22px 16px; cursor: pointer; color: $suave;
+  transition: border-color .15s, background .15s;
+  input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  strong { color: $texto; font-size: 14px; word-break: break-all; }
+  span { font-size: 12px; }
+  &:hover, &:focus-within { border-color: $lima; background: #f2faea; }
+  &.escolhido { border-style: solid; border-color: #c3eba0; background: #f2faea; color: $lima; }
+  &.ocupado { opacity: .6; pointer-events: none; }
+}
+.dica-importacao { font-size: 12px; color: $suave; line-height: 1.45; margin: 0; }
+.aviso-importando { padding: 0; color: $lima; font-weight: 600; }
+.resumo-importacao {
+  list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;
+  li {
+    display: flex; align-items: baseline; gap: 10px; padding: 10px 12px; border-radius: 10px;
+    background: #f7f8f5; font-size: 13px; color: $suave;
+  }
+  strong { font-size: 20px; font-weight: 700; color: $texto; min-width: 28px; text-align: right; font-variant-numeric: tabular-nums; }
+  .ri-ok { background: $verde-claro; strong { color: $verde; } }
+  .ri-suspenso { background: $ambar-claro; strong { color: $ambar; } }
+}
+
+// ── Senha do PDF (abre por cima do modal de importação) ──────
+.modal-fundo-senha { z-index: 1020; background: rgba(5, 38, 26, .2); padding-top: 14vh; }
+.modal-senha { width: min(400px, 100%); }
+.senha-titulo { display: flex; align-items: center; gap: 10px; }
+.senha-icone {
+  width: 34px; height: 34px; border-radius: 50%; background: $lima-claro; color: $lima;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.modal-senha input[aria-invalid="true"] { border-color: $vermelho; }
+
+// ── Criar item na tela de suspensos ──────────────────────────
+.campo-item-rotulo {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  label { font-size: 12px; font-weight: 600; color: $suave; }
+}
+.btn-novo-item {
+  border: none; background: none; padding: 0; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: $lima;
+  &:hover { text-decoration: underline; }
+}
+.novo-item {
+  border: 1px solid #c3eba0; background: #f2faea; border-radius: 10px; padding: 12px;
+  display: flex; flex-direction: column; gap: 10px;
+  > strong { font-size: 13px; color: $texto; }
+  select {
+    border: 1px solid $borda; border-radius: 9px; padding: 10px 8px; font-size: 13px; color: $texto; background: #fff; width: 100%;
+    &:focus { outline: none; border-color: $lima; }
+  }
+}
+.novo-item-campos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); gap: 10px; }
+.novo-item-acoes { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.novo-item-dica { margin-right: auto; font-size: 11px; color: $suave; }
+@media (max-width: 720px) {
+  .novo-item-campos { grid-template-columns: 1fr; }
+  .novo-item-dica { display: none; }
+}
+.modal-fundo:has(.modal-largo) { padding-top: 4vh; }
+
+// ── Lançar todos do mesmo fornecedor (abre por cima dos suspensos) ──
+.modal-fundo-lote { z-index: 1020; background: rgba(5, 38, 26, .25); padding-top: 12vh; }
+.modal-lote { width: min(520px, 100%); }
+.lote-pergunta { margin: 0; font-size: 14px; line-height: 1.5; color: $texto; strong { font-weight: 700; } }
+.lote-lista {
+  list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto;
+  border: 1px solid $borda; border-radius: 10px;
+  li {
+    display: grid; grid-template-columns: 18px 46px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+    padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #edf1e9;
+    &:last-child { border-bottom: none; }
+  }
+}
+.lote-data { color: $suave; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lote-desc { color: $texto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lote-valor { font-weight: 600; font-variant-numeric: tabular-nums; }
+.lote-total { margin: 0; text-align: right; font-size: 13px; color: $suave; strong { color: $texto; } }
+
+.lote-cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: -6px; }
+.lote-marcar-todos {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: $texto; cursor: pointer;
+  input { width: 16px; height: 16px; accent-color: $lima; cursor: pointer; }
+}
+.lote-contagem { font-size: 12px; color: $suave; font-weight: 600; }
+.lote-check { width: 16px; height: 16px; margin: 0; accent-color: $lima; cursor: pointer; }
+.lote-lista label { cursor: pointer; }
+.lote-lista li.lote-desmarcado {
+  background: #f7f8f5;
+  .lote-data, .lote-desc, .lote-valor { color: #8a9d92; }
+  .lote-valor { text-decoration: line-through; }
+}
+.lote-nota { font-size: 12px; color: $suave; }
+
+// ── Painel: novo lançamento recolhível e troca de item na edição ──
+.novo-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  border: 1px dashed #c3cfbf; background: #fff; border-radius: 10px; padding: 10px 12px; cursor: pointer;
+  font-size: 13px; font-weight: 700; color: $texto; text-align: left;
+  &:hover { border-color: $lima; background: #f2faea; }
+  &.aberto { border-style: solid; border-color: #c3eba0; background: #f2faea; }
+}
+.novo-toggle-icone {
+  width: 20px; height: 20px; border-radius: 50%; background: $lima; color: #fff; font-size: 16px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.novo-toggle-seta { margin-left: auto; color: $suave; font-size: 18px; transition: transform .15s; }
+.novo-toggle.aberto .novo-toggle-seta { transform: rotate(90deg); }
+.lista-lanc li.ll-edicao select {
+  border: 1px solid $borda; border-radius: 8px; padding: 8px 9px; font-size: 13px; color: $texto; background: #fff; width: 100%;
+  &:focus { outline: none; border-color: $lima; }
+}
+.lista-lanc li.ll-edicao label.ed-seguintes {
+  flex-direction: row; align-items: center; gap: 8px; color: $texto; font-weight: 600;
+  input { width: 15px; height: 15px; accent-color: $lima; flex-shrink: 0; }
+}
+
+// ── Meta editável na grade ───────────────────────────────────
+.col-meta.meta-editavel { cursor: pointer; }
+.col-meta.meta-editavel:hover { box-shadow: inset 0 0 0 1.5px #c3eba0, 1px 0 0 $borda, 4px 0 6px -4px rgba(5, 38, 26, .15); }
+.col-meta.meta-editando { padding-top: 4px; padding-bottom: 4px; }
+.input-meta {
+  width: 100%; box-sizing: border-box; border: 1.5px solid $lima; border-radius: 7px; padding: 5px 7px;
+  font-size: 13px; font-weight: 600; text-align: right; color: $texto; background: #fff; font-variant-numeric: tabular-nums;
+  &:focus { outline: none; box-shadow: 0 0 0 3px rgba(184, 241, 90, .18); }
+}
+.meta-ano-edicao { display: block; margin-top: 2px; text-align: right; }
+.erro-meta { display: block; margin-top: 2px; font-size: 10px; font-weight: 600; color: $vermelho; white-space: normal; text-align: right; }
+
+// ── Gestão de Pagamentos: receitas, blocos macro, linhas previstas e saldo ──
+// Receitas no topo: faixa verde clara para separar das saídas
+.tr-receitas {
+  // Mesmo tom dos blocos Gastos, Dívidas e Investimentos
+  td { height: 36px; font-weight: 700; border-bottom: none; background: #d9e5cf; }
+  td.col-nome { background: #d9e5cf; }
+  td.col-meta { background: #cddcc0; }
+  td.mes-foco { background-color: #c6d8bf; }
+}
+// Respiro em branco entre Receitas e os blocos de saída
+.tr-respiro td {
+  height: 10px; padding: 0; background: #fff; border-bottom: 1px solid $borda;
+  position: static; box-shadow: none;
+}
+.valor-cel.st-receita { color: $lima; font-weight: 700; }
+
+// Blocos macro (Gastos, Dívidas, Investimentos): faixa em verde profundo claro, texto forte
+.tr-macro {
+  cursor: pointer;
+  // Mais escuro que as categorias (#eef4e8), para marcar o início de cada bloco
+  td { height: 36px; font-weight: 700; background: #d9e5cf; border-bottom: 1px solid #c3d3b6; }
+  td.col-nome { background: #d9e5cf; }
+  td.col-meta { background: #cddcc0; }
+  td.mes-foco { background-color: #c6d8bf; }
+  &:hover td:not(.mes-foco) { background-color: #d1dfc5; }
+}
+.macro-nome { color: $profundo; font-weight: 800; }
+
+// Nome + botão "+" alinhados nas pontas da célula
+.nome-linha { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.btn-mais {
+  flex-shrink: 0;
+  width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent; color: $profundo;
+  font-size: 18px; font-weight: 400; line-height: 1; cursor: pointer;
+  transition: background .15s;
+  &:hover { background: $lima-claro; color: $lima; }
+  &:focus-visible { outline: none; box-shadow: 0 0 0 2px $lima-marca; }
+}
+
+// Linhas previstas (dívidas e investimento)
+.tr-prevista td { height: 26px; padding-top: 2px; padding-bottom: 2px; box-sizing: border-box; }
+// Nível 3 de Dívidas e Investimentos: linhas brancas, sem os tons verdes (meta, mês em foco e hover)
+.tabela .tr-prevista td,
+.tabela .tr-prevista td.col-nome,
+.tabela .tr-prevista td.col-meta,
+.tabela .tr-prevista td.mes-foco { background: #fff; }
+.tabela .tr-prevista:hover td,
+.tabela .tr-prevista:hover td.col-nome,
+.tabela .tr-prevista:hover td.col-meta,
+.tabela .tr-prevista:hover td.mes-foco { background: #f6f7f6; }
+.tabela .tr-prevista td.cel-clicavel:hover { background: #f0f2f0; box-shadow: inset 0 0 0 1px #c3cfbf; }
+.meta-link { margin-left: 4px; font-size: 10px; color: $lima; }
+.tr-prevista td.col-meta:hover .meta-link { color: $profundo; }
+// Mês ajustado (diferente do previsto): sublinhado pontilhado discreto
+.valor-cel.cel-ajustada { text-decoration: underline dotted $lima; text-underline-offset: 3px; font-weight: 700; }
+.input-cel {
+  width: 100%; min-width: 84px; box-sizing: border-box; border: 1.5px solid $lima; border-radius: 7px; padding: 4px 6px;
+  font-size: 13px; font-weight: 600; text-align: right; color: $texto; background: #fff; font-variant-numeric: tabular-nums;
+  &:focus { outline: none; box-shadow: 0 0 0 3px rgba(184, 241, 90, .18); }
+}
+
+// Saldo (rodapé): positivo em verde, negativo em rosa
+.valor-cel.st-ok, .contabil.saldo-ok > span:last-child { color: $verde; }
+.contabil.saldo-estourou > span:last-child { color: $rosa-texto; }
+
+// ── Ajuste automático das metas ──
+.th-meta { display: inline-flex; align-items: center; gap: 6px; }
+.btn-ajustar-metas {
+  width: 22px; height: 22px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid #c4f58a; border-radius: 6px; background: $lima-claro; color: $lima; cursor: pointer;
+  transition: background .15s, box-shadow .15s;
+  &:hover { background: #c4f58a; box-shadow: 0 0 0 2px #e6f8d2; }
+  &:focus { outline: none; }
+  &:focus-visible { box-shadow: 0 0 0 2px $lima-marca; }
+}
+.modal-ajuste { width: min(920px, 100%); }
+.modal-ajuste .modal-sub strong { color: $texto; }
+.ajuste-wrap { overflow: auto; border: 1px solid $borda; border-radius: 12px; max-height: 56vh; }
+.ajuste-tabela {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  th {
+    position: sticky; top: 0; z-index: 1; background: #f7f8f5; color: $suave;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    text-align: left; padding: 9px 10px; border-bottom: 1px solid $borda;
+  }
+  td { padding: 8px 10px; border-bottom: 1px solid #edf1e9; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .aj-check { width: 34px; text-align: center; }
+  .aj-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; small { color: $suave; font-size: 10px; margin-left: 2px; } }
+  th.aj-num { text-align: right; }
+  .aj-item { min-width: 170px; }
+  .aj-nome { display: block; font-weight: 600; color: $texto; }
+  .aj-cat { display: block; font-size: 11px; color: $suave; }
+  .aj-sugerida { font-weight: 700; color: $texto; }
+  .aj-sobe { color: $rosa-texto; }
+  .aj-desce { color: $lima; }
+  .aj-base { font-size: 11px; color: $suave; line-height: 1.4; }
+  tr.aj-igual td { opacity: .55; }
+}
+
+// ── Visão dos Parcelados ──
+.modal-parcelados { width: min(720px, 100%); max-height: 88vh; overflow: hidden; }
+// Topo e resumo ficam fixos; a lista de meses rola por dentro
+.modal-parcelados > * { flex-shrink: 0; }
+.pq-resumo {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+  background: $profundo; border-radius: 12px; padding: 12px 14px;
+  div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  span { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: rgba(247, 248, 245, .62); }
+  strong { font-size: 18px; font-weight: 700; color: $lima-marca; font-variant-numeric: tabular-nums; }
+  .pq-mes-txt { font-size: 14px; color: #f7f8f5; padding-top: 3px; &::first-letter { text-transform: uppercase; } }
+}
+.pq-passados {
+  display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: $suave; cursor: pointer;
+  input { width: 14px; height: 14px; accent-color: $lima; }
+}
+.modal-parcelados > .pq-meses { flex: 1 1 auto; min-height: 0; }
+.pq-meses { list-style: none; margin: 0; padding: 0; border: 1px solid $borda; border-radius: 12px; overflow-y: auto; overscroll-behavior: contain; }
+.pq-mes { border-bottom: 1px solid #eef2eb; &:last-child { border-bottom: none; } }
+.pq-linha {
+  width: 100%; display: grid; grid-template-columns: 16px 150px minmax(0, 1fr) 72px 84px; align-items: center; gap: 10px;
+  background: #fff; border: none; padding: 8px 12px; font-family: inherit; font-size: 11px; color: $texto;
+  cursor: pointer; text-align: left;
+  &:hover:not(:disabled) { background: #f3f6f0; }
+  &:disabled { cursor: default; .chevron { visibility: hidden; } }
+  .chevron { margin-right: 0; }
+}
+.pq-rotulo { font-weight: 600; white-space: nowrap; &::first-letter { text-transform: uppercase; } }
+.pq-tag-atual {
+  margin-left: 6px; font-size: 10px; font-weight: 700; color: $lima; background: $lima-claro;
+  border-radius: 999px; padding: 1px 6px;
+}
+.pq-barra {
+  height: 8px; border-radius: 999px; background: #eef2eb; overflow: hidden;
+  span { display: block; height: 100%; border-radius: 999px; background: #0b3d2e; }
+}
+.pq-qtd { color: $suave; text-align: right; white-space: nowrap; }
+.pq-total { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pq-atual .pq-linha { background: #f2faea; }
+.pq-atual .pq-barra span { background: $lima-marca; box-shadow: inset 0 0 0 1px #8fd63f; }
+.pq-passado .pq-linha { color: $suave; }
+.pq-passado .pq-barra span { background: #c3cfbf; }
+
+.pq-itens {
+  list-style: none; margin: 0; padding: 2px 12px 6px 38px; background: #fafcf8;
+  li {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto 76px; align-items: center; gap: 10px;
+    padding: 6px 0; border-bottom: 1px solid #eef2eb; font-size: 11px;
+    &:last-child { border-bottom: none; }
+  }
+  .tag-parcela { margin-left: 0; }
+}
+.pq-desc { display: flex; flex-direction: column; min-width: 0; }
+.pq-desc-texto { color: $texto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pq-item { font-size: 10px; color: $suave; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pq-valor { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tag-parcela.pq-ultima { background: $rosa-claro; color: $rosa-texto; }
+.pq-terminam { margin: 0; padding: 0 12px 8px 38px; background: #fafcf8; font-size: 11px; color: $lima; font-weight: 600; }
+
+@media (max-width: 640px) {
+  .pq-resumo { grid-template-columns: 1fr; }
+  .pq-linha { grid-template-columns: 16px minmax(0, 1fr) 84px; .pq-barra, .pq-qtd { display: none; } }
+}
+
+// ── Menu "Ferramentas" do cabeçalho (Em suspenso, Importar fatura, Visão dos Parcelados) ──
+.menu-ferramentas { position: relative; flex-shrink: 0; }
+// O botão segue o padrão global dos botões de cabeçalho (styles.scss)
+.mf-caret { transition: transform .15s; &.aberto { transform: rotate(180deg); } }
+.mf-fundo { position: fixed; inset: 0; z-index: 40; }
+.mf-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 41;
+  min-width: 230px; background: #fff; border: 1px solid $borda; border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(5, 38, 26, .16); padding: 6px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.mf-item {
+  position: relative; // âncora do selo de vídeo
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 10px; border: none; border-radius: 8px; background: transparent;
+  font-family: inherit; font-size: 12px; font-weight: 600; color: $texto; text-align: left; cursor: pointer;
+  svg { color: $lima; flex-shrink: 0; }
+  &:hover { background: $lima-claro; }
+  &.tem-pendentes { color: #8a5a00; svg { color: #8a5a00; } }
+}
+.mf-texto { flex: 1; }
+
+// ── Saldo em destaque: faixa verde profundo, como os cards de resumo ──
+// Positivo em lima, negativo no rosa elétrico da marca (vivo sobre o fundo escuro).
+.tabela tfoot td,
+.tabela tfoot td.col-nome {
+  height: 40px; background: $profundo; color: #f7f8f5;
+  font-weight: 700;
+  box-shadow: inset 1px 0 0 rgba(247, 248, 245, .08);
+}
+.tabela tfoot td.col-nome { text-transform: uppercase; letter-spacing: .06em; color: $lima-marca; box-shadow: none; }
+.tabela tfoot td.col-meta { background: #123d29; box-shadow: 2px 0 0 #c3cfbf, 6px 0 8px -4px rgba(5, 38, 26, .18); }
+.tabela tfoot td.mes-foco { background: #17492f; }
+.tabela tfoot .valor-cel.st-ok,
+.tabela tfoot .contabil.saldo-ok > span:last-child { color: $lima-marca; }
+.tabela tfoot .valor-cel.st-estourou,
+.tabela tfoot .contabil.saldo-estourou > span:last-child { color: #ff6690; }
+.tabela tfoot .valor-cel.st-vazio { color: rgba(247, 248, 245, .4); }
+.tabela tfoot .contabil > span:first-child { color: rgba(247, 248, 245, .55); }
+// Meses futuros: mais apagados, mas ainda legíveis no escuro
+.tabela tfoot .mes-futuro .valor-cel { opacity: .8; }

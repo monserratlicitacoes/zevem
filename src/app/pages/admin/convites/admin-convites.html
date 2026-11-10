@@ -1,0 +1,83 @@
+<div class="page">
+  <header class="page-header">
+    <div class="ph-texto">
+      <h1>Enviar convite</h1>
+      <p>Informe o e-mail do convidado. Ele recebe um link para criar a conta no Zevem.</p>
+    </div>
+  </header>
+
+  <section class="cartao">
+    <h2>Novo convite</h2>
+    <p class="ajuda">Quem se cadastra pelo link já entra com o e-mail confirmado. O convite vale por 30 dias.</p>
+    <form class="form-convite" (ngSubmit)="enviar()">
+      <label class="campo campo-email">
+        <span>E-mail do convidado</span>
+        <input type="email" [(ngModel)]="email" name="email" placeholder="convidado@email.com" required />
+      </label>
+      <label class="campo">
+        <span>Nome (opcional)</span>
+        <input type="text" [(ngModel)]="nome" name="nome" placeholder="Para personalizar o e-mail" maxlength="80" />
+      </label>
+      <button type="submit" class="botao primario enviar" [disabled]="enviando || !email.trim()">{{ enviando ? 'Enviando…' : 'Enviar convite' }}</button>
+    </form>
+    @if (erroEnvio) { <p class="erro">{{ erroEnvio }}</p> }
+
+    @if (enviado; as c) {
+      <div class="resultado" [class.falhou]="c.aviso_email">
+        @if (c.aviso_email) {
+          <p><strong>O e-mail não saiu.</strong> O convite para {{ c.email }} foi criado: copie o link e mande ao convidado (WhatsApp, por exemplo).</p>
+          <small>{{ c.aviso_email }}</small>
+        } @else {
+          <p><strong>Convite enviado para {{ c.email }}.</strong> Se preferir, mande o link também por outro canal.</p>
+        }
+        @if (c.link) {
+          <div class="link">
+            <input type="text" [value]="c.link" readonly (focus)="$any($event.target).select()" aria-label="Link do convite" />
+            <button type="button" class="botao" (click)="copiar(c)">{{ copiado === c.id ? 'Copiado!' : 'Copiar link' }}</button>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <section class="cartao">
+    <h2>Convites enviados</h2>
+    @if (carregando) {
+      <p class="aviso">Carregando...</p>
+    } @else if (erro) {
+      <p class="aviso aviso-erro">{{ erro }}</p>
+    } @else if (!convites.length) {
+      <p class="aviso">Nenhum convite enviado ainda.</p>
+    } @else {
+      <div class="tabela-wrap">
+        <table class="grade">
+          <thead><tr><th>Convidado</th><th>Situação</th><th>Enviado em</th><th>Vale até</th><th></th></tr></thead>
+          <tbody>
+            @for (c of convites; track c.id) {
+              <tr>
+                <td>{{ c.email }}@if (c.nome) { <span class="sub">{{ c.nome }}</span> }</td>
+                <td>
+                  <span class="selo" [class]="'selo ' + situacao[c.situacao].classe">{{ situacao[c.situacao].rotulo }}</span>
+                  @if (c.situacao === 'pendente' && c.erro_envio) { <span class="sub vermelho" [title]="c.erro_envio">e-mail não saiu</span> }
+                </td>
+                <td>{{ data(c.criado_em) }}</td>
+                <td>{{ c.situacao === 'aceito' ? 'cadastrou em ' + data(c.usado_em) : data(c.expira_em) }}</td>
+                <td>
+                  <div class="acoes-linha">
+                    @if (c.situacao === 'pendente') {
+                      <button type="button" class="botao" (click)="copiar(c)">{{ copiado === c.id ? 'Copiado!' : 'Copiar link' }}</button>
+                      <button type="button" class="botao" (click)="reenviar(c)">Reenviar</button>
+                      <button type="button" class="botao perigo" (click)="cancelar(c)">Cancelar</button>
+                    } @else if (c.situacao !== 'aceito') {
+                      <button type="button" class="botao" (click)="reenviar(c)">Enviar de novo</button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

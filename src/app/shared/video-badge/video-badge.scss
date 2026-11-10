@@ -1,0 +1,29 @@
+// Rosa elétrico (cor de vídeos de instrução e avisos, ver --ag-rosa em styles.scss)
+$cor: #ff2e63;
+
+.video-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: $cor; // leva a um vídeo de instrução
+  color: #fff;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.15s;
+  &:hover { transform: scale(1.15); }
+  box-shadow: 0 0 0 0 rgba($cor, 0.55);
+  animation: video-badge-pulso 2.2s ease-out infinite;
+}
+
+@keyframes video-badge-pulso {
+  0%   { box-shadow: 0 0 0 0 rgba($cor, 0.55); }
+  70%  { box-shadow: 0 0 0 6px rgba($cor, 0); }
+  100% { box-shadow: 0 0 0 0 rgba($cor, 0); }
+}

@@ -1,0 +1,251 @@
+<div class="page">
+  <header class="page-header">
+    <div class="ph-texto">
+      <h1 class="titulo-video">Alertas<app-video-badge /></h1>
+      <p>Escolha o que você quer receber pelo WhatsApp e teste a conversa com o Zevem.</p>
+    </div>
+  </header>
+
+  @if (carregando) {
+    <p class="aviso">Carregando...</p>
+  } @else if (erro || !dados) {
+    <p class="aviso aviso-erro">{{ erro }}</p>
+  } @else {
+    <!-- Situação do canal e dos números -->
+    <section class="status">
+      <div class="status-item" [class.ok]="dados.integracao_ativa">
+        <span class="ponto"></span>
+        <div>
+          <strong>WhatsApp {{ dados.integracao_ativa ? 'com integração configurada' : 'aguardando integração' }}</strong>
+          <span>{{ dados.integracao_ativa ? 'Os alertas ligados entram na fila de envio nos horários previstos.' : 'Os alertas já são gerados e ficam no histórico abaixo até o WhatsApp ser conectado.' }}</span>
+        </div>
+      </div>
+      <div class="status-item" [class.ok]="dados.ia_ativa">
+        <span class="ponto"></span>
+        <div>
+          <strong>Leitura das mensagens {{ dados.ia_ativa ? 'com IA' : 'sem IA' }}</strong>
+          <span>{{ dados.ia_ativa ? 'Entende gastos e perguntas escritos do seu jeito.' : 'Só lança o que o app já aprendeu; o resto fica em suspenso.' }}</span>
+        </div>
+      </div>
+      <div class="status-numeros">
+        <strong>Números que conversam com o app</strong>
+        <div class="numeros">
+          @for (p of pessoasComTelefone; track p.id) {
+            <span class="numero">{{ p.nome.split(' ')[0] }} · {{ p.telefone }}</span>
+          }
+          @for (p of pessoasSemTelefone; track p.id) {
+            <a class="numero numero-falta" routerLink="/configuracoes">{{ p.nome.split(' ')[0] }} · {{ p.telefone_pendente ? 'WhatsApp não confirmado' : 'sem telefone' }}</a>
+          }
+          @if (!dados.pessoas.length) { <a class="numero numero-falta" routerLink="/configuracoes">Cadastre as pessoas em Configurações</a> }
+        </div>
+      </div>
+    </section>
+
+    <div class="colunas">
+      <!-- Configuração de cada alerta -->
+      <section class="lista-alertas" aria-label="Alertas">
+        @for (c of dados.tipos; track c.tipo) {
+          <article class="alerta" [class.desligado]="!c.ativo">
+            <header class="alerta-topo">
+              <div>
+                <h2>{{ c.titulo }}</h2>
+                <p>{{ c.descricao }}</p>
+              </div>
+              <div class="alerta-acoes">
+                @if (salvos.has(c.tipo)) { <span class="salvo">Salvo ✓</span> }
+                <button type="button" class="chave" role="switch" [attr.aria-checked]="c.ativo" [attr.aria-label]="(c.ativo ? 'Desligar ' : 'Ligar ') + c.titulo"
+                  [class.ligada]="c.ativo" (click)="alternarAtivo(c)"><span></span></button>
+              </div>
+            </header>
+
+            @if (c.ativo) {
+              <div class="alerta-corpo">
+                @if (c.parametros.dias_antes !== undefined) {
+                  <div class="campo">
+                    <span class="rotulo">{{ antecedenciaMultipla(c) ? 'Quando avisar' : 'Avisar' }}</span>
+                    <div class="chips">
+                      @for (d of antecedencias; track d) {
+                        @if (antecedenciaMultipla(c) || d <= 3) {
+                          <button type="button" class="chip" [class.marcado]="temAntecedencia(c, d)" (click)="alternarAntecedencia(c, d)">{{ rotuloAntecedencia(d) }}</button>
+                        }
+                      }
+                    </div>
+                  </div>
+                }
+
+                @if (c.tipo === 'meta_atingida') {
+                  <div class="campo">
+                    <span class="rotulo">Avisar ao chegar em</span>
+                    <div class="chips">
+                      @for (p of percentuais; track p) {
+                        <button type="button" class="chip" [class.marcado]="temNaLista(c, 'percentuais', p)" (click)="alternarLista(c, 'percentuais', p)">{{ p }}% da meta</button>
+                      }
+                    </div>
+                  </div>
+                }
+
+                @if (c.tipo === 'saldo_pos_lancamento') {
+                  <label class="opcao">
+                    <input type="checkbox" [(ngModel)]="c.parametros.avisar_outras_pessoas" (ngModelChange)="alterar(c)" [name]="'outras-' + c.tipo" />
+                    Avisar também a outra pessoa da conta quando alguém lançar um gasto
+                  </label>
+                }
+
+                @if (c.tipo === 'limite_programado') {
+                  <div class="campo">
+                    <span class="rotulo">Dias da semana</span>
+                    <div class="chips">
+                      @for (d of diasSemana; track $index) {
+                        <button type="button" class="chip chip-dia" [class.marcado]="temNaLista(c, 'dias_semana', $index)" (click)="alternarLista(c, 'dias_semana', $index)">{{ d }}</button>
+                      }
+                    </div>
+                  </div>
+                  <div class="campo campo-linha">
+                    <span class="rotulo">A partir de</span>
+                    <select [(ngModel)]="c.parametros.hora" (ngModelChange)="alterar(c)" [name]="'hora-' + c.tipo">
+                      @for (h of horas; track h) { <option [ngValue]="h">{{ h }}h</option> }
+                    </select>
+                  </div>
+                  <div class="campo">
+                    <span class="rotulo">Itens</span>
+                    <button type="button" class="seletor-itens" (click)="itensAbertos = !itensAbertos" [attr.aria-expanded]="itensAbertos">
+                      <span>{{ nomesItens(c) }}</span>
+                      <span class="caret" [class.aberto]="itensAbertos">›</span>
+                    </button>
+                    @if (semMeta(c)) { <span class="dica">Há itens escolhidos sem meta: eles aparecem como "sem meta definida".</span> }
+                    @if (itensAbertos) {
+                      <div class="itens-painel">
+                        <input type="search" class="busca" placeholder="Buscar item ou categoria" [(ngModel)]="buscaItem" name="busca-itens" />
+                        <div class="itens-lista">
+                          @for (g of gruposItens; track g.categoria) {
+                            <span class="grupo">{{ g.categoria }}</span>
+                            @for (i of g.itens; track i.id) {
+                              <label class="item">
+                                <input type="checkbox" [checked]="temNaLista(c, 'itens', i.id)" (change)="alternarLista(c, 'itens', i.id)" />
+                                <span>{{ i.descricao }}</span>
+                                @if (!i.meta) { <small>sem meta</small> }
+                              </label>
+                            }
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (pessoasComTelefone.length > 1) {
+                  <div class="campo">
+                    <span class="rotulo">Quem recebe</span>
+                    <div class="chips">
+                      @for (p of pessoasComTelefone; track p.id) {
+                        <button type="button" class="chip" [class.marcado]="recebe(c, p)" (click)="alternarDestinatario(c, p)">{{ p.nome.split(' ')[0] }}</button>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (erroSalvar[c.tipo]) { <p class="erro">{{ erroSalvar[c.tipo] }}</p> }
+              </div>
+            }
+
+            @if (textos[c.tipo]; as t) {
+              <div class="texto-alerta">
+                <button type="button" class="texto-toggle" (click)="abrirTexto(c.tipo)" [attr.aria-expanded]="textoAberto === c.tipo">
+                  <span>Texto da mensagem</span>
+                  <small>{{ t.texto ? 'personalizado' : 'padrão' }} · vale para todos os clientes</small>
+                  <span class="caret" [class.aberto]="textoAberto === c.tipo">›</span>
+                </button>
+                @if (textoAberto === c.tipo) {
+                  <div class="texto-editor">
+                    <textarea #campoTexto [name]="'texto-' + c.tipo" [(ngModel)]="rascunho" rows="3" maxlength="1000"></textarea>
+                    <div class="chips variaveis">
+                      <span class="rotulo">Inserir</span>
+                      @for (v of t.variaveis; track v) {
+                        <button type="button" class="chip" (click)="inserirVariavel(campoTexto, v)">{{ '{' + v + '}' }}</button>
+                      }
+                    </div>
+                    <div class="previa-texto">
+                      <span class="rotulo">Prévia com valores de exemplo</span>
+                      <div class="bolha-previa">{{ previaTexto(c.tipo) }}</div>
+                    </div>
+                    <div class="texto-acoes">
+                      @if (erroTexto) { <span class="erro">{{ erroTexto }}</span> }
+                      @if (msgTexto) { <span class="ok-msg">{{ msgTexto }}</span> }
+                      @if (t.texto) { <button type="button" class="botao-sec" (click)="salvarTexto(c.tipo, true)">Restaurar padrão</button> }
+                      <button type="button" class="botao-pri" (click)="salvarTexto(c.tipo)">Salvar texto</button>
+                    </div>
+                    <p class="dica-texto">Fora da janela de 24 horas o WhatsApp envia o template aprovado na Meta. Ao mudar o sentido do texto, avise o DEV para atualizar o template.</p>
+                  </div>
+                }
+              </div>
+            }
+          </article>
+        }
+      </section>
+
+      <aside class="lateral">
+        <!-- Simulador: processa como se viesse do WhatsApp -->
+        <section class="cartao chat" aria-label="Testar conversa">
+          <header class="cartao-topo">
+            <h2>Testar conversa</h2>
+            <p>Escreva como se fosse no WhatsApp. <strong>Os gastos lançados aqui entram de verdade no orçamento.</strong></p>
+          </header>
+          @if (dados.pessoas.length > 1) {
+            <div class="chips chips-pessoa">
+              <span class="rotulo">Falando como</span>
+              @for (p of dados.pessoas; track p.id) {
+                <button type="button" class="chip" [class.marcado]="pessoaChat === p.id" (click)="pessoaChat = p.id">{{ p.nome.split(' ')[0] }}</button>
+              }
+            </div>
+          }
+          <div class="chat-corpo">
+            @if (!chat.length) {
+              <div class="chat-vazio">
+                <span>Experimente:</span>
+                <button type="button" (click)="textoChat = 'almoço 45'">almoço 45</button>
+                <button type="button" (click)="textoChat = 'quanto ainda posso gastar com alimentação?'">quanto ainda posso gastar com alimentação?</button>
+                <button type="button" (click)="textoChat = 'quanto gastei com uber este mês?'">quanto gastei com uber este mês?</button>
+              </div>
+            }
+            @for (m of chat; track $index) {
+              <div class="bolha" [class.bolha-pessoa]="m.de === 'pessoa'">
+                @if (m.de === 'pessoa' && m.nome) { <small>{{ m.nome }}</small> }
+                {{ m.texto }}
+              </div>
+            }
+            @if (enviando) { <div class="bolha digitando"><span></span><span></span><span></span></div> }
+            <span #chatFim></span>
+          </div>
+          <form class="chat-entrada" (ngSubmit)="enviar()">
+            <input type="text" name="texto-chat" [(ngModel)]="textoChat" placeholder="Ex.: mercado 120" autocomplete="off" aria-label="Mensagem" />
+            <button type="submit" [disabled]="enviando || !textoChat.trim()" aria-label="Enviar">
+              <svg viewBox="0 0 20 20" fill="none" width="16" height="16"><path d="M3 10h13M11 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </form>
+        </section>
+
+        <!-- Histórico dos avisos gerados -->
+        <section class="cartao" aria-label="Histórico de avisos">
+          <header class="cartao-topo">
+            <h2>Últimos avisos</h2>
+          </header>
+          @if (!avisos.length) {
+            <p class="vazio">Nenhum aviso gerado ainda.</p>
+          } @else {
+            <ul class="avisos">
+              @for (a of avisos; track a.id) {
+                <li>
+                  <div class="aviso-topo">
+                    <strong>{{ a.titulo }}</strong>
+                    <span class="status-aviso" [class]="'status-aviso st-' + a.status">{{ rotuloStatus(a.status) }}</span>
+                  </div>
+                  <p>{{ a.mensagem }}</p>
+                  <small>{{ dataHora(a.criado_em) }}{{ a.pessoa ? ' · para ' + a.pessoa.split(' ')[0] : '' }}</small>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      </aside>
+    </div>
+  }
+</div>

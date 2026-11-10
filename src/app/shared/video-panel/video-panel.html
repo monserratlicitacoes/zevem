@@ -1,0 +1,69 @@
+<aside class="video-panel" [class.colapsado]="layout.videoColapsado()" [style.width.px]="largura()">
+
+  @if (layout.videoColapsado()) {
+    <button class="vp-reabrir" (click)="layout.toggleVideo()" title="Mostrar vídeo da etapa">
+      <span class="vp-play-mini">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M6 4l10 6-10 6V4z"/></svg>
+      </span>
+      <span>Vídeo</span>
+    </button>
+  } @else {
+    <div class="vp-conteudo">
+      <div class="vp-header">
+        <span>{{ cfg.tituloPainel() }}</span>
+        <button class="vp-recolher" (click)="layout.toggleVideo()" title="Recolher painel de vídeo">
+          <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M13 4l6 6-6 6M7 4l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="vp-player" #player>
+        @if (tocando() && urlEmbed()) {
+          <iframe class="vp-iframe" [src]="urlEmbed()" title="Vídeo de instrução da etapa"
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        } @else {
+          <div class="vp-player-fundo">
+            <button class="vp-play" (click)="tocar()" [disabled]="!videoId()"
+              [title]="videoId() ? 'Assistir ao vídeo' : 'Vídeo desta etapa em breve'">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path d="M6 4l10 6-10 6V4z"/></svg>
+            </button>
+            @if (!videoId()) { <span class="vp-em-breve">Vídeo em breve</span> }
+          </div>
+        }
+      </div>
+
+      <button class="vp-tela-cheia" (click)="telaCheia()" [disabled]="!videoId()">
+        <svg viewBox="0 0 20 20" fill="none" width="13" height="13"><path d="M3 7V3h4M17 13v4h-4M3 13v4h4M17 7V3h-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Abrir em tela cheia
+      </button>
+
+      @if (temLista()) {
+        <nav class="vp-lista" aria-label="Vídeos desta etapa">
+          <h3>Vídeos desta etapa</h3>
+          @for (g of grupos(); track g.principal.titulo) {
+            <button type="button" class="vp-lista-item vp-lista-principal" [class.atual]="ehAtual(g.principal)"
+              [attr.aria-current]="ehAtual(g.principal) ? 'true' : null" (click)="escolher(g.principal)">
+              <span class="vp-lista-icone"><svg viewBox="0 0 20 20" fill="currentColor" width="9" height="9"><path d="M6 4l10 6-10 6V4z"/></svg></span>
+              {{ titulo(g.principal) }}
+            </button>
+            @for (v of g.subvideos ?? []; track v.titulo) {
+              <button type="button" class="vp-lista-item vp-lista-sub" [class.atual]="ehAtual(v)"
+                [attr.aria-current]="ehAtual(v) ? 'true' : null" (click)="escolher(v)">
+                <span class="vp-lista-icone"><svg viewBox="0 0 20 20" fill="currentColor" width="8" height="8"><path d="M6 4l10 6-10 6V4z"/></svg></span>
+                {{ titulo(v) }}
+              </button>
+            }
+          }
+        </nav>
+      }
+
+      @if (chamada(); as c) {
+        <a class="vp-chamada" [attr.href]="c.link || null" target="_blank" rel="noopener"
+          [class.inativo]="!c.link" [title]="c.link ? c.texto : 'Link em breve'">
+          {{ c.texto }}
+          <svg viewBox="0 0 20 20" fill="none" width="14" height="14" aria-hidden="true"><path d="M5 10h10M11 6l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      }
+    </div>
+  }
+</aside>

@@ -1,0 +1,215 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Poppins:wght@500;600&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+// Paleta Zevem (referência para estilos novos)
+:root {
+  --ag-verde-profundo: #05261a;
+  --ag-verde-floresta: #0b3d2e;
+  --ag-verde-apple: #39d353;
+  --ag-verde-lima: #b8f15a;
+  --ag-carvao: #111111;
+  --ag-off-white: #f7f8f5;
+  // Rosa elétrico: só para informação e vídeos de instrução (energia, atenção, atitude)
+  --ag-rosa: #ff2e63;
+  --ag-rosa-texto: #d61e4c; // para textos pequenos sobre fundo claro
+  --ag-rosa-claro: #fff0f3;
+}
+
+html, body { background: #f7f8f5; }
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  color: #05261a;
+}
+
+input, button, select, textarea {
+  font-family: inherit;
+}
+
+// Números das tabelas com algarismos de largura fixa: os valores alinham em coluna, igual à Gestão de Pagamentos.
+// Os campos precisam da regra própria porque o navegador não repassa a fonte da tabela para eles.
+table, table input, table select { font-variant-numeric: tabular-nums; }
+
+// ── Caixas de seleção ──
+// A setinha nativa fica colada na borda direita; o padding afasta um pouco. O seletor começa em
+// .app-shell-content .page para prevalecer sobre o padding definido em cada página.
+.app-shell-content .page select:not([multiple]) {
+  padding-right: 16px;
+}
+
+// ── Botão "Jarro do Orçamento" (telas que formam o gráfico de orçamento do Dashboard) ──
+.btn-jarro {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e6f8d2;
+  border: 1.5px solid #c4f58a;
+  border-radius: 8px;
+  color: #0b3d2e;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 6px 12px;
+  white-space: nowrap;
+  transition: background 0.15s, box-shadow 0.15s;
+  &:hover { background: #c4f58a; box-shadow: 0 0 0 2px #e6f8d2; }
+  &:focus { outline: none; }
+  &:focus-visible { box-shadow: 0 0 0 2px #b8f15a; }
+}
+
+// ── Selo de vídeo no título da página (<h1 class="titulo-video">Título<app-video-badge /></h1>) ──
+.titulo-video { position: relative; display: inline-block; padding-right: 14px; }
+// O host do selo não gera caixa: em botões flex não conta como item (nem soma gap à largura)
+app-video-badge { display: contents; }
+
+// ── Padrão de página (layout do Monserrat com a identidade Zevem) ──
+// Vale para todas as páginas dentro do app: título grande com régua lima acima, subtítulo
+// discreto e ações à direita. O seletor começa em .app-shell-content para prevalecer sobre
+// os estilos de cada página sem precisar de !important.
+.app-shell-content .page .page-header {
+  align-items: flex-end;
+  gap: 12px 16px;
+  margin-bottom: 24px;
+
+  .ph-icone { display: none; }
+  // O texto ocupa o espaço que sobra e o subtítulo quebra linha antes de os botões descerem;
+  // nunca fica mais estreito que o título (que é numa linha só)
+  .ph-texto { flex: 1 1 0; min-width: min-content; }
+
+  .ph-texto, > h1 {
+    position: relative;
+    padding-top: 18px;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 40px;
+      height: 3px;
+      border-radius: 3px;
+      background: var(--ag-verde-apple);
+    }
+  }
+
+  .ph-texto h1, > h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+    color: var(--ag-verde-profundo);
+    white-space: nowrap; // título numa linha só; se faltar espaço, os botões descem
+  }
+
+  .ph-texto p {
+    font-size: 14px;
+    color: #5c6f66;
+    margin-top: 6px;
+  }
+}
+
+// Cabeçalho das tabelas: caixa alta mais legível e espaçada
+.app-shell-content .page table.tabela th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #5c6f66;
+}
+
+// ── Botões do cabeçalho das páginas: um tamanho só e duas cores ──
+// Ferramentas (Jarro, Simulador, Como classificar, Em suspenso, Importar fatura, Visão dos Parcelados…):
+// lima claro com contorno. Ação principal (Resumo, Lançar gasto): lima cheio.
+// O seletor começa em .app-shell-content .page para prevalecer sobre o estilo de cada página.
+.app-shell-content .page .page-header {
+  :is(.ph-botoes, .ph-acoes) {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center; // nenhum botão estica o outro
+    gap: 8px;
+  }
+
+  :is(.ph-botoes, .ph-acoes) > button,
+  :is(.ph-botoes, .ph-acoes) > .menu-ferramentas > button, // botão que abre um menu agrupado
+  > .btn-tema {
+    position: relative; // âncora do selo de vídeo
+    box-sizing: border-box;
+    height: 34px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transform: none;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    &:focus { outline: none; }
+    &:focus-visible { box-shadow: 0 0 0 2px var(--ag-verde-lima); }
+  }
+
+  // Ferramentas
+  :is(.ph-botoes, .ph-acoes) > button,
+  :is(.ph-botoes, .ph-acoes) > .menu-ferramentas > button, // botão que abre um menu agrupado
+  > .btn-tema {
+    background: #e6f8d2;
+    border: 1.5px solid #c4f58a;
+    color: #0b3d2e;
+    box-shadow: none;
+    &:hover { background: #c4f58a; border-color: #c4f58a; box-shadow: none; }
+  }
+
+  // Ação principal
+  :is(.ph-botoes, .ph-acoes) > button:is(.btn-resumo, .btn-lancar) {
+    background: var(--ag-verde-lima);
+    border-color: var(--ag-verde-lima);
+    color: var(--ag-verde-profundo);
+    font-weight: 700;
+    &:hover { background: #c8f67a; border-color: #c8f67a; }
+  }
+
+  // Em suspenso com pendências: aviso em âmbar
+  :is(.ph-botoes, .ph-acoes) > button.tem-pendentes,
+  :is(.ph-botoes, .ph-acoes) > .menu-ferramentas > button.tem-pendentes {
+    background: #fff4dc;
+    border-color: #f5c46b;
+    color: #8a5a00;
+    &:hover { background: #ffe9bd; border-color: #f5c46b; }
+  }
+}
+// Versão noturna do Dashboard: o botão de tema mantém o estilo escuro definido na página
+.app-shell-content .page.noturno .page-header > .btn-tema {
+  background: transparent;
+  border-color: rgba(184, 241, 90, 0.45);
+  color: var(--ag-verde-lima);
+  &:hover { background: var(--ag-verde-lima); border-color: var(--ag-verde-lima); color: var(--ag-verde-profundo); }
+}
+
+// ── Valores em R$ nas tabelas (exceto Gestão de Pagamentos, que tem layout próprio) ──
+// O "R$" fica encostado à esquerda da célula e o número à direita.
+// Sem .page no seletor: os modais de Resumo e o simulador ficam fora dele.
+.app-shell-content td {
+  .valor-wrap, .mim-wrap { justify-content: space-between; }
+  .valor-wrap > .input-num { flex: 1 1 0; min-width: 0; width: auto; }
+  > .dash-rs, > .rs-esq { float: left; }
+}
+
+// Números das linhas das tabelas sem negrito (Gastos, Recebimentos, Dívidas, Ativos & Passivos e Gestão de
+// Pagamentos). Na Gestão, as linhas de grupo (tr-macro) e de receitas seguem em negrito para marcar os totais.
+table tbody tr.tr-data :is(.td-num, .input-num, .num-readonly, .input-inteiro, .input-venc),
+table tbody tr.tr-categoria :is(.col-meta span, .cat-qtd, .valor-cel) { font-weight: 400; }
+
+// Coluna de destaque com o sombreado verde claro das colunas calculadas de Sonhos e número em negrito:
+// Valor Mensal em Recebimentos e Gastos, PMT em Dívidas.
+table tbody tr.tr-data td:is(.td-mensal, .td-destaque) {
+  background: #eef2ea;
+  :is(.num-readonly, .input-num) { font-weight: 700; background: transparent; }
+}
+table tbody tr.tr-data:hover td:is(.td-mensal, .td-destaque) { background: #e5ebe0; }

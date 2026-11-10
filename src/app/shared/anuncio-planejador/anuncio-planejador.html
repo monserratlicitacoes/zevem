@@ -1,0 +1,70 @@
+<div class="fundo" (click)="fechar.emit()">
+  <section class="anuncio" role="dialog" aria-modal="true" aria-labelledby="titulo-planejador" (click)="$event.stopPropagation()">
+    <button type="button" class="fechar" (click)="fechar.emit()" aria-label="Fechar">
+      <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+
+    <div class="vitrine">
+      <div class="foto">
+        @if (!fotoFalhou) {
+          <img [src]="foto" alt="Planejador financeiro" (error)="fotoFalhou = true" />
+        } @else {
+          <div class="foto-vazia" aria-hidden="true">
+            <svg viewBox="0 0 48 48" width="64" height="64"><path d="M24 15.5c-3.4-3.6-9.6-4.3-13.3-.4-5.3 5.6-3 16.3 1.5 22.6 3 4.2 6 6.8 8.7 6 1.2-.4 2.1-1.1 3.1-1.1s1.9.7 3.1 1.1c2.7.8 5.7-1.8 8.7-6 4.5-6.3 6.8-17-1.5-22.6-3.7-3.9-9.9-3.2-13.3.4z" fill="currentColor"/><path d="M24.6 14.2c-.5-5.6 3.6-10.3 9.4-10.6.4 5.7-3.8 10.4-9.4 10.6z" fill="currentColor"/></svg>
+          </div>
+        }
+      </div>
+      <div class="chamada">
+        @if (config()?.selo) { <span class="selo">{{ config()!.selo }}</span> }
+        <h2 id="titulo-planejador">{{ config()?.titulo }}</h2>
+        <ul class="pontos">
+          @for (p of config()?.pontos ?? []; track $index) {
+            <li>
+              <strong>{{ p.titulo }}</strong>
+              <span>{{ p.texto }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+
+    @if (config()?.destaque) { <div class="destaque" [style]="varsCor(config()!.cor_destaque)">{{ config()!.destaque }}</div> }
+
+    <form class="formulario" (ngSubmit)="agendar()" novalidate>
+      <label class="campo">
+        <span>Seu nome</span>
+        <input type="text" name="nome" [(ngModel)]="form.nome" [class.invalido]="enviado && !form.nome.trim()" autocomplete="name" />
+      </label>
+      <label class="campo">
+        <span>Você é casado ou solteiro?</span>
+        <select name="estado-civil" [(ngModel)]="form.estado_civil" [class.invalido]="enviado && !form.estado_civil">
+          <option value="" disabled>Escolha</option>
+          <option value="solteiro">Solteiro(a)</option>
+          <option value="casado">Casado(a) / união estável</option>
+        </select>
+      </label>
+      <label class="campo">
+        <span>Qual a sua renda mensal familiar?</span>
+        <input type="text" name="renda" appMascaraMoeda [(ngModel)]="form.renda_mensal" [class.invalido]="enviado && !form.renda_mensal" placeholder="R$ 0" />
+      </label>
+      <label class="campo">
+        <span>Já possui investimento no mercado financeiro?</span>
+        <select name="investimentos" [(ngModel)]="form.investimentos" [class.invalido]="enviado && !form.investimentos">
+          <option value="" disabled>Escolha</option>
+          <option value="sim">Sim</option>
+          <option value="nao">Não</option>
+        </select>
+      </label>
+      <label class="campo campo-largo">
+        <span>Qual a sua profissão?</span>
+        <input type="text" name="profissao" [(ngModel)]="form.profissao" [class.invalido]="enviado && !form.profissao.trim()" autocomplete="organization-title" />
+      </label>
+      @if (enviado && !completo) { <p class="erro">Preencha todas as respostas para agendar.</p> }
+      <button type="submit" class="agendar" [style]="varsCor(config()?.cor_botao_agendar)">
+        <svg viewBox="0 0 20 20" fill="none" width="18" height="18" aria-hidden="true"><path d="M10 2.5a7.5 7.5 0 0 0-6.4 11.4L2.5 17.5l3.7-1a7.5 7.5 0 1 0 3.8-14z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 7.2c.2-.5.5-.5.8-.5h.4c.2 0 .4.1.5.4l.5 1.2c.1.2 0 .4-.1.6l-.4.5c.3.7 1 1.4 1.7 1.7l.5-.4c.2-.2.4-.2.6-.1l1.2.5c.3.1.4.3.4.5v.4c0 .3 0 .6-.5.8-1.6.8-5.6-2.1-5.6-5.1z" fill="currentColor"/></svg>
+        {{ config()?.botao_agendar || 'Agendar diagnóstico grátis' }}
+      </button>
+      <p class="nota">Abre uma conversa no WhatsApp com a mensagem pronta para você enviar.</p>
+    </form>
+  </section>
+</div>

@@ -1,0 +1,18 @@
+.quadro { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 16px 18px; margin-bottom: 20px; }
+header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+  h2 { font-size: 13px; font-weight: 600; color: #05261a; text-transform: uppercase; letter-spacing: .4px; } }
+.selo { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 9px; background: #edf1e9; color: #5c6f66;
+  &.ok { background: #e6f8d2; color: #0b3d2e; } &.critico { background: #fff0f3; color: #d61e4c; } }
+.linha { font-size: 13px; color: #40534a; margin: 4px 0; strong { color: #05261a; } a { color: #0b3d2e; font-weight: 700; } }
+.link-cancelar { margin-top: 8px; border: none; background: none; padding: 0; font-family: inherit; font-size: 12px; color: #5c6f66; text-decoration: underline; cursor: pointer; }
+.aviso-pedido { margin-top: 8px; font-size: 12px; background: #fff4dc; color: #8a5a00; border-radius: 9px; padding: 8px 11px; }
+.pedido { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; max-width: 520px;
+  label { display: flex; flex-direction: column; gap: 5px; span { font-size: 12px; font-weight: 600; color: #5c6f66; } }
+  select, textarea, input { border: 1px solid #dde5d9; border-radius: 9px; padding: 8px 11px; font-family: inherit; font-size: 13px; color: #05261a; }
+  small { font-size: 11px; color: #5c6f66; } }
+.acoes { display: flex; gap: 8px; justify-content: flex-end; }
+.pri, .sec { border-radius: 9px; padding: 8px 14px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.pri { background: #05261a; color: #fff; border: none; }
+.sec { background: #fff; border: 1px solid #dde5d9; color: #05261a; }
+.erro { font-size: 12px; color: #d63a3a; }
+.ok { font-size: 12px; color: #0b3d2e; font-weight: 600; margin-top: 6px; }

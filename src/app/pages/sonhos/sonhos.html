@@ -1,0 +1,1156 @@
+<div class="page">
+
+  <div class="page-header">
+    <div class="ph-icone">
+      <svg viewBox="0 0 20 20" fill="none" width="20" height="20">
+        <path d="M10 2l2.4 4.9 5.4.8-3.9 3.8.9 5.3L10 14.3l-4.8 2.5.9-5.3L2.2 7.7l5.4-.8L10 2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="ph-texto">
+      <h1 class="titulo-video">Sonhos<app-video-badge /></h1>
+      <p>Defina seus objetivos e calcule o investimento mensal necessário</p>
+    </div>
+    <div class="ph-botoes">
+    <button type="button" class="btn-jarro" (click)="jarroAberto = true" title="Ver no gráfico de orçamento a parte que esta tela forma">
+      <svg viewBox="0 0 20 20" fill="none" width="15" height="15" aria-hidden="true"><path d="M7 2.5h6M7.5 2.5v2.2C5.4 5.6 4 7.6 4 10v5a2.5 2.5 0 0 0 2.5 2.5h7A2.5 2.5 0 0 0 16 15v-5c0-2.4-1.4-4.4-3.5-5.3V2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 11.5h12" stroke="currentColor" stroke-width="1.5"/></svg>
+      Jarro do Orçamento
+    </button>
+      <button class="btn-simulador" (click)="abrirSimulador()">
+        <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+          <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M10 6v4l2.5 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        Simulador de Projetos
+        <app-video-badge [video]="['Aposentadoria', 'Imóvel', 'Carro', 'Viagem', 'Novo Filho', 'Faculdade']" />
+      </button>
+      <button class="btn-dashboard btn-resumo" (click)="modalAberto = true">
+        <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+          <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+          <rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+          <rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+          <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+        </svg>
+        Resumo
+      </button>
+    </div>
+  </div>
+
+  @if (jarroAberto) { <app-jarro-orcamento [destaque]="['G']" origem="Sonhos" (fechar)="jarroAberto = false" /> }
+
+  <div class="rec-card">
+
+    <div class="rec-toolbar">
+      <button class="btn-adicionar" (click)="adicionarLinha()" [disabled]="adicionando">
+        <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+          <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Adicionar objetivo
+      </button>
+    </div>
+
+    @if (carregando) {
+      <div class="rec-loading">Carregando…</div>
+    } @else if (sonhos.length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 48 48" fill="none" width="48" height="48">
+          <path d="M24 6l5.6 11.4 12.6 1.8-9.1 8.9 2.1 12.5L24 34.3l-11.2 6.3 2.1-12.5L5.8 19.2l12.6-1.8L24 6z" stroke="#c4f58a" stroke-width="2.5" stroke-linejoin="round"/>
+        </svg>
+        <p>Adicione seu primeiro Sonho</p>
+      </div>
+    } @else {
+      <div class="tabela-wrap">
+        <table class="tabela">
+          <thead>
+            <tr>
+              <th class="th-center col-num"></th>
+              <th class="th-center col-nome">Nome do Objetivo</th>
+              <th class="th-right col-valor">Valor Total</th>
+              <th class="th-center col-prazo">Prazo</th>
+              <th class="th-center col-rent">Rentab.</th>
+              <th class="th-right col-vinicial">Valor Inicial</th>
+              <th class="th-center col-dinicio">Data Início</th>
+              <th class="th-right col-selado">Valor Selado</th>
+              <th class="th-center col-dfim">Data Fim</th>
+              <th class="th-center col-meses">Meses Rest.</th>
+              <th class="th-right col-mim">M.I.M.</th>
+              <th class="col-acao"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of sonhos; track $index; let i = $index) {
+              <tr class="tr-data">
+                <td class="td-num">{{ i + 1 }}</td>
+
+                <td class="td-nome">
+                  <input class="input-nome" [(ngModel)]="s.nome" (blur)="salvar(s)" placeholder="">
+                </td>
+
+                <td class="td-valor">
+                  <div class="valor-wrap">
+                    <span class="rs">R$</span>
+                    <input class="input-num" type="text" inputmode="numeric"
+                      [value]="fmtDisplay(s.valor_total)"
+                      (focus)="onFocusValor($event, s.valor_total)"
+                      (blur)="onBlurValorTotal($event, s)"
+                      placeholder="-">
+                  </div>
+                </td>
+
+                <td class="td-center">
+                  <div class="prazo-wrap">
+                    <input class="input-prazo" type="number" [ngModel]="s.prazo || null" (ngModelChange)="s.prazo = $event || 0" (blur)="salvar(s)" min="1" placeholder="-">
+                  </div>
+                </td>
+
+                <td class="td-center">
+                  <div class="rent-wrap">
+                    <input class="input-rent" type="text" inputmode="decimal" [value]="fmtPct(s.rentabilidade)" (blur)="onBlurRentabilidade($event, s)">
+                    <span class="unit-label">%</span>
+                  </div>
+                </td>
+
+                <td class="td-valor">
+                  <div class="valor-wrap">
+                    <span class="rs">R$</span>
+                    <input class="input-num" type="text" inputmode="numeric"
+                      [value]="fmtDisplay(s.valor_inicial)"
+                      (focus)="onFocusValor($event, s.valor_inicial)"
+                      (blur)="onBlurValorInicial($event, s)"
+                      placeholder="-">
+                  </div>
+                </td>
+
+                <td class="td-center">
+                  <input class="input-data" [value]="s.data_inicio" (input)="formatarData($event, s)" (blur)="salvar(s)" placeholder="dd/mm/aaaa" maxlength="10">
+                </td>
+
+                <td class="td-valor" title="Quanto já está guardado para este objetivo hoje. Entra no cálculo do M.I.M. no lugar do valor inicial.">
+                  <div class="valor-wrap">
+                    <span class="rs">R$</span>
+                    <input class="input-num" type="text" inputmode="numeric"
+                      [value]="fmtDisplay(s.valor_selado)"
+                      (focus)="onFocusValor($event, s.valor_selado)"
+                      (blur)="onBlurValorSelado($event, s)"
+                      placeholder="-">
+                  </div>
+                </td>
+
+                <td class="td-center td-readonly td-calculado">{{ dataFim(s) }}</td>
+
+                <td class="td-center td-readonly td-calculado">{{ mesesRestantes(s) ?? '-' }}</td>
+
+                <td class="td-valor td-calculado">
+                  <div class="mim-wrap">
+                    <span class="mim-rs">R$</span>
+                    @if (mim(s) !== null) {
+                      <span class="mim-val">{{ fmt(mim(s)) }}</span>
+                    } @else {
+                      <span class="mim-vazio">-</span>
+                    }
+                  </div>
+                </td>
+
+                <td class="td-acao">
+                  <button class="btn-lixeira" (click)="excluir(s)" title="Excluir">
+                    <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+                      <path d="M4 6h12M8 6V4h4v2M7 6l1 10h4l1-10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="total-row">
+        <span>M.I.M. Total</span>
+        <span class="total-valor">R$ {{ fmt(totalMim) }}</span>
+      </div>
+    }
+
+  </div>
+</div>
+
+@if (modalAberto) {
+  <div class="modal-overlay" (click)="modalAberto = false">
+    <div class="modal-dash" (click)="$event.stopPropagation()">
+      <div class="modal-dash-header">
+        <h2>Resumo de Investimentos</h2>
+        <button class="modal-fechar" (click)="modalAberto = false">
+          <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+            <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="dash-tabela-wrap">
+        <table class="dash-tabela">
+          <thead>
+            <tr>
+              <th class="dth-classe">Projeto</th>
+              <th class="dth-bar">M.I.M.</th>
+              <th class="dth-num">% MIM</th>
+              <th class="dth-num">Total Alocado</th>
+              <th class="dth-num">Meses Rest.</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (linha of resumoLinhas; track $index) {
+              <tr class="dash-tr">
+                <td class="dash-row-label">{{ linha.nome }}</td>
+                <td class="dtd-bar">
+                  <div class="dash-bar-cell">
+                    <div class="dash-bar-bg">
+                      <div class="dash-bar-fill" [style.width]="barPct(linha.mim) + '%'"></div>
+                    </div>
+                    <span class="dash-rs">R$</span>
+                    <span class="dash-val">{{ fmt(linha.mim) }}</span>
+                  </div>
+                </td>
+                <td class="dtd-num">
+                  <span class="dash-val">{{ pctMim(linha.mim) }}</span>
+                </td>
+                <td class="dtd-num">
+                  @if (linha.totalAlocado) {
+                    <span class="dash-rs">R$</span>
+                    <span class="dash-val">{{ fmt(linha.totalAlocado) }}</span>
+                  } @else {
+                    <span class="dash-val">-</span>
+                  }
+                </td>
+                <td class="dtd-num">
+                  <span class="dash-val">{{ linha.mesesRestantes ?? '-' }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="dash-tr-total">
+              <td class="dtd-classe">Total</td>
+              <td class="dtd-bar">
+                <div class="dash-bar-cell">
+                  <div class="dash-bar-bg">
+                    <div class="dash-bar-fill" style="width:100%"></div>
+                  </div>
+                  <span class="dash-rs">R$</span>
+                  <span class="dash-val">{{ fmt(totalMim) }}</span>
+                </div>
+              </td>
+              <td class="dtd-num"><span class="dash-val">100%</span></td>
+              <td class="dtd-num"><span class="dash-val">-</span></td>
+              <td class="dtd-num"><span class="dash-val">-</span></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+}
+
+@if (simuladorAberto) {
+  <div class="modal-overlay" (click)="simuladorAberto = false">
+    <div class="modal-sim" (click)="$event.stopPropagation()">
+
+      <div class="modal-dash-header">
+        <h2>Simulador de Projetos</h2>
+        <button class="modal-fechar" (click)="simuladorAberto = false">
+          <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+            <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sim-abas-wrap">
+        <div class="sim-abas">
+          <button class="sim-aba" [class.ativa]="abaSimulador==='aposentadoria'" (click)="abaSimulador='aposentadoria'; carregarPessoasAposentadoria()">
+            <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            Aposentadoria
+          </button>
+          <button class="sim-aba" [class.ativa]="abaSimulador==='imovel'" (click)="abaSimulador='imovel'">
+            <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M3 10L10 3l7 7M5 8.5V17h4v-4h2v4h4V8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Imóvel
+          </button>
+          <button class="sim-aba" [class.ativa]="abaSimulador==='carro'" (click)="abaSimulador='carro'; carregarMarcas()">
+            <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M2 11l2-5h12l2 5M2 11v4h2v1.5a.5.5 0 001 0V15h10v1.5a.5.5 0 001 0V15h2v-4M2 11h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="5.5" cy="13" r="1" fill="currentColor"/><circle cx="14.5" cy="13" r="1" fill="currentColor"/></svg>
+            Carro
+          </button>
+          <button class="sim-aba" [class.ativa]="abaSimulador==='viagem'" (click)="abaSimulador='viagem'">
+            <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M10 2a5 5 0 00-5 5c0 3.5 5 11 5 11s5-7.5 5-11a5 5 0 00-5-5z" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="7" r="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+            Viagem
+          </button>
+          <button class="sim-aba" [class.ativa]="abaSimulador==='filho'" (click)="abaSimulador='filho'">
+            <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><circle cx="10" cy="6" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M5 17c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="15" cy="5" r="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+            Novo Filho
+          </button>
+          <button class="sim-aba" [class.ativa]="abaSimulador==='faculdade'" (click)="abaSimulador='faculdade'">
+            <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M10 3l9 4-9 4-9-4 9-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 11v4c0 1.7 2.2 3 5 3s5-1.3 5-3v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            Faculdade
+          </button>
+        </div>
+      </div>
+
+      <div class="sim-conteudo">
+        @if (abaSimulador === 'aposentadoria') {
+          <div class="sim-form">
+
+            <p class="sim-secao-titulo">Idade na aposentadoria</p>
+            <div class="sim-row">
+              @for (p of aposPessoas; track $index; let i = $index) {
+                <div class="sim-field">
+                  <label class="sim-label">{{ p.nome }}</label>
+                  <div class="sim-meses">
+                    <input class="sim-input" type="number" min="1" max="120" placeholder="ex: 60"
+                      [ngModel]="simAposentadoria.idades[i]" (ngModelChange)="simAposentadoria.idades[i] = $event">
+                    <span class="sim-unit">anos</span>
+                  </div>
+                  @if (p.idadeAtual !== null) { <span class="sim-hint">Hoje com {{ p.idadeAtual }} anos</span> }
+                </div>
+              } @empty {
+                <div class="sim-field">
+                  <label class="sim-label">Sua idade</label>
+                  <div class="sim-meses">
+                    <input class="sim-input" type="number" min="1" max="120" placeholder="ex: 60"
+                      [ngModel]="simAposentadoria.idades[0]" (ngModelChange)="simAposentadoria.idades[0] = $event">
+                    <span class="sim-unit">anos</span>
+                  </div>
+                  <span class="sim-hint">Cadastre as pessoas em Configurações para usar os nomes e as idades atuais.</span>
+                </div>
+              }
+            </div>
+
+            <p class="sim-secao-titulo">Premissas</p>
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Rentabilidade de derivação</label>
+                <div class="sim-meses">
+                  <input class="sim-input" type="text" inputmode="decimal" placeholder="1,00"
+                    [ngModel]="aposPctTxt.rentabilidadeAm" (ngModelChange)="onPctDigitado('rentabilidadeAm', $event)"
+                    (blur)="onPctSaiu('rentabilidadeAm')">
+                  <span class="sim-unit">% a.m.</span>
+                </div>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Inflação futura considerada</label>
+                <div class="sim-meses">
+                  <input class="sim-input" type="text" inputmode="decimal" placeholder="ex: 4,50"
+                    [ngModel]="aposPctTxt.inflacaoAa" (ngModelChange)="onPctDigitado('inflacaoAa', $event)"
+                    (blur)="onPctSaiu('inflacaoAa')">
+                  <span class="sim-unit">% a.a.</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="sim-secao-titulo">Renda garantida</p>
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Quanto já tem de renda hoje em aluguéis</label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" appMascaraMoeda [(ngModel)]="simAposentadoria.rendaAlugueis" placeholder="0,00">
+                </div>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Quanto já tem de renda prevista no INSS</label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" appMascaraMoeda [(ngModel)]="simAposentadoria.rendaInss" placeholder="0,00">
+                </div>
+              </div>
+            </div>
+
+            <div class="sim-switch-row">
+              <span class="sim-switch-label">Considerar receita eventual?</span>
+              <div class="sim-switch-inline">
+                <span class="sim-switch-val">{{ simAposentadoria.considerarEventual ? 'Sim' : 'Não' }}</span>
+                <button class="switch" [class.on]="simAposentadoria.considerarEventual" (click)="simAposentadoria.considerarEventual = !simAposentadoria.considerarEventual" type="button">
+                  <span class="switch-thumb"></span>
+                </button>
+              </div>
+            </div>
+
+            <p class="sim-secao-titulo">Renda na aposentadoria</p>
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Formato da renda</label>
+                <select class="sim-select sim-select-cinza" [(ngModel)]="simAposentadoria.formatoRenda">
+                  <option value="perene">Fluxo Perene</option>
+                  <option value="estoque">Consumo de Estoque</option>
+                </select>
+              </div>
+              @if (simAposentadoria.formatoRenda === 'estoque') {
+                <div class="sim-field">
+                  <label class="sim-label">Idade estimada na morte</label>
+                  <div class="sim-meses">
+                    <input class="sim-input" type="number" min="1" max="130" placeholder="ex: 90" [(ngModel)]="simAposentadoria.idadeMorte">
+                    <span class="sim-unit">anos</span>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Método de cálculo da renda necessária</label>
+                <select class="sim-select sim-select-cinza" [(ngModel)]="simAposentadoria.metodoRenda">
+                  <option value="receita">Receita atual</option>
+                  <option value="despesas">Despesas sem dependentes</option>
+                  <option value="livre">Livre</option>
+                </select>
+              </div>
+              @if (simAposentadoria.metodoRenda === 'livre') {
+                <div class="sim-field">
+                  <label class="sim-label">Renda desejada para aposentar</label>
+                  <div class="sim-money">
+                    <span class="sim-rs">R$</span>
+                    <input class="sim-input-num" type="text" appMascaraMoeda [(ngModel)]="simAposentadoria.rendaLivre" placeholder="0,00">
+                  </div>
+                </div>
+              } @else {
+                <div class="sim-field">
+                  <label class="sim-label">
+                    Renda desejada para aposentar
+                    <span class="sim-badge-fipe">{{ simAposentadoria.metodoRenda === 'receita' ? (simAposentadoria.considerarEventual ? 'receita mensal + eventual' : 'receita mensal atual') : 'despesas sem dependentes' }}</span>
+                  </label>
+                  <div class="sim-money sim-money-leitura">
+                    <span class="sim-rs">R$</span>
+                    <input class="sim-input-num" type="text" readonly tabindex="-1"
+                      [value]="aposRendaNecessaria === null ? 'Carregando…' : fmtMoeda(aposRendaNecessaria)">
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (resultadoAposentadoria; as res) {
+              <div class="sim-resultado-carro">
+                <p class="sim-secao-titulo">Resultado <span class="sim-badge-fipe">valores de hoje</span></p>
+                <div class="sim-resultado-grid">
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">Renda necessária</span>
+                    <span class="sim-res-val">R$ {{ fmtMoeda(res.rendaNecessaria) }}</span>
+                  </div>
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">(−) Renda garantida (aluguéis + INSS)</span>
+                    <span class="sim-res-val">R$ {{ fmtMoeda(res.rendaGarantida) }}</span>
+                  </div>
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">Renda a gerar pelo patrimônio</span>
+                    <span class="sim-res-val sim-res-destaque">R$ {{ fmtMoeda(res.rendaAGerar) }}</span>
+                  </div>
+                </div>
+                <p class="sim-hint">
+                  Taxa real de derivação: {{ fmtPct(res.taxaRealAm) }}% a.m. (rentabilidade descontada da inflação)
+                  @if (res.meses !== null) { · Consumo ao longo de {{ res.meses }} meses ({{ fmtPct(res.meses / 12) }} anos) }
+                </p>
+                @if (res.erro) {
+                  <span class="sim-erro">{{ res.erro }}</span>
+                } @else {
+                  <div class="sim-res-total">
+                    <span class="sim-res-label">Patrimônio necessário · {{ simAposentadoria.formatoRenda === 'perene' ? 'fluxo perene' : 'consumo de estoque' }}</span>
+                    <span class="sim-res-val">R$ {{ fmtMoeda(res.patrimonio) }}</span>
+                  </div>
+                }
+                @if (aposAporteMensal; as ap) {
+                  @if (aposAporteOk(ap)) {
+                    <div class="sim-res-total">
+                      <span class="sim-res-label">
+                        Investimento mensal necessário
+                        <small class="sim-res-sub">por {{ ap.meses }} meses, de hoje até {{ fmtMesAno(ap.dataAposentadoria) }} · rentabilidade de {{ fmtPct(ap.taxaAm) }}% a.m.</small>
+                      </span>
+                      <span class="sim-res-val">R$ {{ fmtMoeda(ap.valor) }}</span>
+                    </div>
+                    <button class="btn-adicionar-sonho" (click)="adicionarAposentadoriaAosSonhos()" type="button">
+                      <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+                        <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                      Adicionar à tabela de Sonhos
+                    </button>
+                  } @else {
+                    <span class="sim-erro">{{ $any(ap).erro }}</span>
+                  }
+                }
+              </div>
+            }
+
+          </div>
+        }
+        @if (abaSimulador === 'carro') {
+          <div class="sim-form">
+
+            <p class="sim-secao-titulo">Carro desejado</p>
+
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Marca</label>
+                <select class="sim-select" (change)="onMarcaSel($any($event.target).value)">
+                  <option value="">{{ fipeCarregandoMarcas ? 'Carregando…' : 'Selecione a marca…' }}</option>
+                  @for (m of fipeMarcas; track m.codigo) {
+                    <option [value]="m.codigo">{{ m.nome }}</option>
+                  }
+                </select>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Modelo</label>
+                @if (fipeModelos.length) {
+                  <select class="sim-select" (change)="onModeloSel($any($event.target).value)">
+                    <option value="">Selecione o modelo…</option>
+                    @for (m of fipeModelos; track m.codigo) {
+                      <option [value]="m.codigo">{{ m.nome }}</option>
+                    }
+                  </select>
+                } @else {
+                  <select class="sim-select sim-select-disabled" disabled>
+                    <option>{{ fipeCarregandoModelos ? 'Carregando…' : 'Selecione a marca primeiro' }}</option>
+                  </select>
+                }
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Ano</label>
+                @if (fipeAnos.length) {
+                  <select class="sim-select" (change)="onAnoSel($any($event.target).value)">
+                    <option value="">Selecione o ano…</option>
+                    @for (a of fipeAnos; track a.codigo) {
+                      <option [value]="a.codigo">{{ a.nome }}</option>
+                    }
+                  </select>
+                } @else {
+                  <select class="sim-select sim-select-disabled" disabled>
+                    <option>{{ fipeCarregandoAnos ? 'Carregando…' : 'Selecione o modelo primeiro' }}</option>
+                  </select>
+                }
+              </div>
+            </div>
+
+            <div class="sim-field">
+              <label class="sim-label">
+                Valor do carro
+                @if (fipeBuscando) { <span class="sim-badge-fipe">Buscando FIPE…</span> }
+                @else if (simCarro.valorNovo) { <span class="sim-badge-fipe">Tabela FIPE</span> }
+              </label>
+              <div class="sim-money">
+                <span class="sim-rs">R$</span>
+                <input class="sim-input-num" type="text" inputmode="numeric"
+                  [value]="fmtDisplay(simCarro.valorNovo)"
+                  (focus)="onFocusValor($event, simCarro.valorNovo)"
+                  (blur)="onBlurSimNum($event, simCarro, 'valorNovo')"
+                  placeholder="Selecione marca, modelo e ano">
+              </div>
+              @if (fipeErro) { <span class="sim-erro">{{ fipeErro }}</span> }
+              <span class="sim-hint">Preenchido automaticamente ao selecionar o ano. Você pode editar.</span>
+            </div>
+
+            <div class="sim-field">
+              <label class="sim-label">Daqui quantos meses você gostaria de comprar?</label>
+              <div class="sim-meses">
+                <input class="sim-input" type="number" [(ngModel)]="simCarro.meses" placeholder="0" min="1">
+                <span class="sim-unit">meses</span>
+              </div>
+            </div>
+
+            <div class="sim-switch-row">
+              <span class="sim-switch-label">Você tem um carro atualmente?</span>
+              <button class="switch" [class.on]="simCarro.temCarroAtual" (click)="simCarro.temCarroAtual = !simCarro.temCarroAtual; carregarMarcasAt()" type="button">
+                <span class="switch-thumb"></span>
+              </button>
+            </div>
+
+            @if (simCarro.temCarroAtual) {
+              <div class="sim-carro-atual">
+                <p class="sim-secao-titulo">Carro atual</p>
+                <div class="sim-row">
+                  <div class="sim-field">
+                    <label class="sim-label">Marca</label>
+                    <select class="sim-select" (change)="onMarcaAtSel($any($event.target).value)">
+                      <option value="">{{ fipeCarregandoMarcasAt ? 'Carregando…' : 'Selecione a marca…' }}</option>
+                      @for (m of fipeMarcasAt; track m.codigo) {
+                        <option [value]="m.codigo">{{ m.nome }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="sim-field">
+                    <label class="sim-label">Modelo</label>
+                    @if (fipeModelosAt.length) {
+                      <select class="sim-select" (change)="onModeloAtSel($any($event.target).value)">
+                        <option value="">Selecione o modelo…</option>
+                        @for (m of fipeModelosAt; track m.codigo) {
+                          <option [value]="m.codigo">{{ m.nome }}</option>
+                        }
+                      </select>
+                    } @else {
+                      <select class="sim-select sim-select-disabled" disabled>
+                        <option>{{ fipeCarregandoModelosAt ? 'Carregando…' : 'Selecione a marca primeiro' }}</option>
+                      </select>
+                    }
+                  </div>
+                  <div class="sim-field">
+                    <label class="sim-label">Ano</label>
+                    @if (fipeAnosAt.length) {
+                      <select class="sim-select" (change)="onAnoAtSel($any($event.target).value)">
+                        <option value="">Selecione o ano…</option>
+                        @for (a of fipeAnosAt; track a.codigo) {
+                          <option [value]="a.codigo">{{ a.nome }}</option>
+                        }
+                      </select>
+                    } @else {
+                      <select class="sim-select sim-select-disabled" disabled>
+                        <option>{{ fipeCarregandoAnosAt ? 'Carregando…' : 'Selecione o modelo primeiro' }}</option>
+                      </select>
+                    }
+                  </div>
+                </div>
+                @if (simCarro.valorAtual) {
+                  <div class="sim-dep-grid">
+                    <div class="sim-dep-item">
+                      <span class="sim-dep-label">Valor atual <span class="sim-badge-fipe">Tabela FIPE</span></span>
+                      <span class="sim-dep-val">R$ {{ fmt(simCarro.valorAtual) }}</span>
+                    </div>
+                    <div class="sim-dep-arrow">→</div>
+                    <div class="sim-dep-item">
+                      <span class="sim-dep-label">Valor daqui a <strong>{{ simCarro.meses ?? '?' }} meses</strong> <span class="sim-badge-fipe">c/ depreciação</span></span>
+                      <div class="sim-dep-money">
+                        <span class="sim-dep-rs">R$</span>
+                        <input class="sim-dep-input" type="text" inputmode="numeric"
+                          [value]="fmtDisplay(simCarro.valorAtualEditado ?? valorCarroAtualDaqui)"
+                          (focus)="onFocusValor($event, simCarro.valorAtualEditado ?? valorCarroAtualDaqui)"
+                          (blur)="onBlurSimNum($event, simCarro, 'valorAtualEditado')"
+                          placeholder="—">
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (simCarro.valorNovo && simCarro.meses) {
+              <div class="sim-resultado-carro">
+                <p class="sim-secao-titulo">Resultado</p>
+                <div class="sim-resultado-grid">
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">Valor necessário</span>
+                    <span class="sim-res-val">R$ {{ fmt(resultadoCarro.valorNecessario) }}</span>
+                  </div>
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">M.I.M. estimado</span>
+                    <span class="sim-res-val sim-res-destaque">R$ {{ fmt(resultadoCarro.mim) }}</span>
+                  </div>
+                </div>
+                <button class="btn-adicionar-sonho" (click)="adicionarCarroAosSonhos()" type="button">
+                  <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+                    <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Adicionar à tabela de Sonhos
+                </button>
+              </div>
+            }
+
+          </div>
+        }
+        @if (abaSimulador === 'imovel') {
+          <div class="sim-form">
+            <p class="sim-secao-titulo">Imóvel desejado</p>
+
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Valor do imóvel</label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" inputmode="numeric"
+                    [value]="fmtDisplay(simImovel.valor)"
+                    (focus)="onFocusValor($event, simImovel.valor)"
+                    (blur)="onBlurSimNum($event, simImovel, 'valor')"
+                    placeholder="0">
+                </div>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Percentual de entrada</label>
+                <div class="sim-meses">
+                  <input class="sim-input" type="number" [(ngModel)]="simImovel.entradaPct" min="1" max="100" placeholder="20">
+                  <span class="sim-unit">%</span>
+                </div>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Daqui quantos meses?</label>
+                <div class="sim-meses">
+                  <input class="sim-input" type="number" [(ngModel)]="simImovel.meses" min="1" placeholder="0">
+                  <span class="sim-unit">meses</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="sim-switch-row">
+              <span class="sim-switch-label">Você pretende financiar?</span>
+              <button class="switch" [class.on]="simImovel.financiar" (click)="simImovel.financiar = !simImovel.financiar" type="button">
+                <span class="switch-thumb"></span>
+              </button>
+            </div>
+
+            <div class="sim-switch-row">
+              <span class="sim-switch-label">Você tem imóvel ou dinheiro reservado para essa aquisição?</span>
+              <button class="switch" [class.on]="simImovel.temReserva" (click)="simImovel.temReserva = !simImovel.temReserva" type="button">
+                <span class="switch-thumb"></span>
+              </button>
+            </div>
+
+            @if (simImovel.temReserva) {
+              <div class="sim-field">
+                <label class="sim-label">Valor reservado</label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" inputmode="numeric"
+                    [value]="fmtDisplay(simImovel.reserva)"
+                    (focus)="onFocusValor($event, simImovel.reserva)"
+                    (blur)="onBlurSimNum($event, simImovel, 'reserva')"
+                    placeholder="0">
+                </div>
+              </div>
+            }
+
+            @if (simImovel.valor && simImovel.entradaPct && simImovel.meses) {
+              <div class="sim-resultado-carro">
+                <p class="sim-secao-titulo">Resultado</p>
+                <div class="sim-resultado-grid">
+                  @if (simImovel.financiar) {
+                    <div class="sim-res-item">
+                      <span class="sim-res-label">Valor da entrada ({{ simImovel.entradaPct }}%)</span>
+                      <span class="sim-res-val">R$ {{ fmt(resultadoImovel.entrada) }}</span>
+                    </div>
+                  } @else {
+                    <div class="sim-res-item">
+                      <span class="sim-res-label">Valor total do imóvel</span>
+                      <span class="sim-res-val">R$ {{ fmt(simImovel.valor) }}</span>
+                    </div>
+                  }
+                  @if (simImovel.temReserva && simImovel.reserva) {
+                    <div class="sim-res-item">
+                      <span class="sim-res-label">Valor necessário (− reserva)</span>
+                      <span class="sim-res-val">R$ {{ fmt(resultadoImovel.valorNecessario) }}</span>
+                    </div>
+                  }
+                </div>
+                <button class="btn-adicionar-sonho" (click)="adicionarImovelAosSonhos()" type="button">
+                  <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+                    <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Adicionar à tabela de Sonhos
+                </button>
+              </div>
+            }
+          </div>
+        }
+        @if (abaSimulador === 'viagem') {
+          <div class="sim-form" (mouseenter)="buscarCambio()">
+            <p class="sim-secao-titulo">Destino e duração</p>
+
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Destino</label>
+                <select class="sim-select" (change)="onDestinoSel($any($event.target).value)">
+                  <option value="">Selecione o destino…</option>
+                  @for (d of destinosViagem; track d.valor) {
+                    <option [value]="d.valor">{{ d.nome }}</option>
+                  }
+                </select>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Número de pessoas</label>
+                <input class="sim-input" type="number" [(ngModel)]="simViagem.pessoas" min="1" placeholder="1">
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Duração (dias)</label>
+                <input class="sim-input" type="number" [(ngModel)]="simViagem.dias" min="1" placeholder="7">
+              </div>
+            </div>
+
+            <p class="sim-secao-titulo">Custos estimados <span class="sim-badge-fipe">editável</span></p>
+
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Voo por pessoa</label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" inputmode="numeric"
+                    [value]="fmtDisplay(simViagem.custoVoo)"
+                    (focus)="onFocusValor($event, simViagem.custoVoo)"
+                    (blur)="onBlurSimNum($event, simViagem, 'custoVoo')"
+                    placeholder="0">
+                </div>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Hospedagem diária por pessoa</label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" inputmode="numeric"
+                    [value]="fmtDisplay(simViagem.custoDiaria)"
+                    (focus)="onFocusValor($event, simViagem.custoDiaria)"
+                    (blur)="onBlurSimNum($event, simViagem, 'custoDiaria')"
+                    placeholder="0">
+                </div>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Passeios diários por pessoa</label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" inputmode="numeric"
+                    [value]="fmtDisplay(simViagem.custoPasseios)"
+                    (focus)="onFocusValor($event, simViagem.custoPasseios)"
+                    (blur)="onBlurSimNum($event, simViagem, 'custoPasseios')"
+                    placeholder="0">
+                </div>
+              </div>
+            </div>
+
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Alimentação diária por pessoa</label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" inputmode="numeric"
+                    [value]="fmtDisplay(simViagem.custoAlimentacao)"
+                    (focus)="onFocusValor($event, simViagem.custoAlimentacao)"
+                    (blur)="onBlurSimNum($event, simViagem, 'custoAlimentacao')"
+                    placeholder="0">
+                </div>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Transporte diário por pessoa</label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" inputmode="numeric"
+                    [value]="fmtDisplay(simViagem.custoTransporte)"
+                    (focus)="onFocusValor($event, simViagem.custoTransporte)"
+                    (blur)="onBlurSimNum($event, simViagem, 'custoTransporte')"
+                    placeholder="0">
+                </div>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Compras por pessoa</label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" inputmode="numeric"
+                    [value]="fmtDisplay(simViagem.custoCompras)"
+                    (focus)="onFocusValor($event, simViagem.custoCompras)"
+                    (blur)="onBlurSimNum($event, simViagem, 'custoCompras')"
+                    placeholder="0">
+                </div>
+              </div>
+            </div>
+
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Daqui quantos meses?</label>
+                <div class="sim-meses">
+                  <input class="sim-input" type="number" [(ngModel)]="simViagem.meses" min="1" placeholder="0">
+                  <span class="sim-unit">meses</span>
+                </div>
+              </div>
+            </div>
+
+            @if (simViagem.pessoas && simViagem.dias && simViagem.meses) {
+              <div class="sim-resultado-carro">
+                <p class="sim-secao-titulo">Resultado</p>
+
+                @if (cambio.usd || cambio.eur) {
+                  <div class="sim-cambio-bar">
+                    @if (cambio.usd) {
+                      <div class="sim-cambio-chip">
+                        <span class="chip-flag">🇺🇸</span>
+                        <span>Dólar</span>
+                        <strong>R$ {{ cambio.usd | number:'1.2-2' }}</strong>
+                      </div>
+                    }
+                    @if (cambio.eur) {
+                      <div class="sim-cambio-chip">
+                        <span class="chip-flag">🇪🇺</span>
+                        <span>Euro</span>
+                        <strong>R$ {{ cambio.eur | number:'1.2-2' }}</strong>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <div class="sim-resultado-grid">
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">Voos ({{ simViagem.pessoas }}px)</span>
+                    <span class="sim-res-val">R$ {{ fmt(resultadoViagem.totalVoo) }}</span>
+                  </div>
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">Hospedagem ({{ simViagem.dias }}d)</span>
+                    <span class="sim-res-val">R$ {{ fmt(resultadoViagem.totalDiaria) }}</span>
+                  </div>
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">Passeios ({{ simViagem.dias }}d)</span>
+                    <span class="sim-res-val">R$ {{ fmt(resultadoViagem.totalPasseios) }}</span>
+                  </div>
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">Alimentação ({{ simViagem.dias }}d)</span>
+                    <span class="sim-res-val">R$ {{ fmt(resultadoViagem.totalAlimentacao) }}</span>
+                  </div>
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">Transporte ({{ simViagem.dias }}d)</span>
+                    <span class="sim-res-val">R$ {{ fmt(resultadoViagem.totalTransporte) }}</span>
+                  </div>
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">Compras ({{ simViagem.pessoas }}px)</span>
+                    <span class="sim-res-val">R$ {{ fmt(resultadoViagem.totalCompras) }}</span>
+                  </div>
+                </div>
+
+                <div class="sim-res-total">
+                  <span class="sim-res-label">Total geral</span>
+                  <span class="sim-res-val">R$ {{ fmt(resultadoViagem.total) }}</span>
+                </div>
+
+                <button class="btn-adicionar-sonho" (click)="adicionarViagemAosSonhos()" type="button">
+                  <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+                    <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Adicionar à tabela de Sonhos
+                </button>
+              </div>
+            }
+          </div>
+        }
+        @if (abaSimulador === 'filho') {
+          <div class="sim-form" (mouseenter)="carregarRendaFilho()">
+
+            <p class="sim-secao-titulo">1. Enxoval + Quarto</p>
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Daqui quantos meses nasce o bebê?</label>
+                <div class="sim-meses">
+                  <input class="sim-input" type="number" [(ngModel)]="simFilho.mesesAteNascimento" min="1" placeholder="ex: 9">
+                  <span class="sim-unit">meses</span>
+                </div>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Enxoval + Quarto <span class="sim-badge-fipe">pré-preenchido</span></label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" inputmode="numeric"
+                    [value]="fmtDisplay(simFilho.custoEnxoval)"
+                    (focus)="onFocusValor($event, simFilho.custoEnxoval)"
+                    (blur)="onBlurSimNum($event, simFilho, 'custoEnxoval')"
+                    placeholder="0">
+                </div>
+              </div>
+              <div class="sim-field sim-field-hint">
+                <span class="sim-hint">Valor pré-preenchido com a renda mensal do casal. Edite se preferir.</span>
+              </div>
+            </div>
+
+            <p class="sim-secao-titulo">2. Licença</p>
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Quem vai se ausentar?</label>
+                <select class="sim-select" (change)="onPessoaLicencaSel($any($event.target).value)">
+                  <option value="">Selecione…</option>
+                  @for (p of filhoPessoas; track $index) {
+                    <option [value]="$index">{{ p.nome }}</option>
+                  }
+                </select>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Meses sem trabalhar</label>
+                <div class="sim-meses">
+                  <input class="sim-input" type="number" [(ngModel)]="simFilho.mesesLicenca" min="1" max="24" placeholder="6">
+                  <span class="sim-unit">meses</span>
+                </div>
+              </div>
+              <div class="sim-field">
+                <label class="sim-label">Renda mensal <span class="sim-badge-fipe">editável</span></label>
+                <div class="sim-money">
+                  <span class="sim-rs">R$</span>
+                  <input class="sim-input-num" type="text" inputmode="numeric"
+                    [value]="fmtDisplay(simFilho.rendaLicenca)"
+                    (focus)="onFocusValor($event, simFilho.rendaLicenca)"
+                    (blur)="onBlurSimNum($event, simFilho, 'rendaLicenca')"
+                    placeholder="0">
+                </div>
+              </div>
+            </div>
+
+            <div class="sim-row">
+              <div class="sim-field">
+                <label class="sim-label">Recebe auxílio INSS?</label>
+                <div class="sim-switch-box">
+                  <button class="switch" [class.on]="simFilho.temInss" (click)="simFilho.temInss = !simFilho.temInss" type="button">
+                    <span class="switch-thumb"></span>
+                  </button>
+                  <span class="sim-switch-val">{{ simFilho.temInss ? 'Sim' : 'Não' }}</span>
+                </div>
+              </div>
+              @if (simFilho.temInss) {
+                <div class="sim-field">
+                  <label class="sim-label">Valor do auxílio INSS/mês</label>
+                  <div class="sim-money">
+                    <span class="sim-rs">R$</span>
+                    <input class="sim-input-num" type="text" inputmode="numeric"
+                      [value]="fmtDisplay(simFilho.valorInss)"
+                      (focus)="onFocusValor($event, simFilho.valorInss)"
+                      (blur)="onBlurSimNum($event, simFilho, 'valorInss')"
+                      placeholder="0">
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (resultadoFilho; as res) {
+              <div class="sim-resultado-carro">
+                <p class="sim-secao-titulo">Resultado</p>
+                <div class="sim-resultado-grid">
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">Enxoval + Quarto</span>
+                    <span class="sim-res-val">R$ {{ fmt(res.totalEnxoval) }}</span>
+                  </div>
+                  <div class="sim-res-item">
+                    <span class="sim-res-label">Impacto licença ({{ simFilho.mesesLicenca }}m)</span>
+                    <span class="sim-res-val">R$ {{ fmt(res.totalLicenca) }}</span>
+                  </div>
+                </div>
+                <div class="sim-res-total">
+                  <span class="sim-res-label">Total a reservar</span>
+                  <span class="sim-res-val">R$ {{ fmt(res.total) }}</span>
+                </div>
+                <button class="btn-adicionar-sonho" (click)="adicionarFilhoAosSonhos()" type="button">
+                  <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+                    <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Adicionar à tabela de Sonhos
+                </button>
+              </div>
+            }
+          </div>
+        }
+        @if (abaSimulador === 'faculdade') {
+          <div class="sim-form">
+
+            @for (filho of filhosFaculdade; track $index) {
+              <div class="fac-filho-card">
+                <div class="fac-filho-header">
+                  <span class="fac-filho-titulo">
+                    Filho {{ $index + 1 }}
+                    @if (filho.nome) { <span class="fac-filho-nome">— {{ filho.nome }}</span> }
+                  </span>
+                  @if (filhosFaculdade.length > 1) {
+                    <button class="fac-filho-remover" (click)="removerFilho($index)" type="button" title="Remover">
+                      <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+                        <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                    </button>
+                  }
+                </div>
+
+                <div class="sim-row">
+                  <div class="sim-field">
+                    <label class="sim-label">Nome (opcional)</label>
+                    <input class="sim-input" type="text" [(ngModel)]="filho.nome" placeholder="ex: Ana">
+                  </div>
+                  <div class="sim-field">
+                    <label class="sim-label">Idade atual</label>
+                    <div class="sim-meses">
+                      <input class="sim-input" type="number" [(ngModel)]="filho.idadeFilho" min="0" max="17" placeholder="ex: 5">
+                      <span class="sim-unit">anos</span>
+                    </div>
+                  </div>
+                  <div class="sim-field">
+                    <label class="sim-label">Duração do curso</label>
+                    <div class="sim-meses">
+                      <input class="sim-input" type="number" [(ngModel)]="filho.duracaoCurso" min="1" max="10" placeholder="4">
+                      <span class="sim-unit">anos</span>
+                    </div>
+                  </div>
+                  <div class="sim-field">
+                    <label class="sim-label">Tipo de instituição</label>
+                    <select class="sim-select" (change)="onTipoFilhoSel($index, $any($event.target).value)">
+                      <option value="">Selecione…</option>
+                      @for (t of tiposFaculdade; track t.valor) {
+                        <option [value]="t.valor">{{ t.nome }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                @if (filho.tipo) {
+                  <div class="sim-row">
+                    @if (filho.tipo !== 'publica') {
+                      <div class="sim-field">
+                        <label class="sim-label">Mensalidade atual <span class="sim-badge-fipe">editável</span></label>
+                        <div class="sim-money">
+                          <span class="sim-rs">R$</span>
+                          <input class="sim-input-num" type="text" inputmode="numeric"
+                            [value]="fmtDisplay(filho.custoMensalidade)"
+                            (focus)="onFocusValor($event, filho.custoMensalidade)"
+                            (blur)="onBlurSimNum($event, filho, 'custoMensalidade')"
+                            placeholder="0">
+                        </div>
+                      </div>
+                    }
+                    <div class="sim-field">
+                      <label class="sim-label">Vai morar fora de casa?</label>
+                      <div class="sim-switch-box">
+                        <button class="switch" [class.on]="filho.morarFora" (click)="filho.morarFora = !filho.morarFora" type="button">
+                          <span class="switch-thumb"></span>
+                        </button>
+                        <span class="sim-switch-val">{{ filho.morarFora ? 'Sim' : 'Não' }}</span>
+                      </div>
+                    </div>
+                    @if (filho.morarFora) {
+                      <div class="sim-field">
+                        <label class="sim-label">Moradia + aliment./mês <span class="sim-badge-fipe">editável</span></label>
+                        <div class="sim-money">
+                          <span class="sim-rs">R$</span>
+                          <input class="sim-input-num" type="text" inputmode="numeric"
+                            [value]="fmtDisplay(filho.custoMoradia)"
+                            (focus)="onFocusValor($event, filho.custoMoradia)"
+                            (blur)="onBlurSimNum($event, filho, 'custoMoradia')"
+                            placeholder="0">
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  @if (calcFilho(filho); as res) {
+                    <div class="fac-filho-resultado">
+                      <span class="fac-res-linha">
+                        Inicia em <strong>{{ res.anosAteIniciar }}a</strong> · fator IPCA <strong>{{ res.fatorCorrecao | number:'1.2-2' }}x</strong>
+                      </span>
+                      <span class="fac-res-linha">
+                        @if (filho.tipo !== 'publica') { Mensalidades <strong>R$ {{ fmt(res.totalMensalidades) }}</strong> · }
+                        @if (filho.morarFora) { Moradia <strong>R$ {{ fmt(res.totalMoradia) }}</strong> · }
+                        Prazo <strong>{{ res.prazoMeses }} meses</strong>
+                      </span>
+                      <span class="fac-res-total">R$ {{ fmt(res.total) }}</span>
+                    </div>
+                  }
+                }
+              </div>
+            }
+
+            <button class="fac-add-filho" (click)="adicionarFilho()" type="button">
+              <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+                <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              Adicionar outro filho
+            </button>
+
+            @if (resultadosFaculdade.temAlgum) {
+              <div class="sim-resultado-carro">
+                <p class="sim-secao-titulo">Total geral</p>
+                <div class="sim-res-total">
+                  <span class="sim-res-label">Soma de todos os filhos</span>
+                  <span class="sim-res-val">R$ {{ fmt(resultadosFaculdade.total) }}</span>
+                </div>
+                <button class="btn-adicionar-sonho" (click)="adicionarFaculdadeAosSonhos()" type="button">
+                  <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+                    <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Adicionar à tabela de Sonhos
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+    </div>
+  </div>
+}

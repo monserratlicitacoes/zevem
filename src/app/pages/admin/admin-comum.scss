@@ -1,0 +1,94 @@
+// Estilos comuns das telas da área master (Clientes, Anúncios e avisos, Financeiro)
+$profundo: #05261a;
+$floresta: #0b3d2e;
+$lima: #b8f15a;
+$lima-claro: #e6f8d2;
+$borda: #dde5d9;
+$suave: #5c6f66;
+$fundo: #f7f8f5;
+$rosa: #d61e4c;
+
+:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.page { flex: 1; min-height: 0; overflow-y: auto; padding: 32px 36px 48px; }
+.aviso { color: $suave; font-size: 13px; padding: 16px 0; }
+.aviso-erro { color: #d63a3a; }
+
+// Cartões de números
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.kpi {
+  background: #fff; border: 1px solid $borda; border-radius: 12px; padding: 12px 14px;
+  span { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: $suave; }
+  strong { display: block; font-size: 20px; font-weight: 800; color: $profundo; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  small { font-size: 11px; color: $suave; }
+  &.destaque { background: $profundo; border-color: $profundo; span { color: rgba(247, 248, 245, .65); } strong { color: $lima; } small { color: rgba(247, 248, 245, .7); } }
+  &.alerta strong { color: $rosa; }
+}
+
+// Barra de filtros
+.filtros {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px;
+  input[type=search], select {
+    border: 1px solid $borda; border-radius: 9px; padding: 8px 11px; font-family: inherit; font-size: 12px; color: $profundo; background: #fff;
+    &:focus { outline: none; border-color: $floresta; }
+  }
+  input[type=search] { flex: 1 1 240px; min-width: 200px; }
+  .contagem { margin-left: auto; font-size: 12px; color: $suave; }
+}
+
+// Tabela
+.tabela-wrap { background: #fff; border: 1px solid $borda; border-radius: 14px; overflow: auto; }
+table.grade {
+  width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums;
+  th {
+    position: sticky; top: 0; z-index: 1; background: #fafcf8; color: $profundo; font-size: 11px; font-weight: 700;
+    text-align: left; padding: 10px 12px; border-bottom: 1px solid $borda; white-space: nowrap;
+  }
+  th.ordenavel { cursor: pointer; user-select: none; &:hover { background: #f1f6ed; } }
+  th .seta { color: $floresta; margin-left: 3px; }
+  td { padding: 9px 12px; border-bottom: 1px solid #eef2eb; vertical-align: middle; color: $profundo; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #fafcf8; }
+  .num { text-align: right; white-space: nowrap; }
+  .centro { text-align: center; }
+  .sub { display: block; font-size: 11px; color: $suave; }
+}
+
+.selo {
+  display: inline-block; border-radius: 999px; padding: 2px 9px; font-size: 11px; font-weight: 700; white-space: nowrap;
+  background: #edf1e9; color: $suave;
+  &.ok { background: $lima-claro; color: $floresta; }
+  &.atencao { background: #fff4dc; color: #8a5a00; }
+  &.critico { background: #fff0f3; color: $rosa; }
+}
+
+.botao {
+  border: 1px solid $borda; background: #fff; color: $profundo; border-radius: 8px; padding: 6px 11px;
+  font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  &:hover { border-color: $lima; }
+  &.primario { background: $lima; border-color: $lima; font-weight: 700; &:hover { background: #c8f67a; } }
+  &.perigo { color: $rosa; &:hover { border-color: #ffc2d1; } }
+  &:disabled { opacity: .5; cursor: default; }
+}
+
+.cartao { background: #fff; border: 1px solid $borda; border-radius: 14px; padding: 16px 18px; margin-bottom: 16px;
+  h2 { font-size: 16px; font-weight: 800; color: $profundo; }
+  p.ajuda { font-size: 12px; color: $suave; margin: 3px 0 12px; } }
+
+.campo { display: flex; flex-direction: column; gap: 5px;
+  > span { font-size: 11px; font-weight: 700; color: $suave; }
+  input, select, textarea {
+    border: 1px solid $borda; border-radius: 9px; padding: 8px 11px; font-family: inherit; font-size: 13px; color: $profundo; background: #fff;
+    &:focus { outline: none; border-color: $floresta; box-shadow: 0 0 0 3px rgba(184, 241, 90, .2); }
+  }
+  textarea { resize: vertical; min-height: 70px; line-height: 1.45; }
+  small { font-size: 11px; color: $suave; } }
+.erro { font-size: 12px; color: #d63a3a; }
+.ok-msg { font-size: 12px; color: $floresta; font-weight: 600; }
+
+.chave {
+  width: 40px; height: 22px; border-radius: 999px; border: none; background: #c3cfbf; position: relative; cursor: pointer; flex-shrink: 0;
+  span { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  &.ligada { background: $floresta; span { transform: translateX(18px); } }
+}
+
+@media (max-width: 640px) { .page { padding: 20px 16px 40px; } }

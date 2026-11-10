@@ -1,0 +1,35 @@
+@let r = repeticao();
+<div class="rep">
+  <div class="rep-card" [class.ativo]="r.modo === 'recorrencia'">
+    <label class="rep-linha">
+      <span class="rep-texto">
+        <strong>Recorrência</strong>
+        <small>Repete o lançamento todo mês até a data de término.</small>
+      </span>
+      <input type="checkbox" role="switch" [checked]="r.modo === 'recorrencia'" (change)="alternar('recorrencia', $any($event.target).checked)" />
+      <span class="switch-trilho" aria-hidden="true"><span class="switch-bolinha"></span></span>
+    </label>
+    @if (r.modo === 'recorrencia') {
+      <label class="rep-campo" [for]="nome() + '-fim'">Data de término</label>
+      <input class="rep-input" type="date" [id]="nome() + '-fim'" [min]="data()" [value]="r.dataFim" (input)="mudarDataFim($any($event.target).value)" />
+    }
+  </div>
+
+  <div class="rep-card" [class.ativo]="r.modo === 'parcelado'">
+    <label class="rep-linha">
+      <span class="rep-texto">
+        <strong>Parcelado</strong>
+        <small>Divide o valor em parcelas mensais (1 a {{ maxParcelas }}).</small>
+      </span>
+      <input type="checkbox" role="switch" [checked]="r.modo === 'parcelado'" (change)="alternar('parcelado', $any($event.target).checked)" />
+      <span class="switch-trilho" aria-hidden="true"><span class="switch-bolinha"></span></span>
+    </label>
+    @if (r.modo === 'parcelado') {
+      <label class="rep-campo" [for]="nome() + '-parcelas'">Número de parcelas</label>
+      <input class="rep-input rep-input-curto" type="number" [id]="nome() + '-parcelas'" min="1" [max]="maxParcelas" step="1"
+        [value]="r.parcelas" (input)="mudarParcelas($any($event.target).value)" />
+    }
+  </div>
+
+  @if (resumo()) { <p class="rep-resumo" [class.rep-resumo-erro]="resumoComErro()" aria-live="polite">{{ resumo() }}</p> }
+</div>

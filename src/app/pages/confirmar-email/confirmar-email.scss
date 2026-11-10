@@ -1,0 +1,36 @@
+// Mesmo layout do login (estilos em ../login/login.scss); aqui só o ícone de estado.
+.status-icone {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(184, 241, 90, 0.14);
+  color: #b8f15a;
+  border: 1px solid rgba(184, 241, 90, 0.35);
+  box-shadow: 0 0 24px rgba(184, 241, 90, 0.18);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.status-erro {
+  background: rgba(214, 58, 58, 0.16);
+  color: #ffb4ab;
+  border-color: rgba(255, 180, 171, 0.35);
+  box-shadow: none;
+}
+
+.status-carregando span {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid rgba(184, 241, 90, 0.25);
+  border-top-color: #b8f15a;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.card-head strong { color: #b8f15a; font-weight: 700; word-break: break-all; }

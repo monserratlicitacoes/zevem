@@ -1,0 +1,43 @@
+@if (carregou && assinatura; as a) {
+  <section class="quadro">
+    <header>
+      <h2>Minha assinatura</h2>
+      <span class="selo" [class.ok]="a.status === 'ativa'" [class.critico]="a.status === 'inadimplente'">
+        {{ a.status === 'ativa' ? 'Em dia' : a.status === 'inadimplente' ? 'Pagamento em atraso' : a.status === 'cancelada' ? 'Cancelada' : 'Encerrada' }}
+      </span>
+    </header>
+    <p class="linha">Plano <strong>{{ a.plano }}</strong> · {{ pagas }} de {{ a.cobrancas.length }} parcelas pagas
+      @if (proxima; as p) { · próxima: <strong>{{ moeda(p.valor) }}</strong> em {{ data(p.vencimento) }}
+        @if (p.link_pagamento) { · <a [href]="p.link_pagamento" target="_blank" rel="noopener">pagar</a> } }
+    </p>
+    <p class="linha">
+      @if (a.renovacao_automatica) { Renova automaticamente em {{ data(a.fim_ciclo) }}. }
+      @else { Vale até {{ data(a.fim_ciclo) }} e não será renovada. }
+    </p>
+
+    @if (vigente && a.renovacao_automatica) {
+      @if (a.pedido_cancelamento; as p) {
+        <p class="aviso-pedido">Seu pedido de cancelamento de {{ data(p.criado_em) }} está em análise. Entraremos em contato.</p>
+      } @else if (!pedindo) {
+        <button type="button" class="link-cancelar" (click)="abrirPedido()">Pedir cancelamento</button>
+      } @else {
+        <div class="pedido">
+          <label><span>Por que você quer cancelar?</span>
+            <select name="motivo" [(ngModel)]="motivo">
+              <option value="" disabled>Escolha</option>
+              @for (m of motivos | keyvalue; track m.key) { <option [value]="m.key">{{ m.value }}</option> }
+            </select>
+          </label>
+          <label><span>Quer contar mais? (opcional)</span><textarea name="detalhe" [(ngModel)]="detalhe" rows="3" maxlength="1000"></textarea></label>
+          @if (erro) { <span class="erro">{{ erro }}</span> }
+          <div class="acoes">
+            <button type="button" class="sec" (click)="pedindo = false">Voltar</button>
+            <button type="button" class="pri" (click)="enviarPedido()">Enviar pedido</button>
+          </div>
+          <small>A assinatura continua valendo até {{ data(a.fim_ciclo) }}; as parcelas deste ciclo seguem normalmente.</small>
+        </div>
+      }
+    }
+    @if (enviado) { <p class="ok">Pedido enviado.</p> }
+  </section>
+}

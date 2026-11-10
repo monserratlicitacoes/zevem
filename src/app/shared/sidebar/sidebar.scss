@@ -1,0 +1,311 @@
+// Menu lateral no padrão do Monserrat, com a identidade Zevem:
+// verde profundo, folhagem da foto da marca esmaecida na base, rótulos e régua em lima.
+$profundo: #05261a;
+$profundo-2: #0a3023;
+$lima: #b8f15a;
+$off-white: #f7f8f5;
+
+:host { display: contents; }
+
+.sidebar {
+  position: relative;
+  width: 256px;
+  height: 100vh;
+  background: $profundo;
+  color: $off-white;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width 0.18s ease;
+  isolation: isolate;
+
+  // Folhagem da foto do login (lado esquerdo da imagem), esmaecida na base da barra
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(180deg, $profundo 0%, rgba(5, 38, 26, 0.94) 45%, rgba(5, 38, 26, 0.72) 100%),
+      url('/login-zevem.jpg') 0% 0% / 420% auto no-repeat; // só a planta e a estante, sem a pessoa
+    pointer-events: none;
+  }
+
+  &.colapsada { width: 76px; }
+}
+
+// ── Marca ──
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px;
+  border-bottom: 1px solid rgba(247, 248, 245, 0.08);
+}
+.sidebar.colapsada .sidebar-brand { justify-content: center; padding: 22px 0; }
+
+.brand-logo {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  border: 1px solid rgba(184, 241, 90, 0.45);
+  background: rgba(247, 248, 245, 0.06);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img { width: auto; height: 28px; object-fit: contain; }
+}
+
+.brand-name {
+  font-family: 'Poppins', 'Montserrat', sans-serif;
+  font-size: 38px;
+  font-weight: 600;
+  letter-spacing: -1px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.brand-apple { color: $off-white; }
+.brand-green { color: $lima; }
+
+// Botão de recolher: círculo na borda direita da barra
+.btn-colapsar {
+  position: absolute;
+  top: 32px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: $profundo-2;
+  border: 1px solid rgba(184, 241, 90, 0.5);
+  color: $lima;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+
+  &:hover { background: $lima; color: $profundo; }
+  &:focus-visible { outline: 2px solid $lima; outline-offset: 2px; }
+  svg { transition: transform 0.18s ease; }
+  svg.girado { transform: rotate(180deg); }
+}
+
+// ── Navegação ──
+.sidebar-nav {
+  flex: 1;
+  padding: 20px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  // Barra de rolagem fina e invisível; aparece em lima translúcido só enquanto o menu rola
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  &.rolando { scrollbar-color: rgba($lima, 0.45) transparent; }
+
+  // Safari sem scrollbar-color
+  @supports not (scrollbar-color: auto) {
+    &::-webkit-scrollbar { width: 6px; }
+    &::-webkit-scrollbar-track { background: transparent; }
+    &::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+    &.rolando::-webkit-scrollbar-thumb { background: rgba($lima, 0.45); }
+  }
+}
+.sidebar.colapsada .sidebar-nav { padding: 20px 10px; }
+
+.nav-grupo { display: flex; flex-direction: column; gap: 2px; }
+
+.nav-grupo-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: $lima;
+  padding: 0 12px 10px;
+}
+
+.nav-grupo-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
+  border: none; background: none; font-family: inherit; text-align: left; cursor: pointer;
+  .caret { flex-shrink: 0; opacity: .8; transition: transform .2s ease; &.aberto { transform: rotate(90deg); } }
+  &:hover .caret { opacity: 1; }
+  &:focus-visible { outline: 2px solid $lima; outline-offset: 2px; border-radius: 6px; }
+}
+.sidebar.colapsada .nav-grupo-toggle { justify-content: center; padding: 0 0 10px; }
+
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  color: rgba(247, 248, 245, 0.75);
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+
+  &:hover { background: rgba(247, 248, 245, 0.06); color: $off-white; }
+  &:focus-visible { outline: 2px solid $lima; outline-offset: 1px; }
+
+  // Item da página atual: vidro claro, ícone e régua em lima
+  &.ativo, &.ativa {
+    background: rgba(247, 248, 245, 0.1);
+    border-color: rgba(247, 248, 245, 0.12);
+    color: $off-white;
+    backdrop-filter: blur(8px);
+
+    .nav-icon { color: $lima; }
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: -12px;
+      top: 9px;
+      bottom: 9px;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: $lima;
+    }
+  }
+}
+.sidebar.colapsada .nav-item {
+  justify-content: center;
+  padding: 10px;
+  &.ativo::before, &.ativa::before { left: -10px; }
+}
+
+.nav-icon { position: relative; display: flex; align-items: center; flex-shrink: 0; }
+
+// Selo "Novo": etiqueta no canto do item, para o nome caber numa linha
+.nav-selo {
+  position: absolute;
+  top: -6px;
+  right: 6px;
+  font-size: 8.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  background: $lima;
+  color: $profundo;
+  border-radius: 999px;
+  padding: 1px 6px;
+  line-height: 1.4;
+}
+
+// ── Progresso do passo a passo ──
+// ── "Contrate um planejador": verde-limão com texto verde-escuro, acima do progresso ──
+.btn-planejador {
+  position: relative;
+  margin: 0 16px 12px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  // Verde-limão com texto verde-escuro; ao passar o mouse vira rosa com texto branco.
+  // O botão não se move no hover (mover fazia o cursor sair da borda e o hover piscar).
+  background: var(--cor-fundo, #{$lima}); color: var(--cor-texto, #05261a); border: none; border-radius: 12px; padding: 14px 12px;
+  font-family: inherit; font-size: 13px; font-weight: 900; line-height: 1.2; text-align: center;
+  text-transform: uppercase; letter-spacing: .04em;
+  box-shadow: 0 0 0 1px rgba(var(--cor-brilho, 166, 244, 83), .7), 0 6px 22px rgba(var(--cor-brilho, 166, 244, 83), .32);
+  cursor: pointer;
+  transition: background-color .3s ease, color .3s ease, box-shadow .3s ease;
+
+  // Pulso numa camada própria: o hover só a esconde aos poucos, sem brigar com o brilho do botão
+  &::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    animation: planejador-pulso 2.8s ease-out infinite;
+    transition: opacity .3s ease;
+  }
+  &:hover {
+    background: var(--cor-hover-fundo, #ff2e63); color: var(--cor-hover-texto, #fff);
+    box-shadow: 0 0 0 1px rgba(var(--cor-hover-brilho, 255, 46, 99), .75), 0 8px 26px rgba(var(--cor-hover-brilho, 255, 46, 99), .4);
+    &::after { opacity: 0; }
+  }
+  &:focus-visible { outline: 2px solid #f7f8f5; outline-offset: 3px; }
+}
+@keyframes planejador-pulso {
+  0%   { box-shadow: 0 0 0 0 rgba(var(--cor-brilho, 166, 244, 83), .6); }
+  70%  { box-shadow: 0 0 0 10px rgba(var(--cor-brilho, 166, 244, 83), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--cor-brilho, 166, 244, 83), 0); }
+}
+@media (prefers-reduced-motion: reduce) { .btn-planejador::after { animation: none; } }
+.sidebar.colapsada .btn-planejador { margin: 0 10px 10px; padding: 10px 0; }
+
+.sidebar-progresso {
+  margin: 0 16px 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(247, 248, 245, 0.06);
+  border: 1px solid rgba(247, 248, 245, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sp-topo {
+  display: flex; align-items: baseline; justify-content: space-between;
+  span { font-size: 11px; font-weight: 600; color: rgba(247, 248, 245, 0.75); }
+  strong { font-size: 13px; font-weight: 800; color: $lima; }
+}
+.sp-pct { font-size: 11px; font-weight: 800; color: $lima; text-align: center; }
+.sp-barra {
+  height: 6px; border-radius: 999px; background: rgba(247, 248, 245, 0.12); overflow: hidden;
+  span { display: block; height: 100%; background: $lima; border-radius: inherit; transition: width 0.3s; }
+}
+.sidebar.colapsada .sidebar-progresso { margin: 0 10px 12px; padding: 10px 8px; }
+
+// ── Rodapé: usuário e Sair ──
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(247, 248, 245, 0.1);
+  background: rgba(5, 38, 26, 0.4);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sidebar.colapsada .sidebar-footer { justify-content: center; padding: 16px 10px; }
+
+.user-info { display: flex; flex-direction: column; min-width: 0; }
+.user-nome {
+  font-size: 12px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.user-email {
+  font-size: 10px; font-weight: 600; color: $lima; margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.logout-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid rgba(247, 248, 245, 0.22);
+  color: $off-white;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+
+  &:hover { background: $lima; border-color: $lima; color: $profundo; }
+  &:focus-visible { outline: 2px solid $lima; outline-offset: 2px; }
+}
+.sidebar.colapsada .logout-btn { padding: 8px; }

@@ -1,0 +1,81 @@
+<div class="login-page">
+  <div class="hero">
+    <div class="hero-brand">
+      <img class="brand-maca" src="/zevem-icone.png" alt="" aria-hidden="true" />
+      <div>
+        <div class="brand-nome"><span class="brand-apple">ze</span><span class="brand-green">vem</span></div>
+        <div class="brand-slogan">Inteligência do seu bolso</div>
+      </div>
+    </div>
+
+    <div class="hero-copy">
+      <span class="hero-rule"></span>
+      <h1>Inteligência<br />do seu bolso.</h1>
+      <p>Planejamento financeiro guiado para você ter controle real das contas e viver com mais liberdade.</p>
+      <ul class="hero-pilares">
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.4 3 8.4 7 10 4-1.6 7-5.6 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>
+          Controle real
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16" /><path d="M7 16v-4M12 16V9M17 16V6" /><path d="m6 9 5-4 3 2 5-4" /></svg>
+          Planejamento inteligente
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" /></svg>
+          Mais liberdade
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <aside class="painel">
+    <div class="login-card">
+      @if (!token) {
+        <div class="card-head">
+          <span class="card-kicker">Esqueci minha senha</span>
+          <h2>Criar nova senha</h2>
+          <p>Informe o e-mail da sua conta. Enviaremos um link para você criar uma nova senha.</p>
+        </div>
+
+        <form (ngSubmit)="pedirLink()" class="login-form">
+          @if (enviado) {
+            <p class="sucesso" role="status">{{ enviado }}</p>
+          } @else {
+            <label>
+              <span>E-mail</span>
+              <input type="email" [(ngModel)]="email" name="email" placeholder="seu@email.com" autocomplete="email" required />
+            </label>
+          }
+          @if (erro) { <p class="erro" role="alert">{{ erro }}</p> }
+          @if (!enviado) {
+            <button type="submit" [disabled]="carregando">{{ carregando ? 'Enviando…' : 'Enviar link' }}</button>
+          }
+        </form>
+      } @else {
+        <div class="card-head">
+          <span class="card-kicker">Nova senha</span>
+          <h2>Crie sua nova senha</h2>
+          <p>Para {{ email }}. Ao salvar, os outros aparelhos conectados saem da conta.</p>
+        </div>
+
+        <form (ngSubmit)="salvarSenha()" class="login-form">
+          <label>
+            <span>Nova senha</span>
+            <input type="password" [(ngModel)]="senha" name="senha" placeholder="Mínimo 8 caracteres" minlength="8" maxlength="128" autocomplete="new-password" required />
+          </label>
+          <label>
+            <span>Repita a nova senha</span>
+            <input type="password" [(ngModel)]="senha2" name="senha2" placeholder="••••••••" maxlength="128" autocomplete="new-password" required />
+          </label>
+          @if (erro) { <p class="erro" role="alert">{{ erro }}</p> }
+          <button type="submit" [disabled]="carregando">{{ carregando ? 'Salvando…' : 'Salvar nova senha' }}</button>
+        </form>
+      }
+
+      <p class="cadastro"><a routerLink="/login">Voltar para o login</a></p>
+
+      <div class="card-foot">© {{ ano }} Zevem</div>
+    </div>
+  </aside>
+</div>

@@ -1,0 +1,67 @@
+$profundo: #05261a;
+$floresta: #0b3d2e;
+$lima: #b8f15a;
+$lima-claro: #e6f8d2;
+$borda: #dde5d9;
+$suave: #5c6f66;
+
+.fundo {
+  position: fixed; inset: 0; z-index: 1100; background: rgba(5, 38, 26, .45);
+  display: flex; align-items: flex-start; justify-content: center; padding: 5vh 16px 16px; overflow-y: auto;
+}
+.anuncio {
+  position: relative; width: min(760px, 100%); background: #fff; border-radius: 18px; overflow: hidden;
+  box-shadow: 0 24px 60px rgba(5, 38, 26, .3);
+}
+.fechar {
+  position: absolute; top: 12px; right: 12px; z-index: 2; width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: rgba(255, 255, 255, .9); color: $profundo; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  &:hover { background: #fff; box-shadow: 0 0 0 2px $lima; }
+}
+
+// ── Vitrine: foto + chamada ──
+.vitrine { display: grid; grid-template-columns: 260px minmax(0, 1fr); background: $profundo; color: #f7f8f5; }
+.foto { position: relative; min-height: 300px; background: #10301f;
+  img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; } }
+.foto-vazia { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: $lima; opacity: .5; }
+.chamada { padding: 28px 28px 24px; display: flex; flex-direction: column; gap: 14px; }
+.selo {
+  align-self: flex-start; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  color: $profundo; background: $lima; border-radius: 999px; padding: 3px 10px;
+}
+h2 { font-size: 20px; line-height: 1.3; font-weight: 800; color: #fff; padding-right: 24px; }
+.pontos { list-style: none; display: flex; flex-direction: column; gap: 10px;
+  li { display: flex; flex-direction: column; gap: 2px; padding-left: 14px; border-left: 3px solid $lima; }
+  strong { font-size: 13px; color: $lima; }
+  span { font-size: 12px; color: rgba(247, 248, 245, .82); line-height: 1.45; } }
+
+.destaque {
+  background: var(--cor-fundo, #{$lima}); color: var(--cor-texto, #{$profundo}); text-align: center; font-size: 16px; font-weight: 800; padding: 14px 20px; letter-spacing: .01em;
+}
+
+// ── Formulário ──
+.formulario { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; padding: 20px 28px 24px; }
+.campo { display: flex; flex-direction: column; gap: 5px;
+  span { font-size: 12px; font-weight: 600; color: $suave; }
+  input, select {
+    border: 1px solid $borda; border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 13px; color: $profundo; background: #fff;
+    &:focus { outline: none; border-color: $floresta; box-shadow: 0 0 0 3px rgba(184, 241, 90, .25); }
+    &.invalido { border-color: #ff2e63; }
+  } }
+.campo-largo { grid-column: 1 / -1; }
+.erro { grid-column: 1 / -1; font-size: 12px; color: #d61e4c; }
+.agendar {
+  grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--cor-fundo, #{$lima}); color: var(--cor-texto, #{$profundo}); border: none; border-radius: 12px; padding: 15px 20px;
+  font-family: inherit; font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; cursor: pointer;
+  transition: filter .15s, box-shadow .15s;
+  &:hover { filter: brightness(1.08); box-shadow: 0 6px 18px rgba(var(--cor-brilho, 166, 244, 83), .45); }
+}
+.nota { grid-column: 1 / -1; text-align: center; font-size: 11px; color: $suave; margin-top: -4px; }
+
+@media (max-width: 640px) {
+  .vitrine { grid-template-columns: 1fr; }
+  .foto { min-height: 220px; }
+  .formulario { grid-template-columns: 1fr; padding: 18px; }
+  h2 { font-size: 18px; }
+}

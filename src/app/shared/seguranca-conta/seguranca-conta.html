@@ -1,0 +1,41 @@
+<section class="quadro">
+  <header><h2>Segurança da conta</h2></header>
+  @if (!trocando) {
+    <p class="linha">Troque sua senha ou desconecte a conta de todos os aparelhos (celular, outro computador) de uma vez.</p>
+    @if (ok) { <p class="ok" role="status">{{ ok }}</p> }
+    <div class="acoes" style="justify-content: flex-start; margin-top: 10px;">
+      <button type="button" class="pri" (click)="abrir()">Trocar senha</button>
+      <button type="button" class="sec" (click)="sairDeTodos()">Sair de todos os aparelhos</button>
+      <button type="button" class="sec" (click)="baixarDados()">Baixar meus dados</button>
+      <button type="button" class="link-cancelar" (click)="excluindo = !excluindo">Excluir minha conta</button>
+    </div>
+    @if (erro) { <p class="erro" role="alert">{{ erro }}</p> }
+    @if (excluindo) {
+      <form class="pedido" (ngSubmit)="excluirConta()">
+        <p class="aviso-pedido">Todos os seus dados (pessoas, gastos, dívidas, sonhos, lançamentos e alertas) serão apagados.
+          Ficam guardados só os registros de cobrança da assinatura, sem seu nome nem e-mail, por obrigação fiscal.</p>
+        <label><span>Confirme com sua senha</span>
+          <input type="password" [(ngModel)]="senhaExcluir" name="senhaExcluir" maxlength="128" autocomplete="current-password" required /></label>
+        @if (erroExcluir) { <p class="erro" role="alert">{{ erroExcluir }}</p> }
+        <div class="acoes">
+          <button type="button" class="sec" (click)="excluindo = false; senhaExcluir = ''">Cancelar</button>
+          <button type="submit" class="pri" style="background:#d63a3a">Excluir conta definitivamente</button>
+        </div>
+      </form>
+    }
+  } @else {
+    <form class="pedido" (ngSubmit)="salvar()">
+      <label><span>Senha atual</span>
+        <input type="password" [(ngModel)]="atual" name="atual" maxlength="128" autocomplete="current-password" required /></label>
+      <label><span>Nova senha</span>
+        <input type="password" [(ngModel)]="nova" name="nova" minlength="8" maxlength="128" placeholder="Mínimo 8 caracteres" autocomplete="new-password" required /></label>
+      <label><span>Repita a nova senha</span>
+        <input type="password" [(ngModel)]="nova2" name="nova2" maxlength="128" autocomplete="new-password" required /></label>
+      @if (erro) { <p class="erro" role="alert">{{ erro }}</p> }
+      <div class="acoes">
+        <button type="button" class="sec" (click)="fechar()">Cancelar</button>
+        <button type="submit" class="pri" [disabled]="salvando">{{ salvando ? 'Salvando…' : 'Salvar nova senha' }}</button>
+      </div>
+    </form>
+  }
+</section>

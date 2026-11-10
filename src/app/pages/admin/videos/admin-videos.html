@@ -1,0 +1,80 @@
+<div class="page">
+  <header class="page-header">
+    <div class="ph-texto">
+      <h1>Vídeos</h1>
+      <p>Todos os vídeos do painel da direita, página por página. Troque o título e o link do YouTube de cada um.</p>
+    </div>
+  </header>
+
+  @if (carregando) {
+    <p class="aviso">Carregando...</p>
+  } @else {
+    <section class="kpis">
+      <div class="kpi destaque"><span>Vídeos na plataforma</span><strong>{{ total }}</strong></div>
+      <div class="kpi" [class.alerta]="semVideo"><span>Sem link</span><strong>{{ semVideo }}</strong><small>aparecem como "Vídeo em breve"</small></div>
+    </section>
+
+    <section class="cartao">
+      <h2>Painel de vídeos</h2>
+      <p class="ajuda">O título que aparece no topo do painel, acima do vídeo.</p>
+      <label class="campo titulo-painel">
+        <span>Título do painel</span>
+        <input name="titulo-painel" [(ngModel)]="tituloPainel" maxlength="60" [placeholder]="tituloPadrao" />
+        <small>Vazio = "{{ tituloPadrao }}".</small>
+      </label>
+    </section>
+
+    <div class="filtros">
+      <input type="search" [(ngModel)]="busca" name="busca" placeholder="Buscar página ou vídeo" aria-label="Buscar página ou vídeo" />
+    </div>
+
+    @for (p of visiveis; track p.rota) {
+      <section class="cartao pagina">
+        <div class="pagina-topo">
+          <h2>{{ p.nome }}</h2>
+          @if (p.situacao === 'desativada') { <span class="selo">página desativada · não aparece aos clientes</span> }
+          @if (p.situacao === 'só master') { <span class="selo atencao">só o master vê esta página</span> }
+        </div>
+
+        <div class="videos">
+          @for (v of p.videos; track v.chave) {
+            <div class="video" [class.sub]="v.nivel === 2">
+              <a class="miniatura" [attr.href]="linkOk(v.link) && v.link ? v.link : null" target="_blank" rel="noopener"
+                 [title]="v.link ? 'Abrir no YouTube' : 'Sem vídeo'">
+                @if (miniatura(v.link); as m) { <img [src]="m" alt="" loading="lazy" /> } @else { <span>em breve</span> }
+              </a>
+              <label class="campo">
+                <span>{{ v.nivel === 1 ? 'Vídeo principal' : 'Subvídeo' }}</span>
+                <input [name]="'t-' + v.chave" [(ngModel)]="v.titulo" maxlength="100" />
+              </label>
+              <label class="campo">
+                <span>Link do YouTube</span>
+                <input [name]="'l-' + v.chave" [(ngModel)]="v.link" placeholder="Vazio = Vídeo em breve" [class.invalido]="!linkOk(v.link)" />
+                @if (!linkOk(v.link)) { <small class="vermelho">Link não reconhecido como YouTube.</small> }
+              </label>
+              <div class="acoes">
+                @if (alterado(v)) { <button type="button" class="botao mini" (click)="restaurar(v)" title="Voltar ao título e link originais">Desfazer</button> }
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (p.chamada; as c) {
+          <div class="chamada">
+            <span class="chamada-rotulo">Botão no pé do painel</span>
+            <label class="campo"><span>Texto</span><input [name]="'ct-' + p.rota" [(ngModel)]="c.texto" maxlength="40" /></label>
+            <label class="campo"><span>Link (abre em nova aba)</span><input [name]="'cl-' + p.rota" [(ngModel)]="c.link" placeholder="https://... (vazio = botão inativo)" /></label>
+          </div>
+        }
+      </section>
+    } @empty {
+      <p class="aviso">Nenhum vídeo encontrado.</p>
+    }
+
+    <div class="barra-salvar">
+      @if (erro) { <span class="erro">{{ erro }}</span> }
+      @if (msg) { <span class="ok-msg">{{ msg }}</span> }
+      <button type="button" class="botao primario" (click)="salvar()" [disabled]="salvando">{{ salvando ? 'Salvando...' : 'Salvar alterações' }}</button>
+    </div>
+  }
+</div>

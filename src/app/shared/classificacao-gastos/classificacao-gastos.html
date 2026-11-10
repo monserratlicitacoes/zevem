@@ -1,0 +1,69 @@
+<div class="modal-overlay" (click)="fechar.emit()">
+  <section class="modal-fluxo" role="dialog" aria-modal="true" aria-labelledby="titulo-fluxo" (click)="$event.stopPropagation()">
+    <header class="fluxo-header">
+      <div>
+        <h2 id="titulo-fluxo">{{ conteudo().titulo }}</h2>
+        <p>Responda duas perguntas para cada {{ tipo() === 'gastos' ? 'gasto' : 'recebimento' }}.</p>
+      </div>
+      <button type="button" class="modal-fechar" (click)="fechar.emit()" aria-label="Fechar">
+        <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+
+    <div class="fluxo">
+      <!-- Pergunta 1 -->
+      <div class="nivel-1">
+        <div class="pergunta">
+          <span class="pergunta-num">1</span>
+          <span>{{ conteudo().pergunta1 }} <strong>TODO mês</strong>?</span>
+        </div>
+      </div>
+
+      <svg class="conector" viewBox="0 0 400 36" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M200 0 V14 H100 V36 M200 14 H300 V36" />
+      </svg>
+
+      <!-- Cada ramo leva a sua pergunta 2 e as suas duas classes (no celular, empilha nessa ordem) -->
+      <div class="ramos">
+        @for (ramo of ramos(); track ramo.tipo) {
+          <div class="ramo">
+            <span class="resposta" [class.nao]="ramo.resp === 'Não'">{{ ramo.resp }}</span>
+            <div class="tipo">
+              <strong>{{ ramo.tipo }}</strong>
+              <span>{{ ramo.desc }}</span>
+            </div>
+            <div class="seta-curta" aria-hidden="true"></div>
+            <div class="pergunta pergunta-2">
+              <span class="pergunta-num">2</span>
+              <span>Tem <strong>data FIXA</strong> {{ conteudo().pergunta2 }}?</span>
+            </div>
+
+            <svg class="conector" viewBox="0 0 200 36" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M100 0 V14 H50 V36 M100 14 H150 V36" />
+            </svg>
+
+            <div class="resultados">
+              @for (c of ramo.classes; track c.nome; let k = $index) {
+                <div class="resultado">
+                  <span class="resposta" [class.nao]="k === 1">{{ k === 0 ? 'Sim' : 'Não' }}</span>
+                  <article class="classe" [style.--cor]="c.cor">
+                    <h3>{{ c.nome }}</h3>
+                    <p class="classe-resumo">{{ c.resumo }}</p>
+                    <ul>
+                      @for (e of c.exemplos; track e) { <li>{{ e }}</li> }
+                    </ul>
+                  </article>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <footer class="fluxo-dica">
+      <svg viewBox="0 0 20 20" fill="none" width="15" height="15" aria-hidden="true"><path d="M10 2.5a5.5 5.5 0 0 0-3.2 10v1.8h6.4v-1.8A5.5 5.5 0 0 0 10 2.5zM7.8 17.2h4.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <p><strong>{{ conteudo().dica.titulo }}</strong> {{ conteudo().dica.comprometido }} <strong>Comprometido</strong>. {{ conteudo().dica.flexivel }} <strong>Flexível</strong>.</p>
+    </footer>
+  </section>
+</div>

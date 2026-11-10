@@ -1,0 +1,254 @@
+<div class="page" [class.noturno]="noturno">
+  <header class="page-header">
+    <div class="ph-icone">
+      <svg viewBox="0 0 20 20" fill="none" width="20" height="20"><rect x="2.5" y="2.5" width="6.5" height="8" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="11" y="2.5" width="6.5" height="5" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="2.5" y="12.5" width="6.5" height="5" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="11" y="9.5" width="6.5" height="8" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg>
+    </div>
+    <div class="ph-texto">
+      <h1 class="titulo-video">Dashboard<app-video-badge /></h1>
+      <p>Visão geral do orçamento e da liquidez.</p>
+    </div>
+    <button type="button" class="btn-tema" (click)="alternarTema()" [attr.aria-pressed]="noturno"
+      [title]="noturno ? 'Voltar à versão clara' : 'Ver versão noturna'">
+      @if (noturno) {
+        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="3.6" stroke="currentColor" stroke-width="1.7"/><path d="M10 1.8v2.1M10 16.1v2.1M1.8 10h2.1M16.1 10h2.1M4.2 4.2l1.5 1.5M14.3 14.3l1.5 1.5M4.2 15.8l1.5-1.5M14.3 5.7l1.5-1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>Versão clara</span>
+      } @else {
+        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" aria-hidden="true"><path d="M16.5 12.3A7 7 0 0 1 7.7 3.5a7 7 0 1 0 8.8 8.8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        <span>Versão noturna</span>
+      }
+    </button>
+  </header>
+
+  <div class="painel-geral">
+
+    <!-- Orçamento mensal (coluna da esquerda, ocupa as duas primeiras linhas) -->
+    <section class="cartao cartao-orcamento" aria-label="Orçamento mensal">
+      <span class="titulo-vertical">Orçamento mensal</span>
+      <!-- A área define o tamanho; o desenho só preenche (não realimenta a altura do cartão) -->
+      <div class="orc-area">
+      <svg [attr.viewBox]="'0 0 ' + larguraOrc() + ' ' + alturaOrc()" class="grafico grafico-orc" role="img" aria-label="Orçamento mensal empilhado">
+        @for (m of orcMarcas; track m) {
+          <line [attr.x1]="orc.x0" [attr.x2]="orc.x1" [attr.y1]="orcY(m)" [attr.y2]="orcY(m)" class="grade" />
+          <text [attr.x]="orc.x0 - 8" [attr.y]="orcY(m) + 4" class="eixo" text-anchor="end">R$ {{ moeda(m) }}</text>
+        }
+        @for (s of orcSegmentos; track s.rotulo) {
+          @if (s.h > 0) {
+            <rect [attr.x]="orcCentro - orc.barra / 2" [attr.y]="s.y" [attr.width]="orc.barra" [attr.height]="s.h" [attr.fill]="tomCamada(s.cor)">
+              <title>{{ s.rotulo }}: R$ {{ moeda(s.valor) }}</title>
+            </rect>
+          }
+        }
+        <!-- Receita total (tracejado) e receita mensal (contínuo) -->
+        <rect class="contorno-total" [attr.x]="orcCentro - orc.contorno / 2" [attr.y]="orcY(dados.orcamento.receitaTotal)"
+          [attr.width]="orc.contorno" [attr.height]="orc.y1 - orcY(dados.orcamento.receitaTotal)">
+          <title>Receita total: R$ {{ moeda(dados.orcamento.receitaTotal) }}</title>
+        </rect>
+        <rect class="contorno-mensal" [attr.x]="orcCentro - orc.contorno / 2 + 6" [attr.y]="orcY(dados.orcamento.receitaMensal)"
+          [attr.width]="orc.contorno - 12" [attr.height]="orc.y1 - orcY(dados.orcamento.receitaMensal)">
+          <title>Receita mensal: R$ {{ moeda(dados.orcamento.receitaMensal) }}</title>
+        </rect>
+      </svg>
+      </div>
+    </section>
+
+    <!-- Base de plena liquidez -->
+    <section class="cartao area-bpl" aria-label="Base de plena liquidez">
+      <span class="titulo-vertical">Base de plena liquidez</span>
+      <!-- Ao passar o mouse: de quem é cada parte da barra -->
+      <div class="cartao-corpo com-dica dica-grafico" tabindex="0" aria-describedby="dica-bpl">
+        <span class="leg-dica" role="tooltip" id="dica-bpl">
+          <span class="dica-titulo">Base de plena liquidez</span>
+          @for (p of dados.bpl; track p.nome) {
+            <span class="dica-linha"><i [style.background]="tomDestaque(p.cor)"></i>{{ p.nome }}<strong>R$ {{ moeda(p.valor) }}</strong></span>
+            @if (p.faltando.length) {
+              <span class="dica-nota">Preencha no cadastro de pessoas: {{ p.faltando.join(' e ') }}.</span>
+            }
+          }
+          @if (bplSemPessoas) {
+            <span class="dica-nota">Cadastre as pessoas da família em Configurações para calcular a base.</span>
+          } @else {
+            <span class="dica-linha dica-total">Total<strong>R$ {{ moeda(bplTotal) }}</strong></span>
+          }
+        </span>
+        <svg [attr.viewBox]="'0 0 ' + larguraCol() + ' ' + alturaCol()" class="grafico grafico-px" role="img" aria-label="Base de plena liquidez por pessoa">
+          @if (bplSemPessoas) {
+            <text [attr.x]="larguraCol() / 2" [attr.y]="alturaCol() / 2 - 4" class="aviso-grafico" text-anchor="middle">Cadastre as pessoas</text>
+            <text [attr.x]="larguraCol() / 2" [attr.y]="alturaCol() / 2 + 12" class="aviso-grafico aviso-sub" text-anchor="middle">em Configurações</text>
+          }
+          @for (m of bplSemPessoas ? [] : bplMarcas; track m) {
+            <line [attr.x1]="col.x0" [attr.x2]="col.x1" [attr.y1]="colY(m, bplMarcas)" [attr.y2]="colY(m, bplMarcas)" class="grade" />
+            <text [attr.x]="col.x0 - 6" [attr.y]="colY(m, bplMarcas) + 4" class="eixo" text-anchor="end">{{ escalaCurta(m) }}</text>
+          }
+          @for (s of bplSegmentos; track s.nome) {
+            @if (s.h > 0) {
+              <rect [attr.x]="colCentro - col.barra / 2" [attr.y]="s.y" [attr.width]="col.barra" [attr.height]="s.h" [attr.fill]="tomDestaque(s.cor)" />
+              @if (s.rotulo) {
+                <text [attr.x]="colCentro" [attr.y]="s.rotuloY" class="rotulo-barra" [class.rotulo-fora]="s.rotulo === 'fora'"
+                  [style.fill]="s.rotulo === 'dentro' ? corRotulo(tomDestaque(s.cor)) : null" text-anchor="middle">R$ {{ moeda(s.valor) }}</text>
+              }
+            }
+          }
+        </svg>
+      </div>
+    </section>
+
+    <!-- Limite da fatura do cartão -->
+    <section class="cartao area-cartao" aria-label="Limite da fatura do cartão">
+      <span class="titulo-vertical">Limite da fatura do cartão</span>
+      <div class="cartao-corpo com-dica dica-grafico" tabindex="0" aria-describedby="dica-cartao">
+        <span class="leg-dica" role="tooltip" id="dica-cartao">
+          <span class="dica-titulo">Limite da fatura do cartão</span>
+          <span class="dica-linha"><i [style.background]="tomDestaque(cores.floresta)"></i><span class="dica-destaque">Fatura</span><strong>R$ {{ moeda(dados.limiteCartao) }}</strong></span>
+        </span>
+        <svg [attr.viewBox]="'0 0 ' + larguraCol() + ' ' + alturaCol()" class="grafico grafico-px" role="img" aria-label="Limite da fatura do cartão">
+          @for (m of cartaoMarcas; track m) {
+            <line [attr.x1]="col.x0" [attr.x2]="col.x1" [attr.y1]="colY(m, cartaoMarcas)" [attr.y2]="colY(m, cartaoMarcas)" class="grade" />
+            <text [attr.x]="col.x0 - 6" [attr.y]="colY(m, cartaoMarcas) + 4" class="eixo" text-anchor="end">{{ escalaCurta(m) }}</text>
+          }
+          <rect [attr.x]="colCentro - col.barra / 2" [attr.y]="colY(dados.limiteCartao, cartaoMarcas)" [attr.width]="col.barra"
+            [attr.height]="col.y1 - colY(dados.limiteCartao, cartaoMarcas)" [attr.fill]="tomDestaque(cores.floresta)" />
+          <text [attr.x]="colCentro" [attr.y]="colY(dados.limiteCartao, cartaoMarcas) + 16" class="rotulo-barra" [style.fill]="corRotulo(tomDestaque(cores.floresta))" text-anchor="middle">R$ {{ moeda(dados.limiteCartao) }}</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- Legenda do orçamento: na ordem da pilha (de cima para baixo), com a fatia de cada parte na receita mensal -->
+    <section class="cartao legenda-orcamento" aria-label="Composição do orçamento">
+      <div class="leg-receitas">
+        <div class="leg-receita com-dica" tabindex="0" aria-describedby="dica-receita-total">
+          <i class="linha-tracejada" aria-hidden="true"></i>
+          <span>Receita total</span>
+          <strong>R$ {{ moeda(dados.orcamento.receitaTotal) }}</strong>
+          <span class="leg-dica" role="tooltip" [id]="'dica-receita-total'">@for (t of trechos(explicacaoReceitaTotal); track $index) {@if (t.negrito) {<strong>{{ t.texto }}</strong>} @else {{{ t.texto }}}}@if (mensalizado(explicacaoReceitaTotal)) {<span class="leg-dica-asterisco">*</span><small>{{ notaMensalizado }}</small>}</span>
+        </div>
+        <div class="leg-receita com-dica" tabindex="0" aria-describedby="dica-receita-mensal">
+          <i class="linha-continua" aria-hidden="true"></i>
+          <span>Receita mensal</span>
+          <strong>R$ {{ moeda(dados.orcamento.receitaMensal) }}</strong>
+          <span class="leg-dica" role="tooltip" [id]="'dica-receita-mensal'">@for (t of trechos(explicacaoReceitaMensal); track $index) {@if (t.negrito) {<strong>{{ t.texto }}</strong>} @else {{{ t.texto }}}}@if (mensalizado(explicacaoReceitaMensal)) {<span class="leg-dica-asterisco">*</span><small>{{ notaMensalizado }}</small>}</span>
+        </div>
+      </div>
+      <ul class="leg-camadas">
+        @for (c of legendaCamadas; track c.rotulo) {
+          <li class="com-dica" tabindex="0" [attr.aria-describedby]="'dica-' + $index">
+            <span class="leg-topo">
+              <i class="leg-cor" [style.background]="tomCamada(c.cor)" aria-hidden="true"></i>
+              <span class="leg-nome">{{ c.rotulo }}</span>
+              <strong>R$ {{ moeda(c.valor) }}</strong>
+            </span>
+            <span class="leg-trilho" aria-hidden="true"><span [style.width.%]="pctReceita(c.valor) > 100 ? 100 : pctReceita(c.valor)" [style.background]="tomCamada(c.cor)"></span></span>
+            <small class="leg-pct">{{ pctReceita(c.valor) }}%</small>
+            <span class="leg-dica" role="tooltip" [id]="'dica-' + $index">@for (t of trechos(c.explicacao); track $index) {@if (t.negrito) {<strong>{{ t.texto }}</strong>} @else {{{ t.texto }}}}@if (mensalizado(c.explicacao)) {<span class="leg-dica-asterisco">*</span><small>{{ notaMensalizado }}</small>}</span>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <!-- Velocímetros -->
+    @for (g of dados.velocimetros; track g.titulo; let i = $index) {
+      @let diag = diagnostico(g);
+      <section class="cartao cartao-velocimetro" [class.virado]="virados.has(g.id)" [style.grid-area]="'vel' + (i + 1)" [attr.aria-label]="g.titulo">
+        <div class="flip-interno">
+          <!-- Frente: o velocímetro -->
+          <div class="face frente" [attr.aria-hidden]="virados.has(g.id)">
+            <span class="titulo-vertical">{{ g.titulo }}</span>
+            @if (diag && !semDados(g)) {
+              <button type="button" class="btn-virar" (click)="alternarVirado(g.id)" title="Ver diagnóstico" [attr.aria-label]="'Ver diagnóstico: ' + g.titulo">
+                <svg viewBox="0 0 20 20" fill="none" width="14" height="14" aria-hidden="true"><path d="M4 8a6 6 0 0 1 10.6-3.4L16 6M16 2.5V6h-3.5M16 12a6 6 0 0 1-10.6 3.4L4 14m0 3.5V14h3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            }
+            @let faixa = faixaAtual(g);
+            <svg viewBox="14 10 192 150" class="grafico velocimetro" role="img" [attr.aria-label]="g.titulo + ': ' + g.valor + (g.id === 'comprometimento' ? '%' : g.sufixo) + ', ' + faixa.rotulo">
+              @if (motivo(g)) { <title>Nível {{ g.valor }} de 9: {{ motivo(g) }}</title> }
+              <!-- anel externo fino com as faixas da escala -->
+              @for (f of g.faixas; track f.de) {
+                <path [attr.d]="arco(g, f.de, f.ate, vel.anel)" [attr.stroke]="tomDestaque(f.cor)" class="faixa-anel" />
+              }
+              <!-- trilho e trecho preenchido até o valor, na cor da faixa atual -->
+              <path [attr.d]="arco(g, g.min, g.max)" class="trilho" />
+              @if (!semDados(g)) {
+                <path [attr.d]="arcoValor(g)" [attr.stroke]="tomDestaque(faixa.cor)" class="progresso" />
+                <circle [attr.cx]="marcador(g).x" [attr.cy]="marcador(g).y" r="7" [attr.stroke]="tomDestaque(faixa.cor)" class="marcador" />
+              }
+              <text [attr.x]="vel.cx" [attr.y]="vel.cy + 6" class="valor-velocimetro" text-anchor="middle">{{ semDados(g) ? '—' : g.valor + (g.id === 'comprometimento' ? '%' : g.sufixo) }}</text>
+              @if (!semDados(g)) {
+                <text [attr.x]="vel.cx" [attr.y]="vel.cy + 24" class="rotulo-faixa" [style.fill]="corRotuloFaixa(faixa.cor)" text-anchor="middle">{{ faixa.rotulo }}</text>
+              }
+            </svg>
+          </div>
+
+          <!-- Verso: diagnóstico -->
+          @if (diag) {
+            <div class="face verso" [class]="'face verso verso--' + diag.nivel" [attr.aria-hidden]="!virados.has(g.id)">
+              <div class="verso-topo">
+                <span class="verso-nivel" [attr.aria-label]="'Diagnóstico: nível ' + diag.rotuloNivel">{{ diag.rotuloNivel }}</span>
+                <button type="button" class="btn-virar btn-virar--verso" (click)="alternarVirado(g.id)" title="Voltar ao gráfico" aria-label="Voltar ao gráfico">
+                  <svg viewBox="0 0 20 20" fill="none" width="14" height="14" aria-hidden="true"><path d="M4 8a6 6 0 0 1 10.6-3.4L16 6M16 2.5V6h-3.5M16 12a6 6 0 0 1-10.6 3.4L4 14m0 3.5V14h3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+              <div class="verso-texto verso-previa">
+                @if (diag.chamada) { <p class="verso-chamada">{{ diag.chamada }}</p> }
+                @for (p of diag.abertura; track $index) {
+                  <p>@for (t of trechosValor(p, g); track $index) {@if (t.valor) {<strong>{{ t.texto }}</strong>} @else {{{ t.texto }}}}</p>
+                }
+              </div>
+              <button type="button" class="btn-ver-mais" (click)="abrirDiagnostico(g)" [attr.tabindex]="virados.has(g.id) ? 0 : -1">
+                Ver mais
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+  </div>
+
+  <!-- Diagnóstico completo (fora dos cartões: o flip 3D quebraria o position: fixed) -->
+  @if (diagnosticoAberto; as g) {
+    @let diag = diagnostico(g)!;
+    <div class="modal-overlay" (click)="fecharDiagnostico()">
+      <div class="modal-diag" [class]="'modal-diag verso--' + diag.nivel" role="dialog" aria-modal="true" [attr.aria-label]="g.titulo" (click)="$event.stopPropagation()">
+        <div class="modal-diag-topo">
+          <div>
+            <span class="modal-diag-sub">Diagnóstico</span>
+            <h2>{{ g.titulo }}</h2>
+          </div>
+          <span class="verso-nivel">{{ diag.rotuloNivel }}</span>
+          <button type="button" class="modal-fechar" (click)="fecharDiagnostico()" aria-label="Fechar" autofocus>
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="verso-texto modal-diag-texto">
+          @if (diag.chamada) { <p class="verso-chamada">{{ diag.chamada }}</p> }
+          @for (p of diag.abertura; track $index) {
+            <p>@for (t of trechosValor(p, g); track $index) {@if (t.valor) {<strong>{{ t.texto }}</strong>} @else {{{ t.texto }}}}</p>
+          }
+          <p class="verso-intro">{{ diag.introItens }}</p>
+          <ul>
+            @for (item of diag.itens; track item) { <li>{{ item }}</li> }
+          </ul>
+          @for (p of diag.fechamento; track $index) { <p>{{ p }}</p> }
+          @if (diag.frase) { <p class="verso-frase">{{ diag.frase }}</p> }
+          @if (diag.objetivo) {
+            <div class="verso-objetivo"><span class="verso-calculo-titulo">Objetivo</span>{{ diag.objetivo }}</div>
+          }
+
+          <!-- Como o GC foi calculado -->
+          @if (gc && g.id === 'comprometimento') {
+            <div class="verso-calculo">
+              <span class="verso-calculo-titulo">Como calculamos</span>
+              <span class="vc-linha">Gastos mensais comprometidos<strong>R$ {{ moeda(gc.gastos_comprometidos) }}</strong></span>
+              <span class="vc-linha">Parcelas de passivos financeiros<strong>R$ {{ moeda(gc.passivos_financeiros) }}</strong></span>
+              <span class="vc-linha">Parcelas de passivos imobilizados<strong>R$ {{ moeda(gc.passivos_imobilizados) }}</strong></span>
+              <span class="vc-linha">Parcelados no cartão em {{ mesCurto(gc.mes_parcelados) }}<strong>R$ {{ moeda(gc.parcelados_mes_seguinte) }}</strong></span>
+              <span class="vc-linha vc-total">Comprometido<strong>R$ {{ moeda(gc.comprometido) }}</strong></span>
+              <span class="vc-linha">÷ Renda mensal<strong>R$ {{ moeda(gc.renda) }}</strong></span>
+              <span class="vc-linha vc-total">= Grau de comprometimento<strong>{{ pct(gc.percentual) }}</strong></span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

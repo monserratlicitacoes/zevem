@@ -1,0 +1,853 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.page {
+  padding: 32px 36px 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.ph-icone {
+  width: 46px;
+  height: 46px;
+  background: #e6f8d2;
+  color: #0b3d2e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ph-texto {
+  h1 { font-size: 22px; font-weight: 700; color: #05261a; }
+  p  { font-size: 13px; color: #5c6f66; margin-top: 2px; }
+}
+
+// ── Abas ─────────────────────────────────────────────────────
+.abas-wrap {
+  overflow-x: auto;
+}
+
+.abas {
+  display: flex;
+  border-bottom: 2px solid #dde5d9;
+  min-width: max-content;
+}
+
+.aba {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 22px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5c6f66;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  border-radius: 8px 8px 0 0;
+  &:hover { color: #05261a; background: rgba(184, 241, 90, 0.08); }
+  // Aba selecionada: verde profundo e texto claro, sem sublinhado
+  &.ativa { color: #f7f8f5; border-bottom-color: transparent; background: #05261a; }
+
+  // Sem o contorno azul do navegador; anel lima só na navegação por teclado
+  &:focus { outline: none; }
+  &:focus-visible { box-shadow: 0 0 0 2px #b8f15a; }
+}
+
+
+.aba .aba-total,
+.aba.ativa .aba-total {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0b3d2e !important;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 1px;
+}
+
+// Aba selecionada (fundo verde profundo): total em lima
+.aba.ativa .aba-total { color: #b8f15a !important; }
+
+// ── Card ─────────────────────────────────────────────────────
+.rec-card {
+  background: #fff;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.rec-toolbar {
+  padding: 12px 16px;
+  border-bottom: 1px solid #edf1e9;
+}
+
+.btn-adicionar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #0b3d2e;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  font-family: inherit;
+  &:hover { text-decoration: underline; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.rec-loading {
+  padding: 40px;
+  text-align: center;
+  color: #8a9d92;
+  font-size: 14px;
+}
+
+// ── Tabela ───────────────────────────────────────────────────
+.tabela-wrap {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+  min-height: 460px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabela {
+  // Cabe na largura da página: as colunas crescem juntas (em %), sem o nome tomar a sobra
+  // e os títulos compridos quebram em duas linhas (rolagem lateral só em telas bem estreitas)
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  col.col-num    { width: 24px; }
+  col.col-nome   { width: 14.2%; } // cabe "Apartamento"
+  col.col-quit   { width: 38px; }
+  col.col-modal  { width: 11%; } // cabe "PRICE" com a seta afastada
+  col.col-pmt    { width: 10.9%; } // PMT em negrito (coluna de destaque) precisa de mais espaço
+  col.col-ptotal { width: 6%; }
+  col.col-prest  { width: 9.2%; } // cabe o título "Restantes"
+  col.col-qvista { width: 12.2%; } // cabe R$ 999.999 em negrito ou não
+  col.col-taxa   { width: 10.9%; } // cabe "2,50% a.m."
+  col.col-corr   { width: 12.8%; } // cabe "NÃO HÁ" com a seta afastada
+  // Tabela densa: seta das caixas a 12px da borda (no resto do app são 16px)
+  .sel { padding-right: 12px; }
+  col.col-acao   { width: 26px; }
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f7f8f5;
+    color: #5c6f66;
+    border-bottom: 1px solid #dde5d9;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.2px;
+    line-height: 1.25;
+    padding: 9px 3px;
+    white-space: normal;
+    vertical-align: middle;
+  }
+
+  .th-left   { text-align: left; padding-left: 6px; }
+  .th-center { text-align: center; }
+  .th-right  { text-align: right; padding-right: 12px; }
+
+  td {
+    padding: 3px 6px;
+    border-bottom: 1px solid #edf1e9;
+    vertical-align: middle;
+    overflow: hidden;
+  }
+
+  tr.tr-data:hover td { background: #f7f8f5; }
+  tr.tr-vazia td { height: 38px; }
+}
+
+.td-num {
+  text-align: right;
+  color: #8a9d92;
+  font-size: 12px;
+  font-weight: 600;
+  padding-right: 4px !important;
+  padding-left: 6px !important;
+}
+
+.td-desc { padding-left: 2px !important; }
+
+.input-desc {
+  width: 100%;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #05261a;
+  outline: none;
+  font-family: inherit;
+  padding: 0 4px;
+  &:focus { background: #f7f8f5; border-radius: 6px; }
+  &::placeholder { color: #c3cfbf; }
+}
+
+.td-center { text-align: center; }
+
+.check-quit {
+  width: 16px;
+  height: 16px;
+  accent-color: #b8f15a;
+  cursor: pointer;
+}
+
+.sel {
+  height: 30px;
+  border: 1.5px solid #dde5d9;
+  border-radius: 20px;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #05261a;
+  background: #f7f8f5;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  &:focus { border-color: #b8f15a; }
+}
+
+.sel-modal, .sel-corr { width: 100%; max-width: 112px; padding: 0 2px 0 6px; }
+
+.td-valor { padding-right: 8px !important; }
+
+.valor-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.rs {
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+  flex-shrink: 0;
+}
+
+.input-num {
+  width: 70px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+  outline: none;
+  font-family: inherit;
+  text-align: right;
+  padding: 0;
+  flex: 1 1 0;
+  min-width: 0;
+  &:focus { background: #f7f8f5; border-radius: 6px; padding: 0 3px; }
+  &::placeholder { color: #c3cfbf; font-weight: 400; }
+}
+
+.input-inteiro {
+  width: 100%;
+  max-width: 60px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+  outline: none;
+  font-family: inherit;
+  text-align: center;
+  padding: 0;
+  &:focus { background: #f7f8f5; border-radius: 6px; }
+  &::placeholder { color: #c3cfbf; font-weight: 400; }
+}
+
+.input-taxa {
+  width: 100%;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: #05261a;
+  outline: none;
+  font-family: inherit;
+  text-align: center;
+  padding: 0;
+  &:focus { background: #f7f8f5; border-radius: 6px; padding: 0 4px; }
+  &::placeholder { color: #c3cfbf; font-weight: 400; font-size: 11px; }
+}
+
+.td-acao { text-align: center; }
+
+.btn-lixeira {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #c3cfbf;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { background: #fff0f3; color: #ff2e63; } // exclusão em rosa elétrico (vermelho só para erro)
+}
+
+// ── Total ─────────────────────────────────────────────────────
+.total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #05261a; // total em destaque: verde profundo com o número em lima
+  border-top: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(247, 248, 245, 0.85);
+  flex-shrink: 0;
+}
+
+.total-valor {
+  font-size: 18px;
+  font-weight: 700;
+  color: #b8f15a;
+}
+
+// ── Botões do header ─────────────────────────────────────────
+.ph-botoes {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-dashboard {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1.5px solid #dde5d9;
+  border-radius: 8px;
+  color: #05261a;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:hover { border-color: #b8f15a; box-shadow: 0 0 0 2px #e6f8d2; }
+}
+
+// ── Modal Simulador ───────────────────────────────────────────
+.modal-sim {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  width: 860px;
+  max-width: 96vw;
+  // Altura fixa (cabe a aba mais alta, Financiamento): trocar de aba não move as abas;
+  // resultados longos rolam dentro de .sim-body
+  height: min(640px, 92vh);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sim-abas {
+  display: flex;
+  border-bottom: 2px solid #edf1e9;
+  padding: 0 24px;
+}
+
+.sim-aba {
+  padding: 10px 20px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #5c6f66;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  border-radius: 8px 8px 0 0;
+  &:hover { color: #05261a; background: rgba(184, 241, 90, 0.08); }
+  // Aba selecionada: verde profundo e texto claro (mesmo padrão das demais abas do app)
+  &.ativa { color: #f7f8f5; border-bottom-color: transparent; background: #05261a; }
+
+  // Sem o contorno azul do navegador; anel lima só na navegação por teclado
+  &:focus { outline: none; }
+  &:focus-visible { box-shadow: 0 0 0 2px #b8f15a; }
+}
+
+.sim-body {
+  padding: 20px 24px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.sim-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.conv-campos {
+  flex-direction: column;
+}
+
+.sim-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #5c6f66;
+  }
+}
+
+.label-hint {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #8a9d92;
+}
+
+.sim-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #dde5d9;
+  border-radius: 8px;
+  padding: 0 14px;
+  height: 44px;
+  background: #f7f8f5;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  &:focus-within { border-color: #b8f15a; background: #fff; }
+}
+
+.sim-prefix {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0b3d2e;
+  flex-shrink: 0;
+}
+
+.sim-suffix {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a9d92;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sim-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+  outline: none;
+  font-family: inherit;
+  min-width: 0;
+  &::placeholder { color: #c3cfbf; font-weight: 400; }
+}
+
+.sim-select {
+  width: 100%;
+  height: 44px;
+  border: 1.5px solid #dde5d9;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #05261a;
+  background: #f7f8f5;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  &:focus { border-color: #b8f15a; }
+}
+
+.btn-calcular {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #b8f15a;
+  color: #05261a;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 28px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+  &:hover { background: #c8f67a; }
+}
+
+.sim-resultado { margin-top: 20px; }
+
+.sim-taxa-efetiva {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff0f3;
+  border: 1.5px solid #ffd0db;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: #d61e4c;
+  margin-bottom: 12px;
+
+  strong { color: #05261a; }
+}
+
+.sim-taxa-anual {
+  color: #d61e4c;
+  font-size: 11px;
+}
+
+.sim-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.sim-card {
+  background: #f7f8f5;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &.destaque { background: #e6f8d2; }
+}
+
+.sim-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #5c6f66;
+}
+
+.sim-card-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: #05261a;
+}
+
+.sim-tabela-wrap {
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid #edf1e9;
+  border-radius: 10px;
+}
+
+.sim-tabela {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    position: sticky;
+    top: 0;
+    background: #f7f8f5;
+    color: #5c6f66;
+    border-bottom: 1px solid #dde5d9;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 9px 12px;
+    text-align: right;
+    &:first-child { text-align: center; }
+  }
+
+  td {
+    padding: 8px 12px;
+    font-size: 12px;
+    border-bottom: 1px solid #f7f8f5;
+    color: #05261a;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f7f8f5; }
+}
+
+.stc { text-align: center; color: #8a9d92; font-weight: 600; }
+.str { text-align: right; font-weight: 600; }
+.juros { color: #d61e4c; } // custo/valor negativo: rosa elétrico
+
+.conv-resultado {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #e6f8d2;
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+
+.conv-resultado-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.conv-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #0b3d2e;
+}
+
+.conv-val {
+  font-size: 26px;
+  font-weight: 700;
+  color: #05261a;
+}
+
+.btn-usar-taxa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #b8f15a;
+  color: #05261a;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s;
+  &:hover { background: #c8f67a; }
+}
+
+// ── Modal Dashboard ───────────────────────────────────────────
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-dash {
+  background: #fff;
+  border-radius: 16px;
+  width: 780px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+}
+
+.modal-dash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #edf1e9;
+  h2 { font-size: 16px; font-weight: 700; color: #05261a; margin: 0; }
+}
+
+.modal-fechar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: #edf1e9;
+  border-radius: 8px;
+  color: #5c6f66;
+  cursor: pointer;
+  &:hover { background: #dde5d9; color: #05261a; }
+}
+
+.dash-tabela-wrap {
+  padding: 20px 24px 28px;
+}
+
+.dash-tabela {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #5c6f66;
+    background: #edf1e9;
+    padding: 9px 12px;
+    white-space: nowrap;
+  }
+
+  .dth-classe { text-align: left; border-radius: 8px 0 0 8px; }
+  .dth-bar    { width: 45%; text-align: left; }
+  .dth-num    { text-align: right; border-radius: 0 8px 8px 0; min-width: 140px; }
+}
+
+.dash-tr td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #edf1e9;
+  vertical-align: middle;
+}
+
+.dash-row-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+  white-space: nowrap;
+}
+
+.dtd-bar { padding-right: 20px !important; }
+
+.dash-bar-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dash-pct {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5c6f66;
+  min-width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.dash-bar-bg {
+  flex: 1;
+  height: 10px;
+  background: #dde5d9;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.dash-bar-fill {
+  height: 100%;
+  background: #0b3d2e; // verde floresta: mais escuro que o lima, como a aba selecionada
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+
+.dtd-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dash-rs {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a9d92;
+  margin-right: 4px;
+}
+
+.dash-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+}
+
+.dash-tr-total td {
+  padding: 13px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #05261a;
+  background: #f7f8f5;
+  vertical-align: middle;
+  .dash-rs { color: #5c6f66; }
+}
+
+.dtd-classe {
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+}
+
+// Cabeçalho compacto para a tabela caber sem rolagem lateral
+// (vence o padrão global de cabeçalho, que usa 11px e espaçamento maior)
+.page .tabela-wrap .tabela th { font-size: 10px; letter-spacing: 0.3px; }
+
+// Botão Simulador: mesmo estilo do Simulador de Projetos (Sonhos)
+.btn-simulador {
+  position: relative; // selo de vídeo no canto
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e6f8d2;
+  border: 1.5px solid #c4f58a;
+  border-radius: 8px;
+  color: #0b3d2e;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-family: inherit;
+  transition: background 0.15s, box-shadow 0.15s;
+  &:hover { background: #c4f58a; box-shadow: 0 0 0 2px #e6f8d2; }
+}

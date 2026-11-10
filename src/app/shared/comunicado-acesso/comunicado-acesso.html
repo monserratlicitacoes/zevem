@@ -1,0 +1,24 @@
+@if (atual; as c) {
+  <div class="fundo" (click)="fechar()">
+    @if (previa()) { <span class="selo-previa">Pré-visualização · é assim que o cliente vê · o botão não navega</span> }
+    <section class="aviso" role="dialog" aria-modal="true" aria-labelledby="titulo-aviso" (click)="$event.stopPropagation()">
+      <button type="button" class="fechar" (click)="fechar()" aria-label="Fechar">
+        <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      @if (c.imagem_url) { <img class="imagem" [src]="imagem(c.imagem_url)" alt="" /> }
+      <div class="corpo">
+        <h2 id="titulo-aviso">{{ c.titulo }}</h2>
+        @if (c.mensagem) { <p>{{ c.mensagem }}</p> }
+        <div class="acoes">
+          @if (c.botao_texto && c.botao_link) {
+            <button type="button" class="principal" (click)="abrirLink()">{{ c.botao_texto }}</button>
+            <button type="button" class="secundario" (click)="fechar()">Agora não</button>
+          } @else {
+            <button type="button" class="principal" (click)="fechar()">Entendi</button>
+          }
+        </div>
+        @if (!previa() && fila.length > 1) { <small>Mais {{ fila.length - 1 }} {{ fila.length === 2 ? 'aviso' : 'avisos' }}</small> }
+      </div>
+    </section>
+  </div>
+}

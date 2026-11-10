@@ -1,0 +1,118 @@
+<div class="page">
+  <header class="page-header">
+    <div class="ph-texto">
+      <h1>Clientes</h1>
+      <p>Situação de cada cliente: orçamento, uso do app e último gasto informado.</p>
+    </div>
+  </header>
+
+  @if (carregando) {
+    <p class="aviso">Carregando...</p>
+  } @else if (erro) {
+    <p class="aviso aviso-erro">{{ erro }}</p>
+  } @else {
+    <section class="kpis">
+      <div class="kpi destaque"><span>Clientes</span><strong>{{ linhas.length }}</strong></div>
+      <div class="kpi"><span>Acessaram em 7 dias</span><strong>{{ ativosSemana }}</strong></div>
+      <div class="kpi"><span>Utilização média</span><strong>{{ mediaUtilizacao.toFixed(1).replace('.', ',') }}</strong><small>de 0 a 5</small></div>
+      <div class="kpi alerta"><span>Orçamento crítico</span><strong>{{ emRisco }}</strong><small>nível de saúde 1 a 3</small></div>
+    </section>
+
+    <div class="filtros">
+      <input type="search" [(ngModel)]="busca" name="busca" placeholder="Buscar por nome, e-mail ou telefone" aria-label="Buscar cliente" />
+      <select [(ngModel)]="estadoCivil" name="estado-civil" aria-label="Estado civil">
+        <option value="">Casados e solteiros</option>
+        <option value="casado">Casados</option>
+        <option value="solteiro">Solteiros</option>
+      </select>
+      <select [(ngModel)]="faixaSaude" name="saude" aria-label="Nível de saúde">
+        <option value="">Toda saúde do orçamento</option>
+        <option value="critico">Crítico (1 a 3)</option>
+        <option value="atencao">Atenção (4 a 6)</option>
+        <option value="saudavel">Saudável (7 a 9)</option>
+        <option value="sem">Sem receita cadastrada</option>
+      </select>
+      <select [(ngModel)]="utilizacaoMin" name="utilizacao" aria-label="Utilização mínima">
+        <option [ngValue]="0">Qualquer utilização</option>
+        <option [ngValue]="1">Utilização 1 ou mais</option>
+        <option [ngValue]="2">Utilização 2 ou mais</option>
+        <option [ngValue]="3">Utilização 3 ou mais</option>
+        <option [ngValue]="4">Utilização 4 ou mais</option>
+      </select>
+      <span class="contagem">{{ filtradas.length }} de {{ linhas.length }}</span>
+    </div>
+
+    <div class="tabela-wrap">
+      <table class="grade">
+        <thead>
+          <tr>
+            <th class="ordenavel" (click)="ordenar('nome')">Cliente<span class="seta">{{ seta('nome') }}</span></th>
+            <th>Contato</th>
+            <th class="centro">Casado</th>
+            <th class="ordenavel num" (click)="ordenar('renda')">Renda mensal<span class="seta">{{ seta('renda') }}</span></th>
+            <th class="ordenavel num" (click)="ordenar('patrimonio')">Patrimônio fin.<span class="seta">{{ seta('patrimonio') }}</span></th>
+            <th class="ordenavel centro" (click)="ordenar('saude')">Saúde<span class="seta">{{ seta('saude') }}</span></th>
+            <th class="ordenavel num" (click)="ordenar('comprometimento')">Comprom.<span class="seta">{{ seta('comprometimento') }}</span></th>
+            <th class="centro">Jarro</th>
+            <th class="ordenavel num" (click)="ordenar('videos')">Vídeos<span class="seta">{{ seta('videos') }}</span></th>
+            <th class="ordenavel" (click)="ordenar('ultimo_gasto')">Último gasto<span class="seta">{{ seta('ultimo_gasto') }}</span></th>
+            <th class="ordenavel" (click)="ordenar('utilizacao')">Utilização<span class="seta">{{ seta('utilizacao') }}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of filtradas; track c.id) {
+            <tr>
+              <td>
+                <strong>{{ c.nome }}</strong>@if (c.master) { <span class="selo">master</span> }
+                <span class="sub" [title]="c.ultimo_acesso ?? ''">acesso {{ diasDesde(c.ultimo_acesso) }}</span>
+              </td>
+              <td>
+                {{ c.email }}
+                <span class="sub">{{ c.telefone || 'sem telefone' }}</span>
+              </td>
+              <td class="centro">{{ c.casado ? 'Sim' : 'Não' }}</td>
+              <td class="num">{{ moeda(c.renda_mensal) }}</td>
+              <td class="num">{{ moeda(c.patrimonio_financeiro) }}</td>
+              <td class="centro">
+                @if (c.nivel_saude !== null) {
+                  <span class="selo" [class]="'selo ' + (faixa(c.nivel_saude) === 'critico' ? 'critico' : faixa(c.nivel_saude) === 'atencao' ? 'atencao' : 'ok')" [title]="c.nivel_saude_motivo">{{ c.nivel_saude }}</span>
+                } @else { <span class="selo" title="Sem receita mensal cadastrada">—</span> }
+              </td>
+              <td class="num">
+                @if (c.grau_comprometimento !== null) {
+                  <span class="selo" [class]="'selo ' + classeComprometimento(c.grau_comprometimento)">{{ c.grau_comprometimento.toFixed(1).replace('.', ',') }}%</span>
+                } @else { — }
+              </td>
+              <td class="centro">
+                <button type="button" class="botao botao-jarro" (click)="jarro = c" [attr.aria-label]="'Ver o Jarro do Orçamento de ' + c.nome">
+                  <svg viewBox="0 0 20 20" fill="none" width="14" height="14" aria-hidden="true"><path d="M7 2.5h6M7.5 2.5v2.2C5.4 5.6 4 7.6 4 10v5a2.5 2.5 0 0 0 2.5 2.5h7A2.5 2.5 0 0 0 16 15v-5c0-2.4-1.4-4.4-3.5-5.3V2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 11.5h12" stroke="currentColor" stroke-width="1.5"/></svg>
+                  Ver
+                </button>
+              </td>
+              <td class="num">{{ c.videosPct }}%</td>
+              <td>
+                @if (c.ultimo_gasto; as g) {
+                  {{ moeda(g.valor) }} · {{ data(g.data) }}
+                  <span class="sub" [title]="g.descricao">{{ g.item || g.descricao }} · lançado {{ data(g.criado_em) }}</span>
+                } @else { <span class="sub">nenhum</span> }
+              </td>
+              <td>
+                <div class="utilizacao" [title]="'Acesso ' + c.utilizacao_partes.acesso + ' · lançamentos ' + c.utilizacao_partes.lancamentos.toFixed(2) + ' · cadastro ' + c.utilizacao_partes.cadastro + ' · WhatsApp ' + c.utilizacao_partes.whatsapp.toFixed(2) + ' · vídeos ' + (c.videosPct / 100).toFixed(2)">
+                  <strong>{{ c.utilizacao.toFixed(1).replace('.', ',') }}</strong>
+                  <span class="barra"><span [style.width.%]="c.utilizacao * 20"></span></span>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="11" class="vazio">Nenhum cliente com esses filtros.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="nota">Utilização (0 a 5): média de acesso recente, gastos lançados em 30 dias, cadastro preenchido, uso do WhatsApp e vídeos assistidos. Passe o mouse sobre a nota para ver cada parte.</p>
+  }
+
+  @if (jarro; as j) {
+    <app-jarro-orcamento [componentes]="j.componentes" [cliente]="j.nome" [destaque]="todasPartes" (fechar)="jarro = null" />
+  }
+</div>

@@ -1,0 +1,210 @@
+:host { display: flex; }
+
+.video-panel {
+  flex-shrink: 0;
+  height: 100%;
+  background: #fff;
+  border-left: 1px solid #dde5d9;
+  overflow: hidden;
+  transition: width 0.22s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.vp-conteudo {
+  flex: 1;
+  min-height: 0;
+  width: 340px;
+  padding: 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+// Quando o painel cresce (sidebar esquerda recolhida), o vídeo e o conteúdo
+// acompanham a largura real do painel em vez de ficarem com espaço vazio do lado.
+.video-panel:not(.colapsado) .vp-conteudo {
+  width: 100%;
+}
+
+.vp-reabrir {
+  width: 100%;
+  height: 100%;
+  flex-shrink: 0;
+  background: #fff;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #40534a;
+  font-size: 11px;
+  font-weight: 600;
+  transition: background 0.15s;
+
+  span { writing-mode: vertical-rl; }
+
+  &:hover { background: #f7f8f5; color: #05261a; }
+}
+
+// Único elemento colorido do app: o ícone de play, sempre indicando "isso leva a um vídeo".
+// Rosa contrasta de propósito com o verde-limão/preto e não colide com outras cores
+// semânticas já usadas (vermelho = erro, azul = tag "Trabalho Extra"/cartão).
+.vp-play-mini {
+  display: flex;
+  color: #ff2e63;
+  writing-mode: horizontal-tb;
+}
+
+.vp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+  color: #05261a;
+}
+
+.vp-recolher {
+  background: #edf1e9;
+  border: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #40534a;
+  transition: background 0.15s;
+  &:hover { background: #dde5d9; }
+}
+
+.vp-player {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #111;
+}
+.vp-iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; }
+.vp-player:fullscreen .vp-iframe { height: 100%; aspect-ratio: auto; }
+.vp-em-breve { font-size: 11px; font-weight: 600; color: rgba(247, 248, 245, 0.7); }
+.vp-play:disabled { opacity: 0.45; box-shadow: none; cursor: default; }
+.vp-tela-cheia:disabled { opacity: 0.5; cursor: default; }
+
+.vp-player-fundo {
+  width: 100%;
+  aspect-ratio: 16 / 9; // mesma proporção do vídeo do YouTube
+  flex-direction: column;
+  gap: 10px;
+  background: radial-gradient(80% 80% at 50% 40%, #0b3d2e 0%, #05261a 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vp-play {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  // Rosa elétrico: tudo que leva aos vídeos de instrução
+  background: #ff2e63;
+  color: #fff;
+  box-shadow: 0 0 0 6px rgba(255, 46, 99, 0.18), 0 6px 20px rgba(255, 46, 99, 0.4);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+  &:hover { transform: scale(1.06); }
+}
+
+.vp-tela-cheia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #f7f8f5;
+  border: 1.5px solid #dde5d9;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #40534a;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { border-color: #ff2e63; color: #d61e4c; }
+}
+
+// ── Lista de vídeos da etapa (principal + subvídeos) ──
+.vp-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  h3 { font-size: 13px; font-weight: 700; color: #05261a; margin-bottom: 8px; }
+}
+.vp-lista-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #40534a;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  &:hover { background: #f7f8f5; color: #05261a; }
+  &.atual { background: #fff0f3; color: #d61e4c; font-weight: 700; }
+}
+.vp-lista-principal { font-weight: 700; color: #05261a; }
+// Subvídeos recuados com uma linha-guia à esquerda
+.vp-lista-sub {
+  margin-left: 12px;
+  width: calc(100% - 12px);
+  border-left: 2px solid #e6ece2;
+  border-radius: 0 8px 8px 0;
+  &.atual { border-left-color: #ff2e63; }
+}
+.vp-lista-icone {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e6ece2;
+  color: #40534a;
+  .vp-lista-sub & { width: 17px; height: 17px; }
+  .atual & { background: #ff2e63; color: #fff; }
+}
+
+// Botão de chamada no pé do painel (ex.: curso de quitação de dívidas): abre o link em nova aba
+.vp-chamada {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #ff2e63;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  text-decoration: none;
+  padding: 13px 16px;
+  transition: background 0.15s, box-shadow 0.15s;
+  &:hover { background: #e8164d; box-shadow: 0 0 0 3px #ffe3ea; }
+  // Sem link ainda: mantém o rosa cheio, só não reage ao clique
+  &.inativo { cursor: default; &:hover { background: #ff2e63; box-shadow: none; } }
+}

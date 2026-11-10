@@ -1,0 +1,43 @@
+<div class="page">
+  <header class="page-header">
+    <div class="ph-texto">
+      <h1>Indicadores</h1>
+      <p>Saúde das assinaturas: receita recorrente, cancelamentos e valor de cada cliente.</p>
+    </div>
+  </header>
+
+  @if (carregando) {
+    <p class="aviso">Carregando...</p>
+  } @else if (erro || !dados) {
+    <p class="aviso aviso-erro">{{ erro }}</p>
+  } @else {
+    <section class="cartao">
+      <h2>Assinaturas</h2>
+      <p class="ajuda">MRR = mensalidades das assinaturas vigentes. Churn = assinaturas encerradas no mês ÷ assinantes no 1º dia do mês. LTV = ticket médio mensal ÷ churn médio dos 3 últimos meses fechados.</p>
+      <div class="indicadores">
+        <div class="ind"><span>MRR</span><strong>{{ moeda(dados.indicadores.mrr) }}</strong><small>{{ dados.indicadores.assinantes }} assinantes</small></div>
+        <div class="ind"><span>Ticket médio (ARPU)</span><strong>{{ moeda(dados.indicadores.arpu) }}</strong><small>por mês</small></div>
+        <div class="ind"><span>Churn do mês</span><strong>{{ pct(dados.indicadores.churn_mes) }}</strong><small>mês atual, até hoje</small></div>
+        <div class="ind"><span>Churn médio</span><strong>{{ pct(dados.indicadores.churn_3m) }}</strong><small>3 meses fechados</small></div>
+        <div class="ind"><span>LTV</span><strong>{{ dados.indicadores.ltv !== null ? moeda(dados.indicadores.ltv) : '—' }}</strong><small>{{ dados.indicadores.ltv !== null ? 'receita esperada por assinante' : 'sem cancelamentos para estimar' }}</small></div>
+        <div class="ind"><span>Renovações desligadas</span><strong>{{ dados.indicadores.renovacoes_desligadas }}</strong><small>vão sair no fim do ciclo</small></div>
+      </div>
+      <div class="tabela-wrap historico">
+        <table class="grade">
+          <thead><tr><th>Mês</th><th class="num">Assinantes no início</th><th class="num">Novas</th><th class="num">Encerradas</th><th class="num">Churn</th><th class="num">MRR no fim</th></tr></thead>
+          <tbody>
+            @for (h of dados.historico; track h.mes) {
+              <tr>
+                <td>{{ nomeMes(h.mes) }}</td>
+                <td class="num">{{ h.assinantes_inicio }}</td>
+                <td class="num">{{ h.novas }}</td>
+                <td class="num">{{ h.encerradas }}</td>
+                <td class="num">{{ pct(h.churn) }}</td>
+                <td class="num">{{ moeda(h.mrr) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>  }
+</div>

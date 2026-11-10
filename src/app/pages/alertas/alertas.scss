@@ -1,0 +1,196 @@
+$profundo: #05261a;
+$floresta: #0b3d2e;
+$lima: #b8f15a;
+$lima-claro: #e6f8d2;
+$borda: #dde5d9;
+$suave: #5c6f66;
+$fundo: #f7f8f5;
+$rosa-texto: #d61e4c;
+
+:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.page { flex: 1; min-height: 0; overflow-y: auto; padding: 32px 36px 48px; }
+
+.aviso { color: $suave; font-size: 13px; padding: 16px 0; }
+.aviso-erro { color: #d63a3a; }
+
+// ── Situação do canal ──
+.status {
+  display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 12px; margin-bottom: 20px;
+}
+.status-item, .status-numeros {
+  background: #fff; border: 1px solid $borda; border-radius: 12px; padding: 12px 14px;
+  display: flex; gap: 10px; align-items: flex-start; font-size: 12px; color: $suave;
+  strong { display: block; color: $profundo; font-size: 12px; margin-bottom: 2px; }
+}
+.status-numeros { flex-direction: column; gap: 6px; }
+.ponto { width: 9px; height: 9px; border-radius: 50%; background: #f5c46b; flex-shrink: 0; margin-top: 4px; }
+.status-item.ok .ponto { background: #39d353; }
+.numeros { display: flex; flex-wrap: wrap; gap: 6px; }
+.numero {
+  background: $lima-claro; color: $floresta; border-radius: 999px; padding: 3px 10px; font-weight: 600; text-decoration: none;
+}
+.numero-falta { background: #fff4dc; color: #8a5a00; }
+
+// ── Colunas ──
+.colunas { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, 1fr); gap: 18px; align-items: start; }
+.lista-alertas { display: flex; flex-direction: column; gap: 10px; }
+.lateral { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 0; }
+
+// ── Cartão de cada alerta ──
+.alerta {
+  background: #fff; border: 1px solid $borda; border-radius: 14px; padding: 14px 16px;
+  transition: opacity .15s;
+  &.desligado { background: #fafcf8; h2 { color: $suave; } }
+}
+.alerta-topo {
+  display: flex; justify-content: space-between; gap: 14px; align-items: flex-start;
+  h2 { font-size: 14px; font-weight: 700; color: $profundo; }
+  p { font-size: 12px; color: $suave; margin-top: 3px; line-height: 1.45; }
+}
+.alerta-acoes { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.salvo { font-size: 11px; font-weight: 600; color: $floresta; }
+
+// Chave liga/desliga
+.chave {
+  width: 40px; height: 22px; border-radius: 999px; border: none; background: #c3cfbf; position: relative; cursor: pointer;
+  transition: background .15s; flex-shrink: 0;
+  span { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  &.ligada { background: $floresta; span { transform: translateX(18px); } }
+  &:focus-visible { outline: 2px solid $lima; outline-offset: 2px; }
+}
+
+.alerta-corpo { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed $borda; }
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.campo-linha { flex-direction: row; align-items: center; gap: 10px; }
+.rotulo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: $suave; }
+select {
+  border: 1px solid $borda; border-radius: 8px; padding: 6px 10px; font-family: inherit; font-size: 12px; color: $profundo; background: #fff;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip {
+  border: 1px solid $borda; background: #fff; color: $profundo; border-radius: 999px; padding: 5px 11px;
+  font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: background .12s, border-color .12s;
+  &:hover { border-color: $lima; }
+  &.marcado { background: $lima-claro; border-color: #c4f58a; color: $floresta; }
+}
+.chip-dia { min-width: 44px; }
+
+.opcao { display: flex; gap: 8px; align-items: center; font-size: 12px; color: $profundo; cursor: pointer;
+  input { width: 15px; height: 15px; accent-color: $floresta; } }
+
+.seletor-itens {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%;
+  border: 1px solid $borda; border-radius: 8px; background: #fff; padding: 8px 10px; cursor: pointer;
+  font-family: inherit; font-size: 12px; color: $profundo; text-align: left;
+  .caret { color: $suave; font-size: 16px; transition: transform .15s; &.aberto { transform: rotate(90deg); } }
+}
+.dica { font-size: 11px; color: #8a5a00; }
+.itens-painel { border: 1px solid $borda; border-radius: 10px; padding: 8px; background: $fundo; }
+.busca {
+  width: 100%; border: 1px solid $borda; border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 12px; margin-bottom: 6px; background: #fff;
+}
+.itens-lista { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; }
+.grupo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: $suave; padding: 8px 4px 2px; }
+.item {
+  display: flex; align-items: center; gap: 8px; padding: 5px 4px; font-size: 12px; color: $profundo; cursor: pointer; border-radius: 6px;
+  &:hover { background: #fff; }
+  input { accent-color: $floresta; }
+  small { margin-left: auto; color: #8a9d92; font-size: 10px; }
+}
+.erro { font-size: 12px; color: #d63a3a; }
+
+// ── Cartões laterais ──
+.cartao { background: #fff; border: 1px solid $borda; border-radius: 14px; padding: 14px 16px; }
+.cartao-topo {
+  margin-bottom: 10px;
+  h2 { font-size: 14px; font-weight: 700; color: $profundo; }
+  p { font-size: 12px; color: $suave; margin-top: 3px; line-height: 1.45; strong { color: $profundo; } }
+}
+.vazio { font-size: 12px; color: $suave; }
+
+// Simulador
+.chips-pessoa { margin-bottom: 10px; }
+.chat-corpo {
+  background: #efeae2; border-radius: 12px; padding: 12px; height: 300px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.chat-vazio {
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-start; font-size: 12px; color: $suave;
+  button {
+    border: none; background: #fff; border-radius: 10px; padding: 6px 10px; font-family: inherit; font-size: 12px; color: $profundo; cursor: pointer;
+    &:hover { background: $lima-claro; }
+  }
+}
+.bolha {
+  max-width: 85%; background: #fff; border-radius: 10px 10px 10px 2px; padding: 7px 10px; font-size: 12px; color: #111;
+  white-space: pre-line; line-height: 1.45; box-shadow: 0 1px 1px rgba(0,0,0,.06); align-self: flex-start;
+  small { display: block; font-size: 10px; font-weight: 700; color: $floresta; }
+}
+.bolha-pessoa { align-self: flex-end; background: #d9fdd3; border-radius: 10px 10px 2px 10px; }
+.digitando {
+  display: flex; gap: 4px; padding: 10px 12px;
+  span { width: 6px; height: 6px; border-radius: 50%; background: #8a9d92; animation: piscar 1s infinite; }
+  span:nth-child(2) { animation-delay: .15s; } span:nth-child(3) { animation-delay: .3s; }
+}
+@keyframes piscar { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+.chat-entrada {
+  display: flex; gap: 8px; margin-top: 10px;
+  input { flex: 1; border: 1px solid $borda; border-radius: 999px; padding: 9px 14px; font-family: inherit; font-size: 13px;
+    &:focus { outline: none; border-color: $floresta; } }
+  button {
+    width: 38px; height: 38px; border-radius: 50%; border: none; background: $floresta; color: #fff; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    &:disabled { opacity: .45; cursor: default; }
+  }
+}
+
+// Histórico
+.avisos { list-style: none; display: flex; flex-direction: column; max-height: 420px; overflow-y: auto; }
+.avisos li {
+  padding: 9px 0; border-bottom: 1px solid #eef2eb; font-size: 12px; color: $suave;
+  &:last-child { border-bottom: none; }
+  p { color: $profundo; margin: 3px 0; line-height: 1.4; white-space: pre-line; }
+  small { font-size: 11px; }
+}
+.aviso-topo { display: flex; justify-content: space-between; gap: 8px; align-items: center; strong { color: $profundo; font-size: 12px; } }
+.status-aviso {
+  flex-shrink: 0; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 2px 8px; background: #edf1e9; color: $suave;
+  &.st-enviado { background: $lima-claro; color: $floresta; }
+  &.st-pendente, &.st-reservado { background: #fff4dc; color: #8a5a00; }
+  &.st-falhou { background: #fff0f3; color: $rosa-texto; }
+}
+
+@media (max-width: 1100px) {
+  .colunas { grid-template-columns: 1fr; }
+  .lateral { position: static; }
+  .status { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .page { padding: 20px 16px 40px; }
+}
+
+// ── Texto da mensagem (master) ──
+.texto-alerta { margin-top: 12px; padding-top: 10px; border-top: 1px dashed $borda; }
+.texto-toggle {
+  width: 100%; display: flex; align-items: baseline; gap: 8px; border: none; background: none; padding: 0; cursor: pointer;
+  font-family: inherit; text-align: left;
+  span:first-child { font-size: 12px; font-weight: 700; color: $profundo; }
+  small { font-size: 11px; color: $suave; }
+  .caret { margin-left: auto; color: $suave; font-size: 16px; transition: transform .15s; &.aberto { transform: rotate(90deg); } }
+}
+.texto-editor { display: flex; flex-direction: column; gap: 10px; margin-top: 10px;
+  textarea { border: 1px solid $borda; border-radius: 9px; padding: 9px 11px; font-family: inherit; font-size: 13px; color: $profundo; resize: vertical; line-height: 1.45;
+    &:focus { outline: none; border-color: $floresta; } } }
+.variaveis .chip { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; font-weight: 600; }
+.previa-texto { display: flex; flex-direction: column; gap: 6px; }
+.bolha-previa {
+  align-self: flex-start; max-width: 100%; background: #d9fdd3; border-radius: 10px 10px 10px 2px; padding: 8px 11px;
+  font-size: 12px; color: #111; line-height: 1.45; white-space: pre-line;
+}
+.texto-acoes { display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap; }
+.botao-pri, .botao-sec { border-radius: 8px; padding: 7px 12px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.botao-pri { background: $lima; border: 1px solid $lima; color: $profundo; &:hover { background: #c8f67a; } }
+.botao-sec { background: #fff; border: 1px solid $borda; color: $profundo; }
+.ok-msg { font-size: 12px; color: $floresta; font-weight: 600; }
+.dica-texto { font-size: 11px; color: $suave; }

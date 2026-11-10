@@ -1,0 +1,18 @@
+// ── Versão noturna do app (ligada no Dashboard; ver services/tema.service.ts) ──
+// A maior parte das cores escuras é gerada a partir das folhas de estilo de cada tela
+// (services/tema-noturno-cores.ts). Aqui ficam só os acertos que a geração não alcança:
+// cores vindas de variáveis CSS e detalhes que pedem um tom específico.
+// Paleta da noite (a mesma do Dashboard): fundo #071a11, quadro #0b2419, cartão #10301f,
+// texto #eef3ea, texto suave #94ad9f, destaque lima #b8f15a.
+
+:root.tema-noturno {
+  color-scheme: dark;
+
+  &, body { background: #071a11; }
+  body { color: #eef3ea; }
+
+  // Acertos manuais levam !important: as regras geradas vêm depois e repetem os mesmos seletores.
+  // Título das páginas (a cor vem de variável, que a geração não converte)
+  .app-shell-content .page .page-header .ph-texto h1,
+  .app-shell-content .page .page-header > h1 { color: #eef3ea !important; }
+}

@@ -1,0 +1,8 @@
+.indicadores { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.ind {
+  border: 1px solid #dde5d9; border-radius: 12px; padding: 10px 12px; background: #fafcf8;
+  span { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #5c6f66; }
+  strong { display: block; font-size: 20px; font-weight: 800; color: #05261a; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  small { font-size: 11px; color: #5c6f66; }
+}
+.historico { margin-top: 4px; }

@@ -1,0 +1,240 @@
+<div class="page">
+  <header class="page-header">
+    <div class="ph-texto">
+      <h1>Financeiro</h1>
+      <p>Assinaturas anuais pagas em 12 parcelas, com renovação automática.</p>
+    </div>
+  </header>
+
+  @if (carregando) {
+    <p class="aviso">Carregando...</p>
+  } @else if (erro || !dados) {
+    <p class="aviso aviso-erro">{{ erro }}</p>
+  } @else {
+    @if (dados.provedor === 'manual') {
+      <p class="faixa-provedor">Gateway de pagamento ainda não conectado: as parcelas são baixadas aqui, à mão. Ao escolher o gateway, a baixa passa a ser automática.</p>
+    }
+
+    <section class="kpis">
+      <div class="kpi destaque"><span>Pagamento ativo</span><strong>{{ dados.resumo.assinantes_ativos }}</strong><small>de {{ dados.resumo.clientes }} clientes</small></div>
+      <div class="kpi"><span>Recebido no mês</span><strong>{{ moeda(dados.resumo.recebido_no_mes) }}</strong></div>
+      <div class="kpi"><span>A receber no mês</span><strong>{{ moeda(dados.resumo.a_receber_no_mes) }}</strong></div>
+      <div class="kpi alerta"><span>Inadimplentes</span><strong>{{ dados.resumo.inadimplentes }}</strong><small>{{ moeda(dados.resumo.em_atraso) }} em atraso</small></div>
+      <div class="kpi" [class.alerta]="dados.indicadores.pedidos_cancelamento_abertos"><span>Pedidos de cancelamento</span><strong>{{ dados.indicadores.pedidos_cancelamento_abertos }}</strong><small>em aberto</small></div>
+    </section>
+
+    <!-- Pedidos de cancelamento e Planos: ocultos da tela por enquanto (a infra no backend continua).
+         Para reativar, descomente o bloco abaixo.
+    <!~~ Pedidos de cancelamento ~~>
+    <section class="cartao">
+      <div class="topo">
+        <div>
+          <h2>Pedidos de cancelamento @if (abertos) { <span class="selo critico">{{ abertos }} em aberto</span> }</h2>
+          <p class="ajuda">Pedidos feitos pelo cliente no app ou registrados aqui (WhatsApp, atendimento). Resolva cancelando ou registrando que o cliente ficou.</p>
+        </div>
+        <div class="acoes-topo">
+          <label class="opcao"><input type="checkbox" name="ver-resolvidos" [(ngModel)]="verResolvidos" /> Ver resolvidos</label>
+          @if (!registrando) { <button type="button" class="botao" (click)="registrando = true">+ Registrar pedido</button> }
+        </div>
+      </div>
+      @if (registrando) {
+        <div class="editor-plano">
+          <label class="campo"><span>Cliente</span>
+            <select name="pc-cliente" [(ngModel)]="novoPedido.usuario_id">
+              <option [ngValue]="null" disabled>Escolha</option>
+              @for (c of clientesComAssinatura; track c.usuario_id) { <option [ngValue]="c.usuario_id">{{ c.nome }}</option> }
+            </select>
+          </label>
+          <label class="campo"><span>Motivo</span>
+            <select name="pc-motivo" [(ngModel)]="novoPedido.motivo">
+              @for (m of motivos | keyvalue; track m.key) { <option [value]="m.key">{{ m.value }}</option> }
+            </select>
+          </label>
+          <label class="campo"><span>Canal</span>
+            <select name="pc-canal" [(ngModel)]="novoPedido.canal"><option value="whatsapp">WhatsApp</option><option value="atendimento">Atendimento</option></select>
+          </label>
+          <label class="campo campo-largo"><span>Detalhe</span><input name="pc-detalhe" [(ngModel)]="novoPedido.detalhe" maxlength="1000" /></label>
+          <div class="acoes">
+            <button type="button" class="botao" (click)="registrando = false">Cancelar</button>
+            <button type="button" class="botao primario" (click)="registrarPedido()">Registrar</button>
+          </div>
+          @if (erroPedido) { <span class="erro">{{ erroPedido }}</span> }
+        </div>
+      }
+      @if (pedidosVisiveis.length) {
+        <div class="tabela-wrap">
+          <table class="grade">
+            <thead><tr><th>Cliente</th><th>Motivo</th><th>Canal</th><th>Pedido em</th><th>Vale até</th><th>Situação</th><th></th></tr></thead>
+            <tbody>
+              @for (p of pedidosVisiveis; track p.id) {
+                <tr>
+                  <td><strong>{{ p.nome }}</strong><span class="sub">{{ p.email }}</span></td>
+                  <td>{{ motivos[p.motivo] || p.motivo }}@if (p.detalhe) { <span class="sub" [title]="p.detalhe">{{ p.detalhe.slice(0, 80) }}{{ p.detalhe.length > 80 ? '…' : '' }}</span> }</td>
+                  <td>{{ canais[p.canal] }}</td>
+                  <td>{{ data(p.criado_em) }}</td>
+                  <td>{{ data(p.fim_ciclo) }}</td>
+                  <td>
+                    @if (p.status === 'aberto') { <span class="selo critico">Em aberto</span> }
+                    @else { <span class="selo" [class.ok]="p.status === 'revertido'">{{ resolucoes[p.resolucao || ''] }}</span>@if (p.observacao) { <span class="sub">{{ p.observacao }}</span> } }
+                  </td>
+                  <td class="num acoes-linha">
+                    @if (p.status === 'aberto') {
+                      <button type="button" class="botao" (click)="resolver(p, 'revertido')">Cliente ficou</button>
+                      <button type="button" class="botao perigo" (click)="resolver(p, 'cancelar_renovacao')">Cancelar renovação</button>
+                      <button type="button" class="botao perigo" (click)="resolver(p, 'cancelar_agora')">Cancelar agora</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (!registrando) {
+        <p class="aviso">{{ verResolvidos ? 'Nenhum pedido de cancelamento.' : 'Nenhum pedido em aberto.' }}</p>
+      }
+    </section>
+
+    <!~~ Planos ~~>
+    <section class="cartao">
+      <div class="topo">
+        <div>
+          <h2>Planos</h2>
+          <p class="ajuda">Mudar o valor vale para as próximas assinaturas e renovações; parcelas já geradas não mudam.</p>
+        </div>
+        @if (!plano) { <button type="button" class="botao primario" (click)="novoPlano()">+ Novo plano</button> }
+      </div>
+      @if (plano; as p) {
+        <div class="editor-plano">
+          <label class="campo"><span>Nome</span><input name="plano-nome" [(ngModel)]="p.nome" maxlength="60" /></label>
+          <label class="campo"><span>Valor anual (R$)</span><input name="plano-valor" type="number" min="0" step="0.01" [(ngModel)]="p.valor_anual" /></label>
+          <label class="campo"><span>Parcelas</span><input name="plano-parcelas" type="number" min="1" max="12" [(ngModel)]="p.parcelas" /></label>
+          <label class="opcao"><input type="checkbox" name="plano-ativo" [(ngModel)]="p.ativo" /> Disponível</label>
+          <div class="acoes">
+            <button type="button" class="botao" (click)="plano = null">Cancelar</button>
+            <button type="button" class="botao primario" (click)="salvarPlano()">Salvar</button>
+          </div>
+          @if (erroPlano) { <span class="erro">{{ erroPlano }}</span> }
+          @if (p.valor_anual > 0 && p.parcelas > 0) { <small class="calc">{{ p.parcelas }}× de {{ moeda(p.valor_anual / p.parcelas) }}</small> }
+        </div>
+      }
+      @if (planos.length) {
+        <div class="planos">
+          @for (pl of planos; track pl.id) {
+            <button type="button" class="plano" [class.inativo]="!pl.ativo" (click)="editarPlano(pl)">
+              <strong>{{ pl.nome }}</strong>
+              <span>{{ moeda(pl.valor_anual) }}/ano · {{ pl.parcelas }}× de {{ moeda(pl.valor_anual / pl.parcelas) }}</span>
+              <small>{{ pl.assinantes ?? 0 }} assinante(s){{ pl.ativo ? '' : ' · indisponível' }}</small>
+            </button>
+          }
+        </div>
+      } @else if (!plano) {
+        <p class="aviso">Crie um plano para começar a vender assinaturas.</p>
+      }
+    </section>
+    -->
+
+    <!-- Clientes -->
+    <div class="filtros">
+      <input type="search" [(ngModel)]="busca" name="busca" placeholder="Buscar cliente" aria-label="Buscar cliente" />
+      <select [(ngModel)]="filtroStatus" name="status" aria-label="Situação">
+        <option value="">Todas as situações</option>
+        <option value="ativa">Em dia</option>
+        <option value="inadimplente">Inadimplente</option>
+        <option value="cancelada">Cancelada</option>
+        <option value="encerrada">Encerrada</option>
+        <option value="sem">Sem assinatura</option>
+      </select>
+      <span class="contagem">{{ filtrados.length }} clientes</span>
+    </div>
+
+    <div class="tabela-wrap">
+      <table class="grade">
+        <thead>
+          <tr>
+            <th>Cliente</th><th>Situação</th><th>Plano</th><th>Parcelas pagas</th>
+            <th class="num">Pago no ciclo</th><th>Próximo vencimento</th><th class="num">Em atraso</th><th class="centro">Renova</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of filtrados; track c.usuario_id) {
+            <tr>
+              <td><strong>{{ c.nome }}</strong><span class="sub">{{ c.email }}</span></td>
+              <td><span class="selo" [class]="'selo ' + status(c).classe">{{ status(c).rotulo }}</span>@if (c.pedido_cancelamento) { <span class="selo critico pediu">pediu cancelamento</span> }</td>
+              @if (c.assinatura; as a) {
+                <td>{{ a.plano }}<span class="sub">ciclo {{ a.ciclo }} · até {{ data(a.fim_ciclo) }}</span></td>
+                <td>
+                  <div class="progresso"><span [style.width.%]="a.total_parcelas ? a.parcelas_pagas / a.total_parcelas * 100 : 0"></span></div>
+                  <span class="sub">{{ a.parcelas_pagas }} de {{ a.total_parcelas }}</span>
+                </td>
+                <td class="num">{{ moeda(a.valor_pago_ciclo) }}<span class="sub">de {{ moeda(a.valor_ciclo) }}</span></td>
+                <td>{{ data(a.proximo_vencimento) }}@if (a.proxima_parcela) { <span class="sub">{{ moeda(a.proxima_parcela) }}</span> }</td>
+                <td class="num" [class.vermelho]="a.em_atraso > 0">{{ a.em_atraso ? moeda(a.em_atraso) : '—' }}@if (a.parcelas_em_atraso) { <span class="sub">{{ a.parcelas_em_atraso }} parcela(s)</span> }</td>
+                <td class="centro">
+                  @if (a.status === 'ativa' || a.status === 'inadimplente') {
+                    <button type="button" class="chave" role="switch" [attr.aria-checked]="a.renovacao_automatica" [attr.aria-label]="'Renovação automática de ' + c.nome" [class.ligada]="a.renovacao_automatica" (click)="alternarRenovacao(c)"><span></span></button>
+                  } @else { — }
+                </td>
+                <td class="num acoes-linha">
+                  <button type="button" class="botao" (click)="alternarParcelas(c)">{{ aberto === a.id ? 'Fechar' : 'Parcelas' }}</button>
+                  @if (a.status === 'cancelada' || a.status === 'encerrada') {
+                    <button type="button" class="botao primario" (click)="abrirAssinar(c)" [disabled]="!planosAtivos.length">Nova assinatura</button>
+                  }
+                </td>
+              } @else {
+                <td colspan="6" class="sem-assinatura">—</td>
+                <td class="num acoes-linha"><button type="button" class="botao primario" (click)="abrirAssinar(c)" [disabled]="!planosAtivos.length">Criar assinatura</button></td>
+              }
+            </tr>
+            @if (assinando?.usuario_id === c.usuario_id) {
+              <tr class="linha-extra"><td colspan="9">
+                <div class="assinar">
+                  <label class="campo"><span>Plano</span>
+                    <select name="assinar-plano" [(ngModel)]="planoEscolhido">
+                      @for (pl of planosAtivos; track pl.id) { <option [ngValue]="pl.id">{{ pl.nome }} · {{ moeda(pl.valor_anual) }}/ano</option> }
+                    </select>
+                  </label>
+                  <label class="campo"><span>Primeira parcela em</span><input type="date" name="assinar-inicio" [(ngModel)]="inicio" /></label>
+                  <button type="button" class="botao" (click)="assinando = null">Cancelar</button>
+                  <button type="button" class="botao primario" (click)="confirmarAssinar()">Criar assinatura</button>
+                  @if (erroAssinar) { <span class="erro">{{ erroAssinar }}</span> }
+                </div>
+              </td></tr>
+            }
+            @if (c.assinatura && aberto === c.assinatura.id) {
+              <tr class="linha-extra"><td colspan="9">
+                @for (g of ciclosParcelas; track g.ciclo) {
+                  <div class="ciclo">
+                    <span class="ciclo-titulo">Ciclo {{ g.ciclo }}</span>
+                    <div class="parcelas">
+                      @for (p of g.parcelas; track p.id) {
+                        <div class="parcela" [class]="'parcela ' + statusParcela[p.status].classe">
+                          <strong>{{ p.parcela }}/{{ p.total_parcelas }}</strong>
+                          <span>{{ moeda(p.valor) }}</span>
+                          <span>{{ data(p.vencimento) }}</span>
+                          <span class="selo" [class]="'selo ' + statusParcela[p.status].classe">{{ statusParcela[p.status].rotulo }}</span>
+                          @if (p.status === 'paga') {
+                            <small>{{ data(p.pago_em) }}{{ p.forma_pagamento ? ' · ' + p.forma_pagamento : '' }}</small>
+                            <button type="button" class="link" (click)="desfazer(p)">desfazer</button>
+                          } @else if (p.status === 'pendente' || p.status === 'vencida') {
+                            <button type="button" class="botao primario mini" (click)="darBaixa(p)">Dar baixa</button>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (erroAcao) { <span class="erro">{{ erroAcao }}</span> }
+                @if (c.assinatura.status === 'ativa' || c.assinatura.status === 'inadimplente') {
+                  <div class="cancelar">
+                    <button type="button" class="botao perigo" (click)="cancelar(c, false)">Cancelar renovação</button>
+                    <button type="button" class="botao perigo" (click)="cancelar(c, true)">Cancelar agora</button>
+                  </div>
+                }
+              </td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

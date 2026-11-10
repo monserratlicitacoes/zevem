@@ -1,0 +1,10 @@
+.selo + .selo, strong + .selo { margin-left: 6px; }
+.botao-jarro { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; color: #0b3d2e; background: #e6f8d2; border-color: #c4f58a; }
+.utilizacao {
+  display: flex; align-items: center; gap: 8px; min-width: 110px;
+  strong { font-size: 13px; width: 26px; }
+  .barra { flex: 1; height: 7px; border-radius: 999px; background: #eef2eb; overflow: hidden;
+    span { display: block; height: 100%; border-radius: 999px; background: #0b3d2e; } }
+}
+.vazio { text-align: center; color: #5c6f66; padding: 24px; }
+.nota { font-size: 11px; color: #5c6f66; margin-top: 10px; }

@@ -1,0 +1,81 @@
+<div class="modal-overlay" (click)="fechar.emit()">
+  <section class="modal-jarro" role="dialog" aria-modal="true" aria-labelledby="titulo-jarro" (click)="$event.stopPropagation()">
+    <header class="jarro-header">
+      <div>
+        <h2 id="titulo-jarro">Jarro do Orçamento</h2>
+        @if (cliente()) {
+          <p>Orçamento mensal de <strong>{{ cliente() }}</strong>.</p>
+        } @else {
+          <p>Em destaque, a parte do orçamento mensal que <strong>{{ origem() || 'esta tela' }}</strong> forma. O restante fica esmaecido.</p>
+        }
+      </div>
+      <button type="button" class="modal-fechar" (click)="fechar.emit()" aria-label="Fechar">
+        <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+
+    @if (carregando()) {
+      <p class="jarro-aviso">Carregando…</p>
+    } @else if (erro()) {
+      <p class="jarro-aviso jarro-erro">{{ erro() }}</p>
+    } @else {
+      <div class="jarro-corpo">
+        <svg [attr.viewBox]="'0 0 ' + g.w + ' ' + g.h" class="jarro-grafico" role="img" aria-label="Orçamento mensal empilhado, com destaque">
+          @for (m of marcas(); track m) {
+            <line [attr.x1]="g.x0" [attr.x2]="g.x1" [attr.y1]="y(m)" [attr.y2]="y(m)" class="grade" />
+            <text [attr.x]="g.x0 - 8" [attr.y]="y(m) + 4" class="eixo" text-anchor="end">R$ {{ moeda(m) }}</text>
+          }
+          @for (s of segmentos(); track s.letra) {
+            @if (s.h > 0) {
+              <rect [attr.x]="centro - g.barra / 2" [attr.y]="s.y" [attr.width]="g.barra" [attr.height]="s.h" [attr.fill]="s.cor"
+                class="camada" [class.apagada]="!emDestaque(s.letra)" [class.destacada]="emDestaque(s.letra)">
+                <title>{{ s.rotulo }}: R$ {{ moeda(s.valor) }}</title>
+              </rect>
+            }
+          }
+          <!-- Receita total (tracejado) e receita mensal (contínuo) -->
+          <rect class="contorno-total" [class.apagada]="!emDestaque('I')" [class.destacada]="emDestaque('I')"
+            [attr.x]="centro - g.contorno / 2" [attr.y]="y(receitaTotal)" [attr.width]="g.contorno" [attr.height]="g.y1 - y(receitaTotal)">
+            <title>Receita total: R$ {{ moeda(receitaTotal) }}</title>
+          </rect>
+          <rect class="contorno-mensal" [class.apagada]="!emDestaque('H')" [class.destacada]="emDestaque('H')"
+            [attr.x]="centro - g.contorno / 2 + 6" [attr.y]="y(receitaMensal)" [attr.width]="g.contorno - 12" [attr.height]="g.y1 - y(receitaMensal)">
+            <title>Receita mensal: R$ {{ moeda(receitaMensal) }}</title>
+          </rect>
+        </svg>
+
+        <div class="jarro-legenda">
+          <div class="leg-receitas">
+            <div class="leg-receita" [class.apagada]="!emDestaque('I')" [class.destacada]="emDestaque('I')">
+              <i class="linha-tracejada" aria-hidden="true"></i><span>Receita total</span><strong>R$ {{ moeda(receitaTotal) }}</strong>
+            </div>
+            <div class="leg-receita" [class.apagada]="!emDestaque('H')" [class.destacada]="emDestaque('H')">
+              <i class="linha-continua" aria-hidden="true"></i><span>Receita mensal</span><strong>R$ {{ moeda(receitaMensal) }}</strong>
+            </div>
+          </div>
+          <ul class="leg-camadas">
+            @for (c of legenda(); track c.letra) {
+              <li [class.apagada]="!emDestaque(c.letra)" [class.destacada]="emDestaque(c.letra)">
+                <i class="leg-cor" [style.background]="c.cor" aria-hidden="true"></i>
+                <span class="leg-nome">{{ c.rotulo }}</span>
+                <strong>R$ {{ moeda(c.valor) }}</strong>
+                <small>{{ pct(c.valor) }}%</small>
+              </li>
+            }
+          </ul>
+          <div class="leg-saldos">
+            <div class="leg-saldo" [class.negativo]="saldoMensal < 0">
+              <span>Saldo pela receita mensal</span><strong>{{ moedaSaldo(saldoMensal) }}</strong>
+            </div>
+            <div class="leg-saldo" [class.negativo]="saldoTotal < 0">
+              <span>Saldo pela receita total</span><strong>{{ moedaSaldo(saldoTotal) }}</strong>
+            </div>
+          </div>
+          @if (!destacaReceitas && totalDestaque() > 0) {
+            <p class="jarro-resumo">Em destaque: <strong>R$ {{ moeda(totalDestaque()) }}</strong> por mês, <strong>{{ pct(totalDestaque()) }}%</strong> da receita mensal.</p>
+          }
+        </div>
+      </div>
+    }
+  </section>
+</div>

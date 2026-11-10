@@ -1,0 +1,224 @@
+<div class="page">
+
+  <div class="page-header">
+    <div class="ph-icone">
+      <svg viewBox="0 0 20 20" fill="none" width="20" height="20"><path d="M3 5h14M3 10h14M3 15h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </div>
+    <div class="ph-texto">
+      <h1 class="titulo-video">Gastos<app-video-badge /></h1>
+      <p>Registre seus gastos por categoria.</p>
+    </div>
+    <div class="ph-botoes">
+    <button type="button" class="btn-jarro" (click)="jarroAberto = true" title="Ver no gráfico de orçamento a parte que esta tela forma">
+      <svg viewBox="0 0 20 20" fill="none" width="15" height="15" aria-hidden="true"><path d="M7 2.5h6M7.5 2.5v2.2C5.4 5.6 4 7.6 4 10v5a2.5 2.5 0 0 0 2.5 2.5h7A2.5 2.5 0 0 0 16 15v-5c0-2.4-1.4-4.4-3.5-5.3V2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 11.5h12" stroke="currentColor" stroke-width="1.5"/></svg>
+      Jarro do Orçamento
+    </button>
+    <button type="button" class="btn-classificar" (click)="fluxoAberto = true" title="Fluxograma: como classificar cada gasto">
+      <svg viewBox="0 0 20 20" fill="none" width="15" height="15"><rect x="7" y="2" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="14" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="12" y="14" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M10 6v4M5 14v-4h10v4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      Como classificar
+    </button>
+    <button class="btn-dashboard btn-resumo" (click)="modalAberto = true" title="Ver resumo">
+      <svg viewBox="0 0 20 20" fill="none" width="15" height="15"><rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
+      Resumo
+    </button>
+    </div>
+  </div>
+
+  @if (jarroAberto) { <app-jarro-orcamento [destaque]="['C', 'D', 'E', 'F']" origem="Gastos" (fechar)="jarroAberto = false" /> }
+
+  @if (fluxoAberto) { <app-classificacao-gastos (fechar)="fluxoAberto = false" /> }
+
+  <div class="abas-wrap">
+    <div class="abas">
+      @for (aba of abas; track aba.id) {
+        <button class="aba" [class.ativa]="abaAtiva === aba.id" (click)="selecionarAba(aba.id)">
+          <span class="aba-label">{{ aba.label }}</span>
+          @if (totalAba(aba.id) > 0) {
+            <span class="aba-total">R$ {{ formatarValor(totalAba(aba.id)) }}</span>
+          }
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="rec-card">
+
+    <div class="rec-toolbar">
+      <button class="btn-adicionar" (click)="adicionarLinha()" [disabled]="adicionando">
+        <svg viewBox="0 0 20 20" fill="none" width="13" height="13"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Adicionar linha
+      </button>
+    </div>
+
+    @if (carregando) {
+      <div class="rec-loading">Carregando…</div>
+    } @else {
+      <div class="tabela-wrap">
+        <table class="tabela">
+          <colgroup>
+            <col class="col-num">
+            <col class="col-desc">
+            <col class="col-cartao">
+            <col class="col-classe">
+            <col class="col-venc">
+            <col class="col-valor">
+            <col class="col-mensal">
+            <col class="col-acao">
+          </colgroup>
+          <thead>
+            <tr>
+              <th></th>
+              <th class="th-left">Item</th>
+              <th class="th-center">Cartão</th>
+              <th class="th-center">Classificação</th>
+              <th class="th-center" title="Vencimento: dia do mês (Mensal Comprometido), mês do ano (Eventual Comprometido) ou fatura (pago no cartão)">Vence em</th>
+              <th class="th-right">Valor</th>
+              <th class="th-right">Valor Mensal</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (g of gastos; track g.id; let i = $index) {
+              <tr class="tr-data" (focusout)="aoSairDaLinha($event, g)">
+                <td class="td-num">{{ i + 1 }}</td>
+                <td class="td-desc">
+                  <textarea class="input-desc" rows="1" autoAltura [(ngModel)]="g.descricao"
+                    (blur)="salvarLinha(g)" placeholder="Ex: Condomínio"></textarea>
+                </td>
+                <td class="td-center">
+                  <input type="checkbox" class="check-cartao"
+                    [(ngModel)]="g.com_cartao" (change)="salvarLinha(g)" />
+                </td>
+                <td class="td-center">
+                  <select class="sel" [(ngModel)]="g.classe" (change)="salvarLinha(g)">
+                    <option value="">—</option>
+                    @for (c of classes; track c) {
+                      <option [value]="c">{{ c }}</option>
+                    }
+                  </select>
+                </td>
+                <td class="td-center td-venc">
+                  @switch (tipoVencimento(g)) {
+                    @case ('cartao') { <span class="venc-info" title="Pago no cartão: vence com a fatura">Fatura</span> }
+                    @case ('dia') {
+                      <input class="input-venc" type="text" inputmode="numeric" maxlength="2" placeholder="dia"
+                        title="Dia do mês em que a conta vence" [value]="g.dia_vencimento ?? ''" (blur)="onDiaVencimentoBlur($event, g)" />
+                    }
+                    @case ('mes') {
+                      <select class="sel-venc" [(ngModel)]="g.mes_vencimento" (change)="onMesVencimentoChange(g)" title="Mês do ano em que a conta vence">
+                        <option [ngValue]="null">mês</option>
+                        @for (m of meses; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }
+                      </select>
+                    }
+                    @default {
+                      <input class="input-venc" type="text" disabled placeholder="—" title="Gasto flexível não tem data de vencimento" />
+                    }
+                  }
+                </td>
+                <td class="td-valor">
+                  <div class="valor-wrap">
+                    <span class="rs">R$</span>
+                    <input class="input-num" type="text" inputmode="decimal"
+                      [value]="formatarValor(g.valor)"
+                      (blur)="onValorBlur($event, g)"
+                      placeholder="0" />
+                  </div>
+                </td>
+                <td class="td-mensal">
+                  <div class="valor-wrap">
+                    <span class="rs mensal-rs">R$</span>
+                    <span class="num-readonly">{{ formatarValor(valorMensal(g)) || '—' }}</span>
+                  </div>
+                </td>
+                <td class="td-acao">
+                  <button class="btn-lixeira" (click)="excluirLinha(g)" title="Excluir">
+                    <svg viewBox="0 0 20 20" fill="none" width="13" height="13"><path d="M4 6h12M8 6V4h4v2M7 6l.8 9h4.4L13 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </td>
+              </tr>
+            }
+            @for (v of linhasVazias; track v; let i = $index) {
+              <tr class="tr-vazia">
+                <td class="td-num">{{ gastos.length + i + 1 }}</td>
+                <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="total-row">
+        <span>Total Mensal da categoria</span>
+        <span class="total-verde">R$ {{ formatarValor(totalMensal) || '0' }}</span>
+      </div>
+    }
+  </div>
+
+  @if (modalAberto) {
+    <div class="modal-overlay" (click)="modalAberto = false">
+      <div class="modal-dash" (click)="$event.stopPropagation()">
+
+        <div class="modal-dash-header">
+          <h2>Resumo de Gastos</h2>
+          <button class="modal-fechar" (click)="modalAberto = false">
+            <svg viewBox="0 0 20 20" fill="none" width="16" height="16"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <div class="dash-tabela-wrap">
+          <table class="dash-tabela">
+            <thead>
+              <tr>
+                <th class="dth-classe">Classe</th>
+                <th class="dth-bar"></th>
+                <th class="dth-num">Valor Mensal</th>
+                <th class="dth-num">Valor Anual</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of dashPorClasse; track item.label) {
+                <tr class="dash-tr">
+                  <td class="dtd-classe">
+                    <span class="dash-row-label">{{ item.label }}</span>
+                  </td>
+                  <td class="dtd-bar">
+                    <div class="dash-bar-cell">
+                      <span class="dash-pct">{{ pct(item.valor) }}</span>
+                      <div class="dash-bar-bg">
+                        <div class="dash-bar-fill" [style.width]="larguraBar(item.valor)"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="dtd-num">
+                    <span class="dash-rs">R$</span>
+                    <span class="dash-val">{{ item.valor ? formatarValor(item.valor) : '—' }}</span>
+                  </td>
+                  <td class="dtd-num">
+                    <span class="dash-rs">R$</span>
+                    <span class="dash-val">{{ item.valor ? formatarValor(item.valor * 12) : '—' }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr class="dash-tr-total">
+                <td class="dtd-classe">Total</td>
+                <td class="dtd-bar"></td>
+                <td class="dtd-num">
+                  <span class="dash-rs">R$</span>
+                  <span class="dash-val">{{ formatarValor(totalGeralMensal) }}</span>
+                </td>
+                <td class="dtd-num">
+                  <span class="dash-rs">R$</span>
+                  <span class="dash-val">{{ formatarValor(totalGeralMensal * 12) }}</span>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

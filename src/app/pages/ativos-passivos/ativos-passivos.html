@@ -1,0 +1,393 @@
+<div class="page">
+
+  <div class="page-header">
+    <div class="ph-icone">
+      <svg viewBox="0 0 20 20" fill="none" width="20" height="20">
+        <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+      </svg>
+    </div>
+    <div class="ph-texto">
+      <h1 class="titulo-video">Ativos & Passivos<app-video-badge /></h1>
+      <p>Patrimônio e obrigações financeiras.</p>
+    </div>
+    <div class="ph-botoes">
+      <button class="btn-dashboard btn-resumo" (click)="modalAberto = true">
+        <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
+        Resumo
+      </button>
+    </div>
+  </div>
+
+  <div class="abas-wrap">
+    <div class="abas">
+      @for (g of guias; track g.id) {
+        <button class="aba" [class.ativa]="guiaAtiva === g.id" [class.tipo-passivo]="g.tipo === 'passivo'" (click)="selecionarGuia(g.id)">
+          <span class="aba-label">{{ g.label }}</span>
+          <span class="aba-total">{{ totalLabelGuia(g.id) }} R$ {{ fmt(totalGuia(g.id)) || '0' }}</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="rec-card" [class.somente-leitura]="!tipoAtivo">
+
+    <div class="rec-toolbar">
+      @if (tipoAtivo) {
+        <button class="btn-adicionar" (click)="adicionarLinha()" [disabled]="adicionando">
+          <svg viewBox="0 0 20 20" fill="none" width="13" height="13"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Adicionar linha
+        </button>
+      } @else {
+        <div class="toolbar-readonly">
+          <span class="aviso-readonly">
+            <svg viewBox="0 0 20 20" fill="none" width="13" height="13"><path d="M10 3a7 7 0 1 1 0 14A7 7 0 0 1 10 3zm0 4v4m0 2v.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            Mesmos dados da página Dívidas
+          </span>
+          @if (origemGuia[guiaAtiva]) {
+            <button class="btn-ir-origem" (click)="router.navigate([origemGuia[guiaAtiva].rota], { queryParams: origemGuia[guiaAtiva].params })">
+              <svg viewBox="0 0 20 20" fill="none" width="13" height="13"><path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Abrir em {{ origemGuia[guiaAtiva].label }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    @if (carregando) {
+      <div class="rec-loading">Carregando…</div>
+    } @else {
+
+      <!-- ── Ativos Imobilizados ─────────────────────────────── -->
+      @if (guiaAtiva === 'ativos_imobilizados') {
+        <div class="tabela-wrap">
+          <table class="tabela">
+            <colgroup>
+              <col class="col-num">
+              <col class="col-nome">
+              <col class="col-mercado">
+              <col class="col-corr">
+              <col class="col-taxa">
+              <col class="col-proj">
+              <col class="col-acao">
+            </colgroup>
+            <thead>
+              <tr>
+                <th></th>
+                <th class="th-left">Ativo</th>
+                <th class="th-right">Valor de Mercado</th>
+                <th class="th-center">Correção</th>
+                <th class="th-center">Taxa (% a.m.)</th>
+                <th class="th-right">Valor em 12 Meses</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of linhasAtivos; track $index; let i = $index) {
+                <tr class="tr-data">
+                  <td class="td-num">{{ i + 1 }}</td>
+                  <td class="td-desc">
+                    <input class="input-desc" type="text" [(ngModel)]="a.nome" (blur)="salvar(a)" placeholder="Ex: Apartamento" />
+                  </td>
+                  <td class="td-valor">
+                    <div class="valor-wrap">
+                      <span class="rs">R$</span>
+                      <input class="input-num" type="text" inputmode="decimal"
+                        [value]="fmt(a.valor_atual)"
+                        (blur)="onValorBlur($event, a, 'valor_atual')" placeholder="0" />
+                    </div>
+                  </td>
+                  <td class="td-center">
+                    <select class="sel-corr-badge" [(ngModel)]="a.correcao" (change)="salvar(a)"
+                      [class.badge-valorizacao]="a.correcao === 'VALORIZAÇÃO'"
+                      [class.badge-desvalorizacao]="a.correcao === 'DESVALORIZAÇÃO'">
+                      @for (c of correcoesImob; track c) { <option [value]="c">{{ c }}</option> }
+                    </select>
+                  </td>
+                  <td class="td-center">
+                    <input class="input-taxa" type="text"
+                      [value]="a.taxa || ''"
+                      (focus)="onTaxaFocus($event, a)"
+                      (blur)="onTaxaBlur($event, a)"
+                      placeholder="0,00% a.m." />
+                  </td>
+                  <td class="td-proj">
+                    <div class="valor-wrap">
+                      <span class="rs" [class.verde]="a.correcao !== 'DESVALORIZAÇÃO'" [class.vermelho]="a.correcao === 'DESVALORIZAÇÃO'">R$</span>
+                      <span class="num-proj" [class.verde]="a.correcao !== 'DESVALORIZAÇÃO'" [class.vermelho]="a.correcao === 'DESVALORIZAÇÃO'">{{ fmt(valor12meses(a)) || '0' }}</span>
+                    </div>
+                  </td>
+                  <td class="td-acao">
+                    <button class="btn-lixeira" (click)="excluir(a)" title="Excluir">
+                      <svg viewBox="0 0 20 20" fill="none" width="13" height="13"><path d="M4 6h12M8 6V4h4v2M7 6l.8 9h4.4L13 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+              @for (v of linhasVazias; track v; let i = $index) {
+                <tr class="tr-vazia">
+                  <td class="td-num">{{ linhasAtivos.length + i + 1 }}</td>
+                  <td></td><td></td><td></td><td></td><td></td><td></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="total-row">
+          <span>Valor de Mercado Total</span>
+          <span class="total-valor">R$ {{ fmt(totalValorAtual) || '0' }}</span>
+        </div>
+      }
+
+      <!-- ── Ativos Financeiros ──────────────────────────────── -->
+      @if (guiaAtiva === 'ativos_financeiros') {
+        <div class="tabela-wrap">
+          <table class="tabela">
+            <colgroup>
+              <col class="col-num">
+              <col class="col-nome">
+              <col class="col-valor">
+              <col class="col-classe">
+              <col class="col-acao">
+            </colgroup>
+            <thead>
+              <tr>
+                <th></th>
+                <th class="th-left">Ativo</th>
+                <th class="th-right">Valor Investido</th>
+                <th class="th-center">Classe do Ativo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of linhasAtivos; track a.id; let i = $index) {
+                <tr class="tr-data">
+                  <td class="td-num">{{ i + 1 }}</td>
+                  <td class="td-desc">
+                    <input class="input-desc" type="text" [(ngModel)]="a.nome" (blur)="salvar(a)" placeholder="Ex: CDB" />
+                  </td>
+                  <td class="td-valor">
+                    <div class="valor-wrap">
+                      <span class="rs verde">R$</span>
+                      <input class="input-num verde" type="text" inputmode="decimal"
+                        [value]="fmt(a.valor_atual)"
+                        (blur)="onValorBlur($event, a, 'valor_atual')" placeholder="0" />
+                    </div>
+                  </td>
+                  <td class="td-center">
+                    <select class="sel sel-classe" [(ngModel)]="a.classe" (change)="salvar(a)">
+                      <option value="">Selecione</option>
+                      @for (c of classesAtivo; track c) { <option [value]="c">{{ c }}</option> }
+                    </select>
+                  </td>
+                  <td class="td-acao">
+                    <button class="btn-lixeira" (click)="excluir(a)" title="Excluir">
+                      <svg viewBox="0 0 20 20" fill="none" width="13" height="13"><path d="M4 6h12M8 6V4h4v2M7 6l.8 9h4.4L13 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+              @for (v of linhasVazias; track v; let i = $index) {
+                <tr class="tr-vazia">
+                  <td class="td-num">{{ linhasAtivos.length + i + 1 }}</td>
+                  <td></td><td></td><td></td><td></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="total-row">
+          <span>Valor Investido Total</span>
+          <span class="total-valor">R$ {{ fmt(totalValorAtual) || '0' }}</span>
+        </div>
+      }
+
+      <!-- ── Tabela PASSIVOS ───────────────────────────────── -->
+      @if (!tipoAtivo) {
+        <div class="tabela-wrap">
+          <table class="tabela">
+            <colgroup>
+              <col class="col-num">
+              <col class="col-nome">
+              <col class="col-quit">
+              <col class="col-modal">
+              <col class="col-pmt">
+              <col class="col-ptotal">
+              <col class="col-prest">
+              <col class="col-taxa">
+              <col class="col-qvista">
+              <col class="col-corr">
+              <col class="col-acao">
+            </colgroup>
+            <thead>
+              <tr>
+                <th></th>
+                <th class="th-left">Nome do Passivo</th>
+                <th class="th-center">Quit.</th>
+                <th class="th-center">Modalidade</th>
+                <th class="th-right">PMT</th>
+                <th class="th-center">Parc. Totais</th>
+                <th class="th-center">Parc. Restantes</th>
+                <th class="th-center">Taxa</th>
+                <th class="th-right">Quitação à Vista</th>
+                <th class="th-center">Correção</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of linhasPassivos; track p.id; let i = $index) {
+                <tr class="tr-data">
+                  <td class="td-num">{{ i + 1 }}</td>
+                  <td class="td-desc">
+                    <input class="input-desc" type="text" [(ngModel)]="p.nome" (blur)="salvar(p)" placeholder="Ex: Financiamento" />
+                  </td>
+                  <td class="td-center">
+                    <input type="checkbox" class="check-quit" [(ngModel)]="p.quitado" (change)="salvar(p)" />
+                  </td>
+                  <td class="td-center">
+                    <select class="sel sel-modal" [(ngModel)]="p.modalidade" (change)="onModalidadeChange(p)">
+                      <option value="">—</option>
+                      @for (m of modalidades; track m) { <option [value]="m">{{ m }}</option> }
+                    </select>
+                  </td>
+                  <td class="td-valor">
+                    <div class="valor-wrap">
+                      <span class="rs">R$</span>
+                      <input class="input-num" type="text" inputmode="decimal"
+                        [value]="fmt(p.pmt)"
+                        (blur)="onValorBlur($event, p, 'pmt')" placeholder="0" />
+                    </div>
+                  </td>
+                  <td class="td-center">
+                    <input class="input-inteiro" type="text" inputmode="numeric"
+                      [value]="p.parcelas_totais ?? ''"
+                      (blur)="onInteiroBlur($event, p, 'parcelas_totais')" placeholder="—" />
+                  </td>
+                  <td class="td-center">
+                    <input class="input-inteiro" type="text" inputmode="numeric"
+                      [value]="p.parcelas_restantes ?? ''"
+                      (blur)="onInteiroBlur($event, p, 'parcelas_restantes')" placeholder="—" />
+                  </td>
+                  <td class="td-center">
+                    <input class="input-taxa" type="text"
+                      [value]="p.taxa || ''"
+                      (focus)="onTaxaFocus($event, p)"
+                      (blur)="onTaxaBlur($event, p)"
+                      placeholder="0,00% a.m." />
+                  </td>
+                  <td class="td-valor">
+                    <div class="valor-wrap">
+                      <span class="rs">R$</span>
+                      <input class="input-num" type="text" inputmode="decimal"
+                        [value]="fmt(p.quitacao_a_vista)"
+                        (blur)="onValorBlur($event, p, 'quitacao_a_vista')" placeholder="0" />
+                    </div>
+                  </td>
+                  <td class="td-center">
+                    <select class="sel sel-corr" [(ngModel)]="p.correcao" (change)="salvar(p)">
+                      @for (c of correcoes; track c) { <option [value]="c">{{ c }}</option> }
+                    </select>
+                  </td>
+                  <td class="td-acao">
+                    <button class="btn-lixeira" (click)="excluir(p)" title="Excluir">
+                      <svg viewBox="0 0 20 20" fill="none" width="13" height="13"><path d="M4 6h12M8 6V4h4v2M7 6l.8 9h4.4L13 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+              @for (v of linhasVazias; track v; let i = $index) {
+                <tr class="tr-vazia">
+                  <td class="td-num">{{ linhasPassivos.length + i + 1 }}</td>
+                  <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="total-row">
+          <span>PMT Total</span>
+          <span class="total-valor">R$ {{ fmt(totalPmt) || '0' }}</span>
+        </div>
+      }
+    }
+  </div>
+
+</div>
+
+<!-- ── Modal Resumo ──────────────────────────────────────── -->
+@if (modalAberto) {
+  <div class="modal-overlay" (click)="modalAberto = false">
+    <div class="modal-dash" (click)="$event.stopPropagation()">
+      <div class="modal-dash-header">
+        <h2>Resumo Patrimonial</h2>
+        <button class="modal-fechar" (click)="modalAberto = false">
+          <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="dash-tabela-wrap">
+        <table class="dash-tabela">
+          <thead>
+            <tr>
+              <th class="dth-classe">Projeto</th>
+              <th class="dth-bar"></th>
+              <th class="dth-num">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="dash-tr">
+              <td class="dtd-classe dash-row-label">Ativos Imobilizados</td>
+              <td class="dtd-bar">
+                <div class="dash-bar-cell">
+                  <div class="dash-bar-bg"><div class="dash-bar-fill" [style.width.%]="barPct(totalAtivoImob)"></div></div>
+                </div>
+              </td>
+              <td class="dtd-num"><span class="dash-rs">R$</span><span class="dash-val">{{ fmt(totalAtivoImob) || '0' }}</span></td>
+            </tr>
+            <tr class="dash-tr">
+              <td class="dtd-classe dash-row-label">Ativos Financeiros</td>
+              <td class="dtd-bar">
+                <div class="dash-bar-cell">
+                  <div class="dash-bar-bg"><div class="dash-bar-fill" [style.width.%]="barPct(totalAtivoFin)"></div></div>
+                </div>
+              </td>
+              <td class="dtd-num"><span class="dash-rs">R$</span><span class="dash-val">{{ fmt(totalAtivoFin) || '0' }}</span></td>
+            </tr>
+            <tr class="dash-tr dash-tr-passivo">
+              <td class="dtd-classe dash-row-label">Passivos Imobilizados</td>
+              <td class="dtd-bar">
+                <div class="dash-bar-cell">
+                  <div class="dash-bar-bg"><div class="dash-bar-fill dash-bar-fill-red" [style.width.%]="barPct(totalPassivoImob)"></div></div>
+                </div>
+              </td>
+              <td class="dtd-num dash-val-neg"><span class="dash-rs">R$</span>({{ fmt(totalPassivoImob) || '0' }})</td>
+            </tr>
+            <tr class="dash-tr dash-tr-passivo">
+              <td class="dtd-classe dash-row-label">Passivos Financeiros</td>
+              <td class="dtd-bar">
+                <div class="dash-bar-cell">
+                  <div class="dash-bar-bg"><div class="dash-bar-fill dash-bar-fill-red" [style.width.%]="barPct(totalPassivoFin)"></div></div>
+                </div>
+              </td>
+              <td class="dtd-num dash-val-neg"><span class="dash-rs">R$</span>({{ fmt(totalPassivoFin) || '0' }})</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="dash-tr-total">
+              <td class="dtd-classe">PATRIMÔNIO LÍQUIDO</td>
+              <td class="dtd-bar"></td>
+              <td class="dtd-num">
+                <span class="dash-rs">R$</span>
+                <span class="dash-val" [class.pl-positivo]="patrimonioLiquido >= 0" [class.pl-negativo]="patrimonioLiquido < 0">{{ fmt(patrimonioLiquido) || '0' }}</span>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+}

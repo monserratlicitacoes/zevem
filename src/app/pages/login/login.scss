@@ -1,0 +1,390 @@
+// Identidade Zevem
+$verde-profundo: #05261a;
+$verde-floresta: #0b3d2e;
+$verde-apple: #39d353;
+$verde-lima: #b8f15a;
+$off-white: #f7f8f5;
+
+:host {
+  display: block;
+}
+
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  color: $off-white;
+  background: $verde-profundo;
+  font-family: 'Montserrat', sans-serif;
+
+  // Foto da marca na área à esquerda do painel (o rapaz fica centralizado ali), com um zoom lento de entrada
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 480px 0 0;
+    background: url('/login-zevem.jpg') center 22% / cover no-repeat;
+    animation: zoom-lento 20s ease-out both;
+  }
+
+  // Verde profundo sobre a foto: escurece topo e base e aprofunda a sombra atrás do painel
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(5, 38, 26, 0.55) 0%, rgba(5, 38, 26, 0) 32%, rgba(5, 38, 26, 0) 52%, rgba(5, 38, 26, 0.92) 100%),
+      linear-gradient(90deg, rgba(5, 38, 26, 0.35) 0%, rgba(5, 38, 26, 0.08) 35%, rgba(5, 38, 26, 0.3) 55%, rgba(5, 38, 26, 0.92) 66%, $verde-profundo 100%);
+  }
+
+  > * {
+    z-index: 1;
+  }
+}
+
+@keyframes zoom-lento {
+  from { transform: scale(1.08); }
+  to { transform: scale(1); }
+}
+
+// ---------- Lado esquerdo: marca e frase ----------
+
+.hero {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 44px 64px 48px;
+}
+
+.hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-maca {
+  width: auto;
+  height: 52px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 14px rgba(184, 241, 90, 0.25));
+  flex-shrink: 0;
+}
+
+.brand-nome {
+  font-family: 'Poppins', 'Montserrat', sans-serif;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.brand-apple { color: $off-white; }
+.brand-green { color: $verde-lima; }
+
+.brand-slogan {
+  margin-top: 6px;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.hero-copy {
+  max-width: 540px;
+  animation: subir 0.9s 0.2s ease-out both;
+
+  h1 {
+    font-size: clamp(34px, 4.2vw, 56px);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 24px rgba(5, 38, 26, 0.5);
+  }
+
+  p {
+    margin-top: 18px;
+    font-size: 16px;
+    line-height: 1.6;
+    max-width: 420px;
+    opacity: 0.88;
+  }
+}
+
+.hero-rule {
+  display: block;
+  width: 48px;
+  height: 3px;
+  border-radius: 3px;
+  background: $verde-lima;
+  margin-bottom: 22px;
+}
+
+.hero-pilares {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: $verde-lima;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+// ---------- Lado direito: painel de login ----------
+
+.painel {
+  position: relative;
+  width: 480px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 48px;
+  background: rgba(5, 38, 26, 0.5);
+  backdrop-filter: blur(18px) saturate(130%);
+  border-left: 1px solid rgba(184, 241, 90, 0.14);
+  animation: entrar-direita 0.7s ease-out both;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+}
+
+.card-head {
+  margin-bottom: 32px;
+
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    margin-top: 10px;
+  }
+
+  p {
+    font-size: 13px;
+    opacity: 0.72;
+    margin-top: 6px;
+  }
+}
+
+.card-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: $verde-lima;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: rgba(247, 248, 245, 0.85);
+}
+
+input {
+  border: 1px solid rgba(247, 248, 245, 0.2);
+  border-radius: 12px;
+  padding: 13px 16px;
+  font-size: 14px;
+  font-family: inherit;
+  color: $off-white;
+  background: rgba(247, 248, 245, 0.07);
+  outline: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+
+  &::placeholder {
+    color: rgba(247, 248, 245, 0.42);
+  }
+
+  &:focus {
+    border-color: $verde-lima;
+    background: rgba(247, 248, 245, 0.11);
+    box-shadow: 0 0 0 3px rgba(184, 241, 90, 0.18);
+  }
+
+  // Evita o fundo amarelo/branco do autocomplete do navegador
+  &:-webkit-autofill {
+    -webkit-text-fill-color: $off-white;
+    -webkit-box-shadow: 0 0 0 1000px rgba(11, 61, 46, 0.95) inset;
+    caret-color: $off-white;
+  }
+}
+
+.aviso-local {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(247, 248, 245, 0.85);
+  background: rgba(184, 241, 90, 0.08);
+  border: 1px dashed rgba(184, 241, 90, 0.35);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.erro {
+  margin: 0;
+  color: #ffd2cc;
+  font-size: 13px;
+  background: rgba(214, 58, 58, 0.18);
+  border: 1px solid rgba(255, 180, 171, 0.3);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+button {
+  margin-top: 10px;
+  background: $verde-lima;
+  color: $verde-profundo;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(184, 241, 90, 0.18);
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #c8f67a;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 28px rgba(184, 241, 90, 0.28);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(184, 241, 90, 0.4);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.cadastro {
+  margin-top: 22px;
+  font-size: 13px;
+  opacity: 0.85;
+
+  a {
+    color: $verde-lima;
+    font-weight: 700;
+    text-decoration: none;
+
+    &:hover { text-decoration: underline; }
+  }
+}
+
+.card-foot {
+  margin-top: 36px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  opacity: 0.5;
+}
+
+@keyframes entrar-direita {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes subir {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-page::before, .hero-copy, .painel { animation: none; }
+}
+
+// ---------- Responsivo ----------
+
+@media (max-width: 960px) {
+  .login-page::before { right: 420px; }
+  .hero { padding: 40px; }
+  .painel { width: 420px; padding: 32px; }
+}
+
+@media (max-width: 760px) {
+  .login-page {
+    flex-direction: column;
+    justify-content: center;
+    padding: 24px 16px;
+
+    &::before { inset: 0; background-position: center 15%; }
+    &::after { background: linear-gradient(180deg, rgba(5, 38, 26, 0.45) 0%, rgba(5, 38, 26, 0.75) 45%, rgba(5, 38, 26, 0.95) 100%); }
+  }
+
+  .hero {
+    flex: none;
+    padding: 0 0 24px;
+  }
+
+  .hero-copy { display: none; }
+
+  .painel {
+    width: 100%;
+    border-left: none;
+    border: 1px solid rgba(184, 241, 90, 0.18);
+    border-radius: 18px;
+    padding: 32px 24px;
+  }
+}
+
+.link-esqueci {
+  align-self: flex-end;
+  margin-top: -8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: $verde-lima;
+  text-decoration: none;
+
+  &:hover { text-decoration: underline; }
+}
+
+.sucesso {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: $off-white;
+  background: rgba(184, 241, 90, 0.1);
+  border: 1px solid rgba(184, 241, 90, 0.35);
+  border-radius: 10px;
+  padding: 10px 12px;
+}

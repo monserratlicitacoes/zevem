@@ -1,0 +1,200 @@
+<div class="page">
+  <header class="page-header">
+    <div class="ph-texto">
+      <h1>Anúncios e avisos</h1>
+      <p>O anúncio do botão "Contrate um planejador" e os avisos que aparecem quando o cliente entra no app.</p>
+    </div>
+  </header>
+
+  <!-- Anúncio do planejador -->
+  @if (anuncio; as a) {
+    <section class="cartao">
+      <div class="topo">
+        <div>
+          <h2>Anúncio do planejador</h2>
+          <p class="ajuda">Abre pelo botão do menu lateral. Desligado, o botão some do menu de todos os clientes.</p>
+        </div>
+        <button type="button" class="chave" role="switch" [attr.aria-checked]="a.ativo" aria-label="Anúncio ligado" [class.ligada]="a.ativo" (click)="a.ativo = !a.ativo"><span></span></button>
+      </div>
+
+      <div class="grade-form">
+        <div class="foto-campo">
+          <span class="rotulo">Foto</span>
+          <div class="foto-previa">
+            @if (a.foto_url) { <img [src]="imagem(a.foto_url)" alt="Foto do anúncio" /> } @else { <span>Sem foto</span> }
+          </div>
+          <label class="botao">
+            {{ enviandoImagem === 'anuncio' ? 'Enviando...' : (a.foto_url ? 'Trocar foto' : 'Enviar foto') }}
+            <input type="file" accept="image/jpeg,image/png,image/webp" (change)="escolherImagem($event, 'anuncio')" hidden />
+          </label>
+          @if (a.foto_url) { <button type="button" class="botao perigo" (click)="a.foto_url = ''">Remover</button> }
+          <small>JPG, PNG ou WebP até 5 MB. Retrato, rosto na parte de cima.</small>
+        </div>
+
+        <div class="campos">
+          <div class="linha">
+            <label class="campo"><span>Texto do botão no menu</span><input name="botao-menu" [(ngModel)]="a.botao_menu" maxlength="40" /></label>
+            <label class="campo"><span>Selo (acima do título)</span><input name="selo" [(ngModel)]="a.selo" maxlength="50" /></label>
+          </div>
+          <label class="campo"><span>Título</span><textarea name="titulo" [(ngModel)]="a.titulo" maxlength="160" rows="2"></textarea></label>
+
+          <div class="campo">
+            <span>Pontos fortes</span>
+            @for (p of a.pontos; track $index; let i = $index) {
+              <div class="ponto">
+                <input [name]="'ponto-t-' + i" [(ngModel)]="p.titulo" placeholder="Título" maxlength="60" />
+                <input [name]="'ponto-x-' + i" [(ngModel)]="p.texto" placeholder="Explicação" maxlength="200" />
+                <button type="button" class="botao perigo" (click)="removerPonto(i)" aria-label="Remover ponto">×</button>
+              </div>
+            }
+            @if (a.pontos.length < 5) { <button type="button" class="botao adicionar" (click)="adicionarPonto()">+ Adicionar ponto</button> }
+          </div>
+
+          <label class="campo"><span>Frase de destaque (faixa)</span><input name="destaque" [(ngModel)]="a.destaque" maxlength="120" /></label>
+          <div class="linha">
+            <label class="campo"><span>Texto do botão de agendar</span><input name="botao-agendar" [(ngModel)]="a.botao_agendar" maxlength="40" /></label>
+            <label class="campo"><span>WhatsApp do planejador</span><input name="whatsapp" [(ngModel)]="a.whatsapp" placeholder="5562999999999" inputmode="numeric" /><small>Com 55 e DDD, só números.</small></label>
+          </div>
+          <div class="campo">
+            <span>Cores</span>
+            <div class="cores">
+              @for (alvo of alvosCor; track alvo.campo) {
+                <div class="cor-linha">
+                  <span class="cor-rotulo">{{ alvo.rotulo }}</span>
+                  <div class="amostras" role="radiogroup" [attr.aria-label]="alvo.rotulo">
+                    @for (c of paleta; track c.chave) {
+                      <button type="button" class="amostra" role="radio" [attr.aria-checked]="a[alvo.campo] === c.chave"
+                              [class.marcada]="a[alvo.campo] === c.chave" [style.background]="c.fundo" [title]="c.nome"
+                              (click)="a[alvo.campo] = c.chave"><span [style.color]="c.texto">Aa</span></button>
+                    }
+                  </div>
+                  <!-- Prévia: o mesmo estilo que o cliente vê -->
+                  @if (alvo.campo === 'cor_destaque') {
+                    <div class="previa-cor previa-faixa" [style]="varsCor(a.cor_destaque)">{{ a.destaque || 'Frase de destaque' }}</div>
+                  } @else {
+                    <div class="previa-cor previa-botao" [style]="varsCor(a[alvo.campo])">{{ alvo.campo === 'cor_botao_menu' ? a.botao_menu : a.botao_agendar }}</div>
+                  }
+                </div>
+              }
+            </div>
+            <small>Só cores da paleta da marca. Os botões mudam de cor com o mouse em cima: verde-limão vira rosa; as outras viram verde-limão.</small>
+          </div>
+          <label class="campo">
+            <span>Mensagem que abre no WhatsApp</span>
+            <textarea name="mensagem" [(ngModel)]="a.mensagem" maxlength="500" rows="3"></textarea>
+            <small>Use {{ '{' }}nome{{ '}' }} para o nome do cliente. As respostas do formulário vão abaixo da mensagem.</small>
+          </label>
+        </div>
+      </div>
+
+      <div class="rodape">
+        @if (erroAnuncio) { <span class="erro">{{ erroAnuncio }}</span> }
+        @if (msgAnuncio) { <span class="ok-msg">{{ msgAnuncio }}</span> }
+        <button type="button" class="botao" (click)="salvarAnuncio(true)" [disabled]="salvandoAnuncio">Salvar e ver como o cliente vê</button>
+        <button type="button" class="botao primario" (click)="salvarAnuncio()" [disabled]="salvandoAnuncio">{{ salvandoAnuncio ? 'Salvando...' : 'Salvar' }}</button>
+      </div>
+    </section>
+  }
+
+  <!-- Vídeo de boas-vindas -->
+  @if (boasVindas; as b) {
+    <section class="cartao">
+      <div class="topo">
+        <div>
+          <h2>Vídeo de boas-vindas</h2>
+          <p class="ajuda">Abre no primeiro acesso de cada cliente, ocupando a tela. O cliente não consegue fechar: no fim do vídeo aparece o botão que libera o app. Você (master) fecha quando quiser.</p>
+        </div>
+        <button type="button" class="chave" role="switch" [attr.aria-checked]="b.ativo" aria-label="Vídeo de boas-vindas ligado" [class.ligada]="b.ativo" (click)="b.ativo = !b.ativo"><span></span></button>
+      </div>
+      <div class="campos">
+        <label class="campo"><span>Link do vídeo no YouTube</span><input name="bv-link" [(ngModel)]="b.link" placeholder="https://www.youtube.com/watch?v=..." /><small>Deixe o vídeo como "Não listado" no YouTube.</small></label>
+        <div class="linha">
+          <label class="campo"><span>Título acima do vídeo</span><input name="bv-titulo" [(ngModel)]="b.titulo" maxlength="100" placeholder="Opcional" /></label>
+          <label class="campo"><span>Texto do botão no fim do vídeo</span><input name="bv-botao" [(ngModel)]="b.botao" maxlength="60" /></label>
+        </div>
+      </div>
+      <div class="rodape">
+        @if (b.total) { <span class="contagem-bv">{{ b.assistiram }} de {{ b.total }} usuários já passaram pelas boas-vindas</span> }
+        @if (erroBoasVindas) { <span class="erro">{{ erroBoasVindas }}</span> }
+        @if (msgBoasVindas) { <span class="ok-msg">{{ msgBoasVindas }}</span> }
+        <button type="button" class="botao" (click)="testarBoasVindas()" [disabled]="!b.link">Testar agora</button>
+        <button type="button" class="botao primario" (click)="salvarBoasVindas()" [disabled]="salvandoBoasVindas">{{ salvandoBoasVindas ? 'Salvando...' : 'Salvar' }}</button>
+      </div>
+    </section>
+  }
+
+  <!-- Avisos de acesso -->
+  <section class="cartao">
+    <div class="topo">
+      <div>
+        <h2>Avisos no acesso</h2>
+        <p class="ajuda">Aparecem uma vez para cada cliente, ao entrar no app, dentro do período escolhido.</p>
+      </div>
+      @if (!editando) { <button type="button" class="botao primario" (click)="novoAviso()">+ Novo aviso</button> }
+    </div>
+
+    @if (editando; as e) {
+      <div class="editor">
+        <div class="linha">
+          <label class="campo"><span>Título</span><input name="av-titulo" [(ngModel)]="e.titulo" maxlength="120" /></label>
+          <label class="campo"><span>Para quem</span>
+            <select name="av-publico" [(ngModel)]="e.publico">
+              @for (p of publicos | keyvalue; track p.key) { <option [value]="p.key">{{ p.value }}</option> }
+            </select>
+          </label>
+        </div>
+        <label class="campo"><span>Mensagem</span><textarea name="av-mensagem" [(ngModel)]="e.mensagem" maxlength="2000" rows="4"></textarea></label>
+        <div class="linha">
+          <label class="campo"><span>Texto do botão (opcional)</span><input name="av-botao" [(ngModel)]="e.botao_texto" maxlength="40" placeholder="Ex.: Ver novidade" /></label>
+          <label class="campo"><span>Link do botão</span><input name="av-link" [(ngModel)]="e.botao_link" placeholder="/sonhos ou https://..." /><small>Começando com / abre uma tela do app.</small></label>
+        </div>
+        <div class="linha">
+          <label class="campo"><span>Início</span><input type="date" name="av-inicio" [(ngModel)]="e.inicio" /></label>
+          <label class="campo"><span>Fim</span><input type="date" name="av-fim" [(ngModel)]="e.fim" /></label>
+          <div class="campo"><span>Imagem (opcional)</span>
+            <div class="imagem-linha">
+              <label class="botao">{{ enviandoImagem === 'aviso' ? 'Enviando...' : (e.imagem_url ? 'Trocar' : 'Enviar') }}
+                <input type="file" accept="image/jpeg,image/png,image/webp" (change)="escolherImagem($event, 'aviso')" hidden /></label>
+              @if (e.imagem_url) { <img class="mini" [src]="imagem(e.imagem_url)" alt="" /><button type="button" class="botao perigo" (click)="e.imagem_url = ''">Remover</button> }
+            </div>
+          </div>
+        </div>
+        <label class="opcao"><input type="checkbox" name="av-ativo" [(ngModel)]="e.ativo" /> Ativo</label>
+        <div class="rodape">
+          @if (erroAviso) { <span class="erro">{{ erroAviso }}</span> }
+          <button type="button" class="botao" (click)="cancelarAviso()">Cancelar</button>
+          <button type="button" class="botao" (click)="previsualizar(e)">Pré-visualizar</button>
+          <button type="button" class="botao primario" (click)="salvarAviso()" [disabled]="salvandoAviso">{{ salvandoAviso ? 'Salvando...' : 'Salvar aviso' }}</button>
+        </div>
+      </div>
+    }
+
+    @if (avisos.length) {
+      <div class="tabela-wrap">
+        <table class="grade">
+          <thead><tr><th>Aviso</th><th>Para quem</th><th>Período</th><th class="num">Vistos</th><th class="centro">Ativo</th><th></th></tr></thead>
+          <tbody>
+            @for (c of avisos; track c.id) {
+              <tr>
+                <td><strong>{{ c.titulo }}</strong><span class="sub">{{ c.mensagem.slice(0, 90) }}{{ c.mensagem.length > 90 ? '…' : '' }}</span></td>
+                <td>{{ publicos[c.publico] }}</td>
+                <td>{{ periodo(c) }}</td>
+                <td class="num">{{ c.vistos ?? 0 }}</td>
+                <td class="centro"><button type="button" class="chave" role="switch" [attr.aria-checked]="!!c.ativo" [attr.aria-label]="'Ativo: ' + c.titulo" [class.ligada]="!!c.ativo" (click)="alternarAtivo(c)"><span></span></button></td>
+                <td class="num">
+                  <button type="button" class="botao" (click)="previsualizar(c)">Ver</button>
+                  <button type="button" class="botao" (click)="editarAviso(c)">Editar</button>
+                  <button type="button" class="botao perigo" (click)="excluirAviso(c)">Excluir</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (!editando) {
+      <p class="aviso">Nenhum aviso criado.</p>
+    }
+  </section>
+
+  @if (previa) { <app-comunicado-acesso [previa]="previa" (fechou)="previa = null" /> }
+</div>

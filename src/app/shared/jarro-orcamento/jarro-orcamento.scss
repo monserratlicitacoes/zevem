@@ -1,0 +1,138 @@
+$profundo: #05261a;
+$suave: #5c6f66;
+$borda: #dde5d9;
+$fundo: #f7f8f5;
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.modal-jarro {
+  background: #fff;
+  border-radius: 16px;
+  width: 760px;
+  max-width: 100%;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+}
+
+.jarro-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #edf1e9;
+  h2 { font-size: 18px; font-weight: 700; color: $profundo; }
+  p { font-size: 13px; color: $suave; margin-top: 2px; line-height: 1.4; }
+  strong { color: $profundo; }
+}
+
+.modal-fechar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: #edf1e9;
+  color: $suave;
+  cursor: pointer;
+  &:hover { background: $borda; color: $profundo; }
+}
+
+.jarro-aviso { padding: 40px 24px; text-align: center; color: $suave; font-size: 14px; }
+.jarro-erro { color: #d63a3a; }
+
+.jarro-corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+  padding: 20px 24px 24px;
+}
+
+// ── Gráfico ──
+.jarro-grafico {
+  width: 100%;
+  height: auto;
+  max-height: 420px;
+  font-family: inherit;
+  .grade { stroke: rgba(5, 38, 26, 0.09); stroke-width: 1; }
+  .eixo { fill: $suave; font-size: 10px; font-weight: 600; }
+  .camada { transition: opacity 0.2s, filter 0.2s; }
+  .camada.apagada { opacity: 0.16; filter: grayscale(0.7); }
+  .camada.destacada { stroke: #fff; stroke-width: 1.5; }
+  .contorno-total { fill: none; stroke: $profundo; stroke-width: 1.5; stroke-dasharray: 3 4; }
+  .contorno-mensal { fill: none; stroke: $profundo; stroke-width: 2; }
+  .contorno-total.apagada, .contorno-mensal.apagada { stroke-opacity: 0.22; }
+  // Receitas em destaque: contorno preto, mais grosso
+  .contorno-total.destacada { stroke: #111111; stroke-width: 2.5; }
+  .contorno-mensal.destacada { stroke: #111111; stroke-width: 3; }
+}
+
+// ── Legenda ──
+.jarro-legenda { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.leg-receitas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-bottom: 10px; border-bottom: 1px dashed #d5dfd0; }
+.leg-receita {
+  display: flex; flex-direction: column; gap: 2px;
+  background: #fff; border: 1px solid #e6ece2; border-radius: 10px; padding: 6px 10px;
+  i { display: block; width: 28px; height: 0; margin-bottom: 2px; }
+  span { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: $suave; }
+  strong { font-size: 14px; font-weight: 800; color: $profundo; font-variant-numeric: tabular-nums; }
+  &.destacada { border-color: #111111; background: $fundo; i { border-color: #111111 !important; } }
+}
+.linha-tracejada { border-top: 2px dashed $profundo; }
+.linha-continua { border-top: 2.5px solid $profundo; }
+
+.leg-camadas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.leg-camadas li {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #40534a;
+  transition: opacity 0.2s, background 0.2s;
+  strong { color: $profundo; font-variant-numeric: tabular-nums; }
+  small { text-align: right; color: $suave; font-variant-numeric: tabular-nums; }
+  &.destacada { background: $fundo; box-shadow: inset 3px 0 0 $profundo; font-weight: 600; }
+  &.apagada { opacity: 0.45; }
+}
+// Saldo: receita (mensal ou total) menos tudo o que a pilha consome
+.leg-saldos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 10px; border-top: 1px dashed #d5dfd0; }
+.leg-saldo {
+  display: flex; flex-direction: column; gap: 2px;
+  background: #e6f8d2; border-radius: 10px; padding: 6px 10px;
+  span { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: $suave; }
+  strong { font-size: 14px; font-weight: 800; color: $profundo; font-variant-numeric: tabular-nums; }
+  &.negativo { background: #ffe3ea; strong { color: #d63a3a; } }
+}
+.leg-cor { width: 12px; height: 12px; border-radius: 3px; }
+.leg-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.jarro-resumo {
+  font-size: 12px;
+  color: $suave;
+  background: #e6f8d2;
+  border-radius: 10px;
+  padding: 9px 12px;
+  strong { color: $profundo; }
+}
+
+@media (max-width: 640px) {
+  .jarro-corpo { grid-template-columns: minmax(0, 1fr); }
+  .jarro-grafico { max-height: 320px; }
+}

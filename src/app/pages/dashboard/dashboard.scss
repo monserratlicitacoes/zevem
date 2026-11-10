@@ -1,0 +1,683 @@
+// Identidade Zevem
+$profundo: #05261a;
+$painel: #12392a;
+$lima: #b8f15a;
+$floresta: #0b3d2e;
+$off-white: #f7f8f5;
+$texto: #05261a;
+$suave: #5c6f66;
+$rosa-texto: #d61e4c;
+$rosa-claro: #fff0f3;
+
+:host { display: block; height: 100%; }
+
+.page {
+  padding: 32px 36px 24px;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  // sem gap: o espaço até o painel vem só do margin-bottom global do .page-header (24px, igual às outras páginas)
+}
+
+.page-header { display: flex; align-items: center; gap: 16px; }
+.ph-icone {
+  width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+  background: #e6f8d2; color: $floresta;
+  display: flex; align-items: center; justify-content: center;
+}
+.ph-texto {
+  h1 { font-size: 22px; font-weight: 700; color: $texto; }
+  p { font-size: 13px; color: $suave; margin-top: 2px; }
+}
+
+// ── Quadro geral ──
+.painel-geral {
+  // Quadro claro: os destaques escuros ficam só nas barras e marcações
+  background: #fff;
+  border: 1px solid #dde5d9;
+  box-shadow: 0 1px 3px rgba(5, 38, 26, 0.05);
+  border-radius: 18px;
+  padding: 16px;
+  display: grid;
+  // Meses em cima; orçamento e legenda lado a lado; os quatro gráficos menores numa linha só
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-areas:
+    'orc orc leg leg'
+    'bpl cartao vel1 vel2';
+  // Estica até o fim da tela, como os quadros das outras páginas; a sobra vai para a linha do orçamento.
+  // Não encolhe abaixo do conteúdo: em janela baixa a página rola.
+  flex: 1 0 auto;
+  grid-template-rows: 1fr auto;
+  gap: 14px;
+  color: $texto;
+
+  > .cartao-orcamento { grid-area: orc; }
+  > .area-bpl { grid-area: bpl; }
+  > .area-cartao { grid-area: cartao; }
+  > .legenda-orcamento { grid-area: leg; }
+  // velocímetros: grid-area vel1/vel2 definido no template
+}
+
+.cartao {
+  background: #f7f8f5;
+  border: 1px solid #e6ece2;
+  border-radius: 14px;
+  padding: 14px 14px 12px 8px;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cartao-corpo { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.titulo-vertical {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: $suave;
+  flex-shrink: 0;
+}
+
+// ── SVG ──
+.grafico {
+  width: 100%;
+  height: auto;
+  display: block;
+  font-family: inherit;
+  overflow: visible;
+
+  .grade { stroke: rgba(5, 38, 26, 0.09); stroke-width: 1; }
+  .eixo { fill: $suave; font-size: 11px; font-weight: 600; }
+  .eixo-x { fill: $suave; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+  .rotulo-barra { fill: $profundo; font-size: 11px; font-weight: 800; }
+  .aviso-grafico { fill: $suave; font-size: 12px; font-weight: 700; }
+  .aviso-sub { font-size: 11px; font-weight: 500; }
+  .contorno-total { fill: none; stroke: $profundo; stroke-width: 1.5; stroke-dasharray: 3 4; }
+  .contorno-mensal { fill: none; stroke: $profundo; stroke-width: 2; }
+}
+
+.legenda {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px;
+  font-size: 11px; font-weight: 600; color: $suave;
+  span { display: inline-flex; align-items: center; gap: 6px; }
+  i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+}
+
+// Gráficos das colunas do meio ficam estreitos: fontes maiores no espaço do SVG (~10–11px na tela)
+// Escalas discretas. Nos gráficos de barra pequenos o desenho é 1:1 com a tela (ver larguraCol),
+// então estes tamanhos valem em pixels de verdade.
+.cartao-corpo .grafico {
+  .eixo { font-size: 11px; }
+  .eixo-x { font-size: 11px; text-transform: none; }
+  .rotulo-barra { font-size: 11px; }
+}
+// Ocupa toda a altura que sobra no cartão (a linha da grade é definida pelos velocímetros)
+.grafico-px { flex: 1 1 0; min-height: 0; height: auto; width: 100%; }
+.cartao-orcamento .grafico .eixo { font-size: 12px; } // desenho 1:1 (ver larguraOrc)
+
+// Linha dos quatro gráficos menores: mesma altura (a linha da grade estica todos) e título
+// em cima, na horizontal, para o gráfico usar a largura toda do cartão
+.area-bpl, .area-cartao, .cartao-velocimetro {
+  flex-direction: column;
+  padding: 12px 12px 10px;
+  gap: 6px;
+  // o gráfico não tem altura própria (ocupa a sobra); sem isto, no layout em 2 ou 1 coluna o cartão some
+  min-height: 200px;
+
+  .titulo-vertical {
+    writing-mode: horizontal-tb;
+    transform: none;
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    line-height: 1.3;
+  }
+}
+// A altura do orçamento acompanha a janela, para a linha dos quatro gráficos caber sem rolar
+// (≈500px = título da página, espaçamentos e a linha de baixo).
+// Ocupa todo o cartão: a área tem a altura mínima (acompanha a janela) e o desenho a preenche
+// por posição absoluta, sem influenciar a altura da linha da grade.
+.orc-area { position: relative; flex: 1 1 auto; min-width: 0; min-height: clamp(240px, calc(100vh - 500px), 440px); }
+.grafico-orc { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+// ── Legenda do orçamento ──
+.legenda-orcamento {
+  padding: 12px 16px;
+  flex-direction: column;
+  gap: 8px;
+  overflow: visible; // o balão de explicação pode sair do cartão
+  position: relative;
+  z-index: 2;
+}
+
+// Receitas no topo: os dois contornos do gráfico, com o valor em destaque
+.leg-receitas {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  padding-bottom: 8px; border-bottom: 1px dashed #d5dfd0;
+}
+.leg-receita {
+  display: flex; flex-direction: column; gap: 4px;
+  background: #fff; border: 1px solid #e6ece2; border-radius: 10px; padding: 6px 10px; gap: 2px;
+  i { display: block; width: 28px; height: 0; }
+  // só o rótulo e o valor do cartão (o balão de explicação tem estilo próprio)
+  > span:not(.leg-dica) { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: $suave; }
+  > strong { font-size: 14px; font-weight: 800; color: $profundo; font-variant-numeric: tabular-nums; }
+  .linha-continua { border-top: 2.5px solid $profundo; }
+  .linha-tracejada { border-top: 2px dashed $profundo; }
+}
+
+// Partes do orçamento: cor, nome, valor e uma barra com a fatia na receita mensal
+.leg-camadas {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; justify-content: space-between; flex: 1; min-height: 0; gap: 4px;
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 34px;
+    grid-template-areas: 'topo pct' 'trilho pct';
+    column-gap: 8px; row-gap: 3px;
+    align-items: center;
+  }
+}
+.leg-topo {
+  grid-area: topo;
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  font-size: 12px; color: $texto;
+  strong { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+}
+.leg-cor { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.leg-nome { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.leg-trilho {
+  grid-area: trilho;
+  display: block; height: 4px; border-radius: 999px; background: #e6ece2; overflow: hidden;
+  span { display: block; height: 100%; border-radius: inherit; }
+}
+.leg-pct {
+  grid-area: pct; justify-self: end; align-self: center;
+  font-size: 11px; font-weight: 700; color: $suave; font-variant-numeric: tabular-nums;
+}
+
+// ── Velocímetros ──
+// Mostrador centralizado no espaço que sobra abaixo do título
+.velocimetro {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-height: 240px;
+  margin: auto 0;
+  padding: 0;
+  box-sizing: border-box;
+
+  .faixa-anel { fill: none; stroke-width: 3; stroke-linecap: round; opacity: 0.45; }
+  .trilho { fill: none; stroke: #e6ece2; stroke-width: 14; stroke-linecap: round; }
+  .progresso { fill: none; stroke-width: 14; stroke-linecap: round; }
+  .marcador { fill: #fff; stroke-width: 4; filter: drop-shadow(0 1px 2px rgba(5, 38, 26, 0.25)); }
+  .valor-velocimetro { fill: $profundo; font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
+  .rotulo-faixa { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+}
+
+// ── Layout conforme a largura disponível (o painel de vídeo pode estar aberto ou fechado) ──
+.page { container-type: inline-size; }
+
+@container (max-width: 700px) {
+  .painel-geral {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+    grid-template-areas:
+      'orc leg'
+      'bpl cartao'
+      'vel1 vel2';
+  }
+}
+@container (max-width: 520px) {
+  .painel-geral {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas: 'orc' 'leg' 'bpl' 'cartao' 'vel1' 'vel2';
+  }
+}
+@media (max-width: 720px) {
+  .page { padding: 20px 16px; }
+}
+
+// ── Explicação ao passar o mouse (ou focar pelo teclado) nos itens da legenda ──
+.com-dica {
+  position: relative;
+  cursor: help;
+  border-radius: 8px;
+  outline: none;
+  &:focus-visible { box-shadow: 0 0 0 2px $lima; }
+  &:hover .leg-dica, &:focus-visible .leg-dica { opacity: 1; visibility: visible; transform: translateY(0); }
+}
+.leg-camadas li.com-dica { padding: 2px 4px; margin: -2px -4px; }
+.leg-camadas li.com-dica:hover { background: #fff; }
+
+.leg-dica {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 20;
+  width: max-content;
+  max-width: 260px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: $profundo;
+  color: $off-white;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: normal;
+  box-shadow: 0 8px 24px rgba(5, 38, 26, 0.22);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.12s, transform 0.12s, visibility 0.12s;
+
+  strong { color: $lima; font-weight: 800; }
+  small { display: block; margin-top: 4px; font-size: 10px; color: rgba(247, 248, 245, 0.7); }
+
+  // setinha apontando para o item
+  &::after {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 100%;
+    border: 6px solid transparent;
+    border-top-color: $profundo;
+  }
+}
+.leg-dica-asterisco { color: $lima; font-weight: 800; }
+// Receita da direita: balão alinhado pela direita para não passar da borda do quadro
+.leg-receita:last-child .leg-dica { left: auto; right: 0; &::after { left: auto; right: 18px; } }
+
+// Balão sobre os gráficos de barra (liquidez e cartão): mesmo estilo da legenda
+.area-bpl, .area-cartao { overflow: visible; position: relative; z-index: 1; }
+.area-bpl:hover, .area-cartao:hover { z-index: 3; }
+.dica-grafico {
+  .leg-dica { left: 50%; bottom: calc(100% - 4px); transform: translate(-50%, 4px); min-width: 180px; }
+  &:hover .leg-dica, &:focus-visible .leg-dica { transform: translate(-50%, 0); }
+  .leg-dica::after { left: calc(50% - 6px); }
+}
+.dica-titulo { display: block; margin-bottom: 4px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(247, 248, 245, 0.7); }
+.dica-linha {
+  display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  i { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; box-shadow: 0 0 0 1px rgba(247, 248, 245, 0.35); }
+  strong { margin-left: auto; padding-left: 12px; color: $off-white; font-variant-numeric: tabular-nums; }
+}
+.dica-nota { display: block; max-width: 220px; white-space: normal; font-size: 11px; color: $lima; margin: 0 0 2px 17px; }
+.dica-total { margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(247, 248, 245, 0.2); strong { color: $lima; } }
+.dica-destaque { color: #fff; font-weight: 500; }
+
+// ── Velocímetro que vira: frente (gráfico) e verso (diagnóstico) ──
+// A seção vira só o "palco" 3D; as faces levam a aparência do cartão.
+.cartao-velocimetro {
+  padding: 0;
+  background: none;
+  border: none;
+  overflow: visible;
+  perspective: 1200px;
+}
+.flip-interno {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.cartao-velocimetro.virado .flip-interno { transform: rotateY(180deg); }
+
+.face {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 12px 10px;
+  background: #f7f8f5;
+  border: 1px solid #e6ece2;
+  border-radius: 14px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.face.frente { position: relative; height: 100%; box-sizing: border-box; }
+.face.frente .titulo-vertical { padding-right: 30px; }
+.face.verso {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  background: #fff;
+}
+
+// Botão de virar: pequeno, redondo, no canto do cartão
+.btn-virar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dde5d9;
+  border-radius: 50%;
+  background: #fff;
+  color: $profundo;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  &:hover { background: $lima; border-color: $lima; transform: rotate(-20deg); }
+  &:focus-visible { outline: 2px solid $lima; outline-offset: 2px; }
+}
+.btn-virar--verso { position: static; margin-left: auto; flex-shrink: 0; }
+
+.verso-topo { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.verso-rotulo { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: $suave; }
+.verso-nivel {
+  font-size: 10px; font-weight: 800; border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+  background: #edf1e9; color: $profundo;
+}
+.verso--elevado .verso-nivel { background: #fff0f3; color: #d61e4c; }
+.verso--saudavel .verso-nivel { background: #e6f8d2; color: $floresta; }
+
+.verso-texto {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: $texto;
+  scrollbar-width: thin;
+  outline: none;
+  &:focus-visible { box-shadow: inset 0 0 0 2px $lima; border-radius: 6px; }
+
+  p { margin: 0 0 6px; }
+  strong { font-weight: 800; color: $profundo; }
+  ul { list-style: none; margin: 0 0 6px; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+  li { position: relative; padding-left: 14px; font-weight: 600; }
+  li::before { content: ''; position: absolute; left: 0; top: 0.45em; width: 7px; height: 7px; border-radius: 2px; background: $profundo; }
+}
+.verso--elevado .verso-texto li::before { background: #ff2e63; }
+.verso--saudavel .verso-texto li::before { background: #0b3d2e; }
+.verso-chamada { font-size: 14px; font-weight: 800; color: $floresta; letter-spacing: 0.02em; }
+.verso-frase { font-weight: 700; font-style: italic; color: $profundo; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-interno { transition: none; }
+}
+
+.cartao-velocimetro { position: relative; z-index: 1; }
+.cartao-velocimetro:hover { z-index: 4; }
+.face.frente { overflow: visible; }
+
+// Quadro "Como calculamos" no verso do GC
+.verso-calculo {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f7f8f5;
+  border: 1px solid #e6ece2;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+}
+.verso-calculo-titulo { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: $suave; margin-bottom: 2px; }
+.vc-linha {
+  display: flex; align-items: flex-start; gap: 8px; line-height: 1.3; color: $texto;
+  strong { margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+}
+.vc-total { padding-top: 3px; border-top: 1px solid #e6ece2; font-weight: 700; }
+
+// Quadro "Objetivo" no verso da saúde orçamentária
+.verso-objetivo {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f7f8f5;
+  border-left: 3px solid #05261a;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #05261a;
+}
+.verso--elevado .verso-objetivo { border-left-color: #ff2e63; }
+.verso--saudavel .verso-objetivo { border-left-color: #0b3d2e; }
+.verso-intro { font-weight: 700; }
+
+// Prévia no verso: só a abertura, esmaecendo no fim, com o botão "Ver mais"
+.verso-previa {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent);
+  mask-image: linear-gradient(180deg, #000 70%, transparent);
+}
+.btn-ver-mais {
+  align-self: flex-start;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 999px;
+  background: #05261a;
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  &:hover { background: #b8f15a; color: #05261a; }
+  &:focus-visible { outline: 2px solid #b8f15a; outline-offset: 2px; }
+}
+
+// ── Modal do diagnóstico completo ──
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(5, 38, 26, 0.4);
+  backdrop-filter: blur(3px);
+  animation: modal-fundo 0.18s ease;
+}
+.modal-diag {
+  width: 560px;
+  max-width: 100%;
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(5, 38, 26, 0.25);
+  overflow: hidden;
+  animation: modal-entrada 0.2s ease;
+}
+.modal-diag-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid #edf1e9;
+  > div { flex: 1; min-width: 0; }
+  h2 { margin: 2px 0 0; font-size: 16px; font-weight: 700; color: #05261a; }
+}
+.modal-diag-sub { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #5c6f66; }
+.modal-fechar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: #edf1e9;
+  color: #5c6f66;
+  cursor: pointer;
+  &:hover { background: #dde5d9; color: #05261a; }
+  &:focus-visible { outline: 2px solid #b8f15a; outline-offset: 2px; }
+}
+.modal-diag-texto {
+  padding: 16px 22px 22px;
+  font-size: 13px;
+  line-height: 1.6;
+  p { margin: 0 0 10px; }
+  ul { gap: 6px; margin-bottom: 12px; }
+  .verso-chamada { font-size: 16px; }
+  .verso-objetivo { font-size: 13px; margin-top: 12px; padding: 10px 14px; }
+  .verso-calculo { font-size: 12px; margin-top: 12px; padding: 10px 14px; }
+}
+@keyframes modal-fundo { from { opacity: 0; } }
+@keyframes modal-entrada { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay, .modal-diag { animation: none; }
+}
+
+// ── Botão de tema (cabeçalho) ──
+.page-header { justify-content: space-between; }
+.btn-tema {
+  flex-shrink: 0;
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid #dde5d9;
+  border-radius: 999px;
+  background: #fff;
+  color: $profundo;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  &:hover { background: $profundo; border-color: $profundo; color: $lima; }
+  &:focus-visible { outline: 2px solid $lima; outline-offset: 2px; }
+}
+
+// ── Versão noturna: fundo verde quase preto, lima como destaque ──
+$noite-fundo: #071a11;
+$noite-quadro: #0b2419;
+$noite-cartao: #10301f;
+$noite-borda: rgba(247, 248, 245, 0.07);
+$noite-texto: #eef3ea;
+$noite-suave: #94ad9f;
+
+.page.noturno {
+  background: $noite-fundo;
+  color-scheme: dark;
+  transition: background 0.25s;
+
+  .ph-texto h1 { color: $noite-texto; }
+  .ph-texto p { color: $noite-suave; }
+  .ph-texto::before { background: $lima; }
+
+  .btn-tema {
+    background: transparent;
+    border-color: rgba(184, 241, 90, 0.45);
+    color: $lima;
+    &:hover { background: $lima; border-color: $lima; color: $profundo; }
+  }
+
+  .painel-geral {
+    background: $noite-quadro;
+    border-color: $noite-borda;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    color: $noite-texto;
+  }
+  .cartao, .face { background: $noite-cartao; border-color: $noite-borda; }
+  .cartao-velocimetro { background: none; }
+  .titulo-vertical { color: $noite-suave; }
+
+  // Gráficos
+  .grafico {
+    .grade { stroke: rgba(247, 248, 245, 0.08); }
+    .eixo, .eixo-x { fill: $noite-suave; }
+    .contorno-total, .contorno-mensal { stroke: $noite-texto; }
+    .rotulo-fora { fill: $noite-texto; }
+    .aviso-grafico { fill: $noite-suave; }
+  }
+
+  // Legenda
+  .leg-receitas { border-bottom-color: rgba(247, 248, 245, 0.12); }
+  .leg-receita {
+    background: $noite-quadro;
+    border-color: $noite-borda;
+    > span:not(.leg-dica) { color: $noite-suave; }
+    > strong { color: $lima; }
+    .linha-continua { border-top-color: $noite-texto; }
+    .linha-tracejada { border-top-color: $noite-texto; }
+  }
+  .leg-topo { color: $noite-texto; }
+  .leg-trilho { background: rgba(247, 248, 245, 0.08); }
+  .leg-pct { color: $noite-suave; }
+  .leg-camadas li.com-dica:hover { background: rgba(247, 248, 245, 0.05); }
+
+  // Balões: um degrau mais escuro que o cartão, com contorno lima
+  .leg-dica {
+    background: #03100a;
+    border: 1px solid rgba(184, 241, 90, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    &::after { border-top-color: #03100a; }
+  }
+
+  // Velocímetros
+  .velocimetro {
+    .trilho { stroke: rgba(247, 248, 245, 0.08); }
+    .faixa-anel { opacity: 0.6; }
+    .marcador { fill: $noite-fundo; filter: drop-shadow(0 0 6px rgba(184, 241, 90, 0.35)); }
+    .valor-velocimetro { fill: $noite-texto; }
+  }
+  .btn-virar {
+    background: $noite-quadro;
+    border-color: rgba(184, 241, 90, 0.35);
+    color: $lima;
+    &:hover { background: $lima; border-color: $lima; color: $profundo; }
+  }
+
+  // Verso e modal do diagnóstico
+  .face.verso { background: $noite-cartao; }
+  .verso-texto { color: $noite-texto; strong { color: $lima; } li::before { background: $noite-suave; } }
+  .verso--saudavel .verso-texto li::before { background: $lima; }
+  .verso-chamada { color: $lima; }
+  .verso-frase { color: $noite-texto; }
+  .verso-nivel { background: rgba(247, 248, 245, 0.1); color: $noite-texto; }
+  .verso--saudavel .verso-nivel { background: rgba(184, 241, 90, 0.16); color: $lima; }
+  .verso--elevado .verso-nivel { background: rgba(255, 46, 99, 0.16); color: #ff6b8e; }
+  .verso-calculo, .verso-objetivo { background: $noite-quadro; border-color: $noite-borda; }
+  .verso-objetivo { color: $noite-texto; border-left-color: $noite-suave; }
+  .verso--saudavel .verso-objetivo { border-left-color: $lima; }
+  .verso--elevado .verso-objetivo { border-left-color: #ff2e63; }
+  .verso-calculo-titulo { color: $noite-suave; }
+  .vc-linha { color: $noite-texto; }
+  .vc-total { border-top-color: $noite-borda; }
+  .btn-ver-mais {
+    background: $lima;
+    color: $profundo;
+    &:hover { background: $noite-texto; }
+  }
+
+  .modal-overlay { background: rgba(0, 0, 0, 0.55); }
+  .modal-diag { background: $noite-cartao; box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5); border: 1px solid $noite-borda; }
+  .modal-diag-topo { border-bottom-color: $noite-borda; h2 { color: $noite-texto; } }
+  .modal-diag-sub { color: $lima; }
+  .modal-fechar {
+    background: rgba(247, 248, 245, 0.08);
+    color: $noite-suave;
+    &:hover { background: $lima; color: $profundo; }
+  }
+}

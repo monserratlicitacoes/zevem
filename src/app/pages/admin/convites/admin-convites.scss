@@ -1,0 +1,27 @@
+.form-convite {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px;
+  .campo { flex: 1 1 200px; }
+  .campo-email { flex: 1.4 1 260px; }
+  .enviar { padding: 9px 18px; font-size: 13px; }
+}
+.erro { margin-top: 8px; }
+
+.resultado {
+  margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: #e6f8d2; border: 1px solid #c4f58a;
+  font-size: 12px; color: #05261a; display: flex; flex-direction: column; gap: 8px;
+  strong { color: #0b3d2e; }
+  small { font-size: 11px; color: #5c6f66; }
+  &.falhou { background: #fff4dc; border-color: #f5c46b; strong { color: #8a5a00; } }
+}
+.link {
+  display: flex; gap: 8px;
+  input {
+    flex: 1; min-width: 0; border: 1px solid #dde5d9; border-radius: 8px; padding: 7px 10px; background: #fff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: #05261a;
+    &:focus { outline: none; border-color: #0b3d2e; }
+  }
+}
+
+.acoes-linha { display: flex; gap: 6px; justify-content: flex-end; }
+.vermelho { color: #d61e4c !important; font-weight: 600; }
+.acoes-linha .botao { padding: 4px 9px; font-size: 11px; }

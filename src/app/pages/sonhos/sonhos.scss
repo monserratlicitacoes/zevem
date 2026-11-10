@@ -1,0 +1,1284 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.page {
+  padding: 32px 36px 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.ph-icone {
+  width: 46px;
+  height: 46px;
+  background: #e6f8d2;
+  color: #0b3d2e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ph-texto {
+  h1 { font-size: 22px; font-weight: 700; color: #05261a; }
+  p  { font-size: 13px; color: #5c6f66; margin-top: 2px; }
+}
+
+// ── Card ─────────────────────────────────────────────────────
+.rec-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.rec-toolbar {
+  padding: 12px 16px;
+  border-bottom: 1px solid #edf1e9;
+}
+
+.btn-adicionar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #0b3d2e;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  font-family: inherit;
+  &:hover { text-decoration: underline; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.rec-loading {
+  padding: 40px;
+  text-align: center;
+  color: #8a9d92;
+  font-size: 14px;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #8a9d92;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+// ── Tabela ───────────────────────────────────────────────────
+.tabela-wrap {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+  min-height: 460px;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f7f8f5;
+    color: #5c6f66;
+    border-bottom: 1px solid #dde5d9;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 12px 10px;
+    // Cabeçalhos longos (Valor Inicial, Meses Rest.…) quebram em duas linhas para a grade caber sem rolagem
+    white-space: normal;
+    line-height: 1.3;
+  }
+
+  .th-left   { text-align: left; }
+  .th-center { text-align: center; }
+  .th-right  { text-align: right; }
+
+  td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #edf1e9;
+    vertical-align: middle;
+  }
+
+  tr.tr-data:hover td { background: #f7f8f5; }
+}
+
+// Larguras das colunas via th
+.col-num     { width: 32px; }
+.col-nome    { min-width: 160px; }
+.col-valor   { width: 96px; }
+.col-prazo   { width: 80px; }
+.col-rent    { width: 80px; }
+.col-vinicial { width: 96px; }
+.col-dinicio { width: 106px; }
+.col-selado  { width: 96px; }
+.col-dfim    { width: 96px; }
+.col-meses   { width: 82px; }
+.col-mim     { width: 120px; }
+.col-acao    { width: 36px; }
+
+// ── Célula de número de linha ─────────────────────────────────
+.td-num {
+  text-align: right;
+  color: #8a9d92;
+  font-size: 12px;
+  font-weight: 600;
+  padding-right: 6px !important;
+}
+
+// ── Célula Nome ───────────────────────────────────────────────
+.td-nome { padding-left: 2px !important; }
+
+.input-nome {
+  width: 100%;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #05261a;
+  outline: none;
+  font-family: inherit;
+  padding: 0 4px;
+  &:focus { background: #f7f8f5; border-radius: 6px; }
+  &::placeholder { color: #c3cfbf; }
+}
+
+// ── Células de valor ──────────────────────────────────────────
+.td-valor { text-align: right; }
+
+// Valor Total, Valor Inicial e Valor Selado: colunas enxutas para a grade caber sem rolagem lateral
+.tabela {
+  th.col-valor, th.col-vinicial, th.col-selado,
+  // Folga à direita para o número não encostar na coluna seguinte
+  td.td-valor:not(.td-calculado) { padding-left: 4px; padding-right: 16px; }
+  th.col-acao, td.td-acao { padding-left: 6px; padding-right: 6px; }
+  // 64px cabe até R$ 9.999.999
+  td.td-valor:not(.td-calculado) .input-num { width: 64px; }
+}
+
+.valor-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.rs {
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+  flex-shrink: 0;
+}
+
+// Remove setas de inputs numéricos
+input[type=number] {
+  -moz-appearance: textfield;
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+}
+
+.input-num {
+  width: 80px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+  outline: none;
+  font-family: inherit;
+  text-align: right;
+  padding: 0;
+  flex-shrink: 0;
+  &:focus { background: #f7f8f5; border-radius: 6px; padding: 0 4px; }
+  &::placeholder { color: #c3cfbf; font-weight: 400; }
+}
+
+// ── Prazo e Rentabilidade ─────────────────────────────────────
+.td-center { text-align: center; }
+
+.prazo-wrap, .rent-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.input-prazo, .input-rent {
+  width: 46px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+  outline: none;
+  font-family: inherit;
+  text-align: center;
+  padding: 0;
+  &:focus { background: #f7f8f5; border-radius: 6px; }
+}
+
+.unit-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a9d92;
+}
+
+// ── Data Início ───────────────────────────────────────────────
+.input-data {
+  width: 90px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: #05261a;
+  outline: none;
+  font-family: inherit;
+  text-align: center;
+  padding: 0;
+  &:focus { background: #f7f8f5; border-radius: 6px; }
+  &::placeholder { color: #c3cfbf; }
+}
+
+// ── Colunas calculadas (readonly) ─────────────────────────────
+.td-readonly {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0b3d2e;
+  white-space: nowrap;
+}
+
+// ── M.I.M. ────────────────────────────────────────────────────
+.td-mim { text-align: right; }
+
+// Igual às demais colunas de valor: R$ encostado à esquerda e o número à direita
+.mim-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.mim-rs {
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+}
+
+.mim-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0b3d2e;
+}
+
+.mim-vazio {
+  font-size: 13px;
+  color: #c3cfbf;
+}
+
+// ── Lixeira ───────────────────────────────────────────────────
+.td-acao { text-align: center; }
+
+.btn-lixeira {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #c3cfbf;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { background: #fff0f3; color: #ff2e63; } // exclusão em rosa elétrico (vermelho só para erro)
+}
+
+// ── Toolbar botões ────────────────────────────────────────────
+.ph-botoes {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.btn-dashboard {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1.5px solid #dde5d9;
+  border-radius: 8px;
+  color: #05261a;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:hover { border-color: #b8f15a; box-shadow: 0 0 0 2px #e6f8d2; }
+}
+
+.btn-simulador {
+  position: relative; // selo de vídeo no canto
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e6f8d2;
+  border: 1.5px solid #c4f58a;
+  border-radius: 8px;
+  color: #0b3d2e;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-family: inherit;
+  transition: background 0.15s, box-shadow 0.15s;
+  &:hover { background: #c4f58a; box-shadow: 0 0 0 2px #e6f8d2; }
+}
+
+// ── Total ─────────────────────────────────────────────────────
+.total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #05261a; // total em destaque: verde profundo com o número em lima
+  border-top: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(247, 248, 245, 0.85);
+  flex-shrink: 0;
+}
+
+.total-valor {
+  font-size: 18px;
+  font-weight: 700;
+  color: #b8f15a;
+}
+
+// ── Modal Resumo ──────────────────────────────────────────────
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-dash {
+  background: #fff;
+  border-radius: 16px;
+  width: 980px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+}
+
+.modal-dash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #edf1e9;
+  h2 { font-size: 16px; font-weight: 700; color: #05261a; margin: 0; }
+}
+
+.modal-fechar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: #edf1e9;
+  border-radius: 8px;
+  color: #5c6f66;
+  cursor: pointer;
+  &:hover { background: #dde5d9; color: #05261a; }
+}
+
+.dash-tabela-wrap { padding: 20px 24px 28px; }
+
+.dash-tabela {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #5c6f66;
+    background: #edf1e9;
+    padding: 9px 12px;
+    white-space: nowrap;
+  }
+
+  .dth-classe { text-align: left; border-radius: 8px 0 0 8px; }
+  .dth-bar    { width: 40%; text-align: left; }
+  .dth-num    { text-align: right; min-width: 100px; }
+  .dth-num:last-child { border-radius: 0 8px 8px 0; }
+}
+
+.dash-tr td {
+  padding: 12px 12px;
+  border-bottom: 1px solid #edf1e9;
+  vertical-align: middle;
+}
+
+.dash-row-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+  white-space: nowrap;
+}
+
+.dtd-bar { padding-right: 16px !important; }
+
+.dash-bar-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-bar-bg {
+  flex: 1;
+  height: 10px;
+  background: #dde5d9;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.dash-bar-fill {
+  height: 100%;
+  background: #0b3d2e; // verde floresta: mais escuro que o lima, como a aba selecionada
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+
+.dtd-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dash-rs {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a9d92;
+  margin-right: 4px;
+}
+
+.dash-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #05261a;
+}
+
+.dash-tr-total td {
+  padding: 12px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  background: #f7f8f5;
+  vertical-align: middle;
+  .dash-rs { color: #5c6f66; }
+  .dash-val { color: #0b3d2e; font-size: 14px; }
+}
+
+.dtd-classe {
+  font-size: 13px;
+  font-weight: 600;
+  color: #40534a;
+}
+
+// ── Modal Simulador ───────────────────────────────────────────
+.modal-sim {
+  background: #fff;
+  border-radius: 16px;
+  width: 860px;
+  max-width: calc(100vw - 48px);
+  // Altura fixa: trocar de aba não muda o tamanho da janela nem tira as abas do lugar;
+  // o conteúdo mais longo rola dentro de .sim-conteudo
+  height: min(820px, calc(100vh - 80px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+}
+
+.sim-abas-wrap {
+  border-bottom: 2px solid #dde5d9;
+  padding: 0 24px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  // Não encolhe quando o conteúdo cresce: só a área .sim-conteudo rola
+  flex-shrink: 0;
+}
+
+.modal-sim > .modal-dash-header { flex-shrink: 0; }
+
+.sim-abas {
+  display: flex;
+  gap: 0;
+  min-width: max-content;
+}
+
+.sim-aba {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5c6f66;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  border-radius: 8px 8px 0 0;
+
+  &:hover { color: #05261a; background: rgba(184, 241, 90, 0.08); }
+
+  // Aba selecionada: verde profundo e texto claro (mesmo padrão das abas de Gastos, Ativos & Passivos etc.)
+  &.ativa {
+    color: #f7f8f5;
+    border-bottom-color: transparent;
+    background: #05261a;
+  }
+
+  // Sem o contorno azul do navegador; anel lima só na navegação por teclado
+  &:focus { outline: none; }
+  &:focus-visible { box-shadow: 0 0 0 2px #b8f15a; }
+}
+
+.sim-conteudo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 24px;
+}
+
+// ── Formulário do Simulador ───────────────────────────────────
+.sim-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sim-row {
+  display: flex;
+  gap: 20px;
+  .sim-field { flex: 1; }
+}
+
+.sim-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sim-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #40534a;
+  strong { color: #05261a; }
+}
+
+.sim-input {
+  height: 42px;
+  border: 1.5px solid #dde5d9;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #05261a;
+  background: #fff;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+  &:focus { border-color: #b8f15a; box-shadow: 0 0 0 3px #e6f8d2; }
+  &::placeholder { color: #c3cfbf; }
+}
+
+
+.btn-buscar-fipe {
+  height: 42px;
+  padding: 0 16px;
+  background: #b8f15a;
+  color: #05261a;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  &:hover:not(:disabled) { background: #8fe04a; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.sim-money {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  border: 1.5px solid #dde5d9;
+  border-radius: 10px;
+  padding: 0 14px;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:focus-within { border-color: #b8f15a; box-shadow: 0 0 0 3px #e6f8d2; }
+}
+
+.sim-rs {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a9d92;
+  flex-shrink: 0;
+}
+
+.sim-input-num {
+  flex: 1;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #05261a;
+  outline: none;
+  font-family: inherit;
+  text-align: right;
+  padding: 0;
+  &::placeholder { color: #c3cfbf; font-weight: 400; }
+}
+
+.sim-meses {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  border: 1.5px solid #dde5d9;
+  border-radius: 10px;
+  padding: 0 14px;
+  background: #fff;
+  transition: border-color 0.15s;
+  &:focus-within { border-color: #b8f15a; box-shadow: 0 0 0 3px #e6f8d2; }
+
+  input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: #05261a;
+    outline: none;
+    font-family: inherit;
+    padding: 0;
+    -moz-appearance: textfield;
+    &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; }
+  }
+}
+
+.sim-unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a9d92;
+  flex-shrink: 0;
+}
+
+.sim-secao-titulo {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8a9d92;
+  margin: 0;
+}
+
+.sim-select {
+  height: 42px;
+  border: 1.5px solid #dde5d9;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 13px;
+  color: #05261a;
+  background: #fff;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color 0.15s;
+  &:focus { border-color: #b8f15a; box-shadow: 0 0 0 3px #e6f8d2; }
+  &:disabled { background: #f7f8f5; color: #8a9d92; cursor: default; }
+  &.sim-select-disabled { background: #f7f8f5; color: #8a9d92; cursor: default; }
+}
+
+.sim-badge-fipe {
+  display: inline-flex;
+  align-items: center;
+  background: #e6f8d2;
+  color: #0b3d2e;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 2px 7px;
+  margin-left: 8px;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+
+
+.fac-filho-card {
+  background: #f7f8f5;
+  border: 1.5px solid #dde5d9;
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fac-filho-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fac-filho-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: #132a20;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fac-filho-nome {
+  font-weight: 500;
+  text-transform: none;
+  color: #5c6f66;
+}
+
+.fac-filho-remover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #fff0f3;
+  border: none;
+  border-radius: 8px;
+  color: #ff2e63;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: #ffd0db; }
+}
+
+.sim-field-hint {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 6px;
+}
+
+.sim-hint {
+  font-size: 12px;
+  color: #8a9d92;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.sim-switch-val {
+  font-size: 13px;
+  color: #5c6f66;
+}
+
+.sim-switch-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  border: 1.5px solid #dde5d9;
+  border-radius: 10px;
+  padding: 0 14px;
+  background: #fff;
+}
+
+.fac-filho-resultado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #ecf8de;
+  border: 1.5px solid #c5e87a;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.fac-res-linha {
+  font-size: 12px;
+  color: #05261a;
+  strong { font-weight: 600; }
+}
+
+.fac-res-total {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f4a2f;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.fac-add-filho {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  height: 38px;
+  background: #fff;
+  border: 1.5px dashed #b8f15a;
+  border-radius: 10px;
+  color: #0f4a2f;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: background 0.15s;
+  &:hover { background: #ecf8de; }
+}
+
+
+.sim-loading-txt {
+  flex: 1;
+  text-align: right;
+  font-size: 13px;
+  color: #8a9d92;
+  font-style: italic;
+}
+
+// ── Switch ────────────────────────────────────────────────────
+.sim-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  background: #f7f8f5;
+  border-radius: 12px;
+  border: 1.5px solid #dde5d9;
+}
+
+.sim-switch-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #05261a;
+}
+
+.switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 99px;
+  background: #dde5d9;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+  flex-shrink: 0;
+
+  // Ligado: verde profundo (padrão de todos os switches do app)
+  &.on { background: #05261a; }
+  &:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(184, 241, 90, 0.35); }
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  transition: left 0.2s;
+
+  .on & { left: 23px; }
+}
+
+// ── Carro atual (seção expansível) ────────────────────────────
+.sim-carro-atual {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background: #f7f8f5;
+  border-radius: 12px;
+  border: 1.5px solid #dde5d9;
+}
+
+.sim-field-readonly .sim-money {
+  background: #edf1e9;
+  border-color: #dde5d9;
+  pointer-events: none;
+}
+
+.sim-resultado { background: #edf1e9; border-color: #dde5d9; }
+
+.sim-resultado-val {
+  flex: 1;
+  text-align: right;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0b3d2e;
+}
+
+.sim-valor-ia-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+
+  .sim-money { flex: 1; }
+}
+
+.btn-ia {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  height: 42px;
+  background: #b8f15a;
+  color: #05261a;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+  &:hover { background: #c8f67a; }
+  &:disabled { opacity: 0.6; cursor: default; }
+}
+
+.ia-spin {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+  font-size: 16px;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.sim-erro {
+  font-size: 12px;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.sim-hint {
+  font-size: 11px;
+  color: #8a9d92;
+  font-style: italic;
+}
+
+.sim-dep-grid {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #f7f8f5;
+  border: 1.5px solid #dde5d9;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-top: 4px;
+}
+
+.sim-dep-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sim-dep-label {
+  font-size: 12px;
+  color: #5c6f66;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sim-dep-val {
+  font-size: 20px;
+  font-weight: 600;
+  color: #132a20;
+}
+
+
+.sim-dep-money {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.sim-dep-rs {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0b3d2e;
+  flex-shrink: 0;
+}
+
+.sim-dep-input {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0b3d2e;
+  border: none;
+  border-bottom: 1.5px dashed #b8f15a;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-family: inherit;
+  &:focus { border-bottom-color: #0b3d2e; }
+}
+
+.sim-dep-arrow {
+  font-size: 20px;
+  color: #c3cfbf;
+  flex-shrink: 0;
+}
+
+.sim-resultado-carro {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1.5px solid #edf1e9;
+  // Espaçamento único entre todos os blocos do resultado (título, câmbio, cards, total, botão)
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  > .sim-cambio-bar, > .sim-res-total, > .btn-adicionar-sonho, > .sim-secao-titulo, > .sim-hint { margin: 0; }
+  > .btn-adicionar-sonho { align-self: flex-start; margin-top: 4px; }
+}
+
+.sim-resultado-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.sim-res-item {
+  background: #f7f8f5;
+  border: 1.5px solid #dde5d9;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 80px;
+}
+
+.sim-res-total {
+  margin-top: 4px;
+  // Caixa de destaque: verde profundo com número em lima (mesmo padrão dos cards de resumo da Gestão)
+  background: #05261a;
+  border: 1.5px solid #05261a;
+  border-radius: 12px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  .sim-res-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f7f8f5;
+  }
+
+  .sim-res-val {
+    font-size: 26px;
+    font-weight: 700;
+    color: #b8f15a;
+  }
+}
+
+.sim-cambio-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+
+  .sim-cambio-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1.5px solid #dde5d9;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    color: #40534a;
+    font-weight: 500;
+
+    strong { color: #132a20; font-weight: 600; }
+    .chip-flag { font-size: 14px; line-height: 1; }
+  }
+}
+
+.sim-res-label {
+  font-size: 12px;
+  color: #5c6f66;
+  font-weight: 500;
+}
+
+.sim-res-val {
+  font-size: 20px;
+  font-weight: 600;
+  color: #132a20;
+}
+
+.sim-res-destaque {
+  color: #0b3d2e;
+}
+
+.btn-adicionar-sonho {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 0 20px;
+  height: 42px;
+  background: #b8f15a;
+  color: #05261a;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: #8fe04a; }
+}
+
+.sim-tab-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: #8a9d92;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+// Aposentadoria: rótulo Sim/Não ao lado do switch
+.sim-switch-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+// Selects com o mesmo sombreado da coluna de meta da Gestão de Gastos
+.sim-select.sim-select-cinza {
+  font-weight: 600;
+  background-color: #e9f0e4;
+  border-color: #d5dfd0;
+  &:hover { background-color: #e1e9db; }
+}
+
+// Valor calculado (somente leitura): mesmo tom de campo travado
+.sim-money.sim-money-leitura {
+  background: #f7f8f5;
+  &:focus-within { border-color: #dde5d9; box-shadow: none; }
+  input { cursor: default; color: #05261a; font-weight: 700; }
+}
+
+// Linha de apoio dentro da caixa de destaque (ex.: prazo do investimento mensal)
+.sim-res-total .sim-res-label .sim-res-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(247, 248, 245, 0.7);
+}
+
+// ── Colunas travadas (# e Nome) na rolagem horizontal da grade ──
+.tabela {
+  th.col-num, td.td-num, th.col-nome, td.td-nome {
+    position: sticky;
+    background: #fff;
+    z-index: 2;
+  }
+  th.col-num, th.col-nome { background: #f7f8f5; z-index: 3; }
+
+  th.col-num, td.td-num {
+    left: 0;
+    box-sizing: border-box;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+  }
+  th.col-nome, td.td-nome {
+    left: 44px;
+    // Linha que separa as colunas travadas do restante quando a grade rola
+    box-shadow: inset -1px 0 0 #dde5d9, 6px 0 8px -6px rgba(5, 38, 26, 0.12);
+  }
+  tr.tr-data:hover td.td-num, tr.tr-data:hover td.td-nome { background: #f7f8f5; }
+}
+
+// Colunas calculadas (não editáveis): fundo sombreado e cursor padrão
+.tabela {
+  td.td-calculado { background: #eef2ea; cursor: default; }
+  tr.tr-data:hover td.td-calculado { background: #e5ebe0; }
+}
+
+// Resumo: valor ao lado da barra com R$ e número em colunas fixas (R$ alinhado à esquerda, número à direita)
+.dash-bar-cell .dash-val { min-width: 52px; text-align: right; flex-shrink: 0; }
+.dash-bar-cell .dash-rs { margin-right: 0; flex-shrink: 0; }
+
+// Corpo da tabela de Sonhos sem negrito; só as colunas calculadas (Data Fim, Meses Rest., M.I.M.) ficam em negrito
+.tabela tbody :is(td, input, select, span, div):not(.td-calculado, .td-calculado *) { font-weight: 400; }
+// Números da tabela de Sonhos no mesmo tamanho das datas (12px)
+.tabela tbody :is(.input-num, .input-prazo, .input-rent, .td-calculado, .mim-val) { font-size: 12px; }
