@@ -47,8 +47,8 @@ nginx -t && systemctl reload nginx
    pelo runner para autenticar na VPS. Configure as variáveis do repositório
    `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER` e `DEPLOY_KNOWN_HOSTS`.
    Na VPS, a chave que o Git usa para buscar o repositório precisa ter acesso ao Zevem.
-   Com tudo pronto, defina a variável do repositório `DEPLOY_ENABLED=true` e
-   execute **Validar e publicar Zevem** na `main`.
+   Com tudo pronto, faça um push na `main` ou execute manualmente
+   **Validar e publicar Zevem** na `main`. A publicação roda após a validação.
 
 ```bash
 curl -fsS https://app.zevem.com.br/api/health
