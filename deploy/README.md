@@ -24,9 +24,7 @@ cd /opt/zevem
 ```
 
 Preencha `MASTER_EMAILS` com os endereços autorizados, separados por vírgula.
-As demais integrações estão em `backend/.env.example`. Se habilitar o Google,
-cadastre `https://app.zevem.com.br/api/auth/google/callback` no OAuth e use o mesmo
-endereço como primeiro `redirect_uris` no arquivo `google_credentials.json`.
+As demais integrações estão em `backend/.env.example`.
 
 4. Instale o vhost HTTP e emita o certificado usando o webroot que já existe na VPS.
 
@@ -60,3 +58,41 @@ curl -fsS https://app.zevem.com.br/login
 O deploy valida os dois endereços e restaura os containers da versão anterior
 se houver falha. O volume de dados continua no lugar; alterações de esquema
 exigem uma cópia do banco para que os dados também possam ser revertidos.
+
+## Primeira conta master e envio de e-mail
+
+1. Cadastre no site o endereço que você incluiu em `MASTER_EMAILS`. Se o Gmail
+   ainda não estiver conectado, o cadastro será criado e o e-mail não chegará.
+2. Na VPS, recupere o link de confirmação da sua conta. Troque
+   `master@exemplo.com` pelo endereço cadastrado e abra o link em seu navegador.
+   O link é de uso único e deve ficar com o titular da conta.
+
+```bash
+cd /opt/zevem
+docker compose exec -T backend node -e '
+  const { join } = require("node:path");
+  const Database = require("better-sqlite3");
+  const email = process.argv[1].trim().toLowerCase();
+  const masters = (process.env.MASTER_EMAILS || "").toLowerCase().split(",").map(e => e.trim());
+  if (!masters.includes(email)) throw new Error("Endereço ausente em MASTER_EMAILS");
+  const db = new Database(join(process.env.DATA_DIR, "apple-green.db"), { readonly: true });
+  const conta = db.prepare("SELECT token_confirmacao FROM usuarios WHERE email = ? AND confirmado = 0").get(email);
+  if (!conta?.token_confirmacao) throw new Error("Conta pendente não encontrada");
+  const url = new URL("/confirmar-email", process.env.FRONTEND_URL);
+  url.searchParams.set("email", email);
+  url.searchParams.set("token", conta.token_confirmacao);
+  console.log(url.href);
+' master@exemplo.com
+```
+
+3. Para habilitar confirmações, recuperação de senha e convites por e-mail,
+   cadastre `https://app.zevem.com.br/api/auth/google/callback` no OAuth do
+   Google e use o mesmo endereço como primeiro `redirect_uris` em
+   `google_credentials.json`. Coloque esse arquivo no volume do backend, em
+   `/data/google_credentials.json`, com leitura para o usuário do container
+   (UID 1000). Entre como master no Zevem e rode no console do navegador
+   dessa aba para abrir a autorização do Gmail:
+
+```js
+location.assign('/api/auth/google?token=' + encodeURIComponent(localStorage.getItem('token')));
+```
