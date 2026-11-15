@@ -48,6 +48,10 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:4300';
 // enxerga um IP só para todo mundo. TRUST_PROXY ajusta o número de saltos (0 = sem proxy).
 app.set('trust proxy', Number(process.env.TRUST_PROXY ?? (process.env.NODE_ENV === 'production' ? 1 : 0)));
 app.disable('x-powered-by');
+app.get('/health', (_req, res) => {
+  db.prepare('SELECT 1').get();
+  res.json({ status: 'ok' });
+});
 // Cabeçalhos de segurança: a API só devolve JSON (e a página de retorno do Google), nada pode ser embutido
 app.use((req, res, next) => {
   res.set({
