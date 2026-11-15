@@ -99,3 +99,75 @@ docker compose exec -T backend node -e '
 ```js
 location.assign('/api/auth/google?token=' + encodeURIComponent(localStorage.getItem('token')));
 ```
+
+## Backup local e Cloudflare R2
+
+O timer roda às 03:40 no horário de São Paulo. O arquivo local mais recente
+fica em `/var/backups/zevem/zevem.tar` e contém o SQLite e a pasta `uploads`.
+O Restic guarda cópias criptografadas em um bucket exclusivo do Zevem, com
+retenção de 3 snapshots diários, 2 semanais e 3 mensais.
+
+Crie o bucket privado `zevem-backups` no R2 e uma credencial **Object Read & Write**
+restrita a ele. Selecione o endpoint S3 mostrado no próprio bucket. Na VPS,
+confirme `restic version` e prepare os arquivos com acesso exclusivo do root:
+
+```bash
+install -d -m 700 /etc/zevem-backup
+(
+  umask 077
+  set -o noclobber
+  openssl rand -hex 32 > /etc/zevem-backup/restic-password
+)
+umask 077
+nano /etc/zevem-backup/r2.env
+```
+
+Preencha o `r2.env` com os valores do R2, usando o ID da conta no endpoint:
+
+```bash
+RESTIC_REPOSITORY='s3:https://ACCOUNT_ID.r2.cloudflarestorage.com/zevem-backups'
+RESTIC_PASSWORD_FILE='/etc/zevem-backup/restic-password'
+AWS_ACCESS_KEY_ID='ACCESS_KEY_ID_DO_ZEVEM'
+AWS_SECRET_ACCESS_KEY='SECRET_ACCESS_KEY_DO_ZEVEM'
+AWS_DEFAULT_REGION='auto'
+```
+
+Guarde a senha do Restic e a `DADOS_KEY` no gerenciador de senhas. Para uma
+recuperação completa, guarde também a configuração de produção e, se o Gmail
+estiver configurado, as credenciais do OAuth. O arquivo de backup contém o
+SQLite e os uploads.
+
+Inicialize o bucket vazio uma vez, rode o primeiro backup e só então ligue o timer:
+
+```bash
+cd /opt/zevem
+chmod 600 /etc/zevem-backup/r2.env /etc/zevem-backup/restic-password
+(
+  set -a
+  source /etc/zevem-backup/r2.env
+  set +a
+  restic init
+)
+install -m 644 deploy/systemd/zevem-backup.{service,timer} /etc/systemd/system/
+systemctl daemon-reload
+systemctl start zevem-backup.service &&
+systemctl enable --now zevem-backup.timer
+journalctl -u zevem-backup.service -n 40 --no-pager
+systemctl list-timers zevem-backup.timer
+```
+
+Para validar uma restauração em uma pasta temporária:
+
+```bash
+(
+  set -eu
+  set -a
+  source /etc/zevem-backup/r2.env
+  set +a
+  restic check
+  restore_dir="$(mktemp -d)"
+  restic restore latest --tag zevem --target "$restore_dir"
+  tar -tf "$restore_dir/var/backups/zevem/zevem.tar"
+  echo "Arquivo restaurado em $restore_dir"
+)
+```
