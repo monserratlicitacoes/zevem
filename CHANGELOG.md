@@ -3,6 +3,14 @@
 Todas as mudanças relevantes do Zevem (antigo Apple Green) ficam registradas aqui.
 Versionamento semântico: PATCH = correções e pequenos ajustes; MINOR = novas funcionalidades; MAJOR = mudanças estruturais.
 
+## [1.1.1] - 2026-11-15
+
+### Corrigido
+- Versão publicada com a fonte igual à do localhost (o menu aparecia em negrito). O build de produção embutia a Montserrat no CSS com um arquivo de fonte diferente do que o navegador recebe do Google; agora a produção carrega a fonte do Google como no localhost (`optimization.fonts: false` no angular.json).
+
+### Técnico
+- Deploy na VPS (app.zevem.com.br): backend em `/api` no mesmo domínio (padrão do `environment.prod.ts`, trocável por `API_URL` no build) e pasta `scripts/` incluída no build do container do front.
+
 ## [1.1.0] - 2026-11-10
 
 ### Funcionalidades

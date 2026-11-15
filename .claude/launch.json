@@ -4,8 +4,20 @@
     {
       "name": "apple-green-frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["start"],
+      "runtimeArgs": [
+        "start"
+      ],
       "port": 4300
+    },
+    {
+      "name": "sephiroth",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/joaogondimneto/Downloads/Node/sephiroth",
+        "start"
+      ],
+      "port": 4500
     }
   ]
 }
