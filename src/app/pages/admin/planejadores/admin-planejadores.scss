@@ -1,0 +1,13 @@
+@use 'tokens' as *;
+.form-planejador {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  .nome, .erro, .modal-acoes { grid-column: 1 / -1; }
+  .erro { margin: 0; }
+  @media (max-width: 560px) { grid-template-columns: 1fr; }
+}
+
+.kpis { max-width: 720px; }
+tr.removido td { color: $apagado; }
+tr.detalhe > td { background: #fafcf8; padding: 10px 14px 14px; }
+table.grade.interna { background: #fff; border: 1px solid $borda; border-radius: 10px; overflow: hidden; }
+.vazio { text-align: center; color: $suave; padding: 24px; }

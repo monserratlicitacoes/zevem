@@ -1,8 +1,4 @@
-$lima: #0b3d2e;
-$borda: #dde5d9;
-$texto: #05261a;
-$suave: #5c6f66;
-$vermelho: #d63a3a;
+@use 'tokens' as *;
 
 :host { display: block; }
 
@@ -28,24 +24,24 @@ $vermelho: #d63a3a;
 
 .switch-trilho {
   position: relative; flex-shrink: 0; width: 44px; height: 26px; border-radius: 999px;
-  background: #dde5d9; box-shadow: inset 0 0 0 1px #c3cfbf; transition: background .15s;
+  background: $borda; box-shadow: inset 0 0 0 1px $borda-forte; transition: background .15s;
 }
 .switch-bolinha {
   position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
   background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .15s;
 }
 // Interruptor ligado: verde profundo (padrão de todos os switches do app)
-input:checked + .switch-trilho { background: #05261a; box-shadow: none; }
+input:checked + .switch-trilho { background: $profundo; box-shadow: none; }
 input:checked + .switch-trilho .switch-bolinha { transform: translateX(18px); }
-input:focus-visible + .switch-trilho { outline: 2px solid $lima; outline-offset: 2px; }
+input:focus-visible + .switch-trilho { outline: 2px solid $floresta; outline-offset: 2px; }
 
 .rep-campo { font-size: 12px; font-weight: 600; color: $suave; margin-top: 4px; }
 .rep-input {
   border: 1px solid $borda; border-radius: 9px; padding: 9px 11px; font-size: 14px; color: $texto;
   background: #fff; width: 100%; box-sizing: border-box;
-  &:focus { outline: none; border-color: $lima; box-shadow: 0 0 0 3px rgba(184, 241, 90, .15); }
+  &:focus { outline: none; border-color: $floresta; box-shadow: 0 0 0 3px rgba(184, 241, 90, .15); }
 }
 .rep-input-curto { max-width: 140px; }
 
-.rep-resumo { margin: 0; font-size: 12px; font-weight: 600; color: $lima; }
-.rep-resumo-erro { color: $vermelho; }
+.rep-resumo { margin: 0; font-size: 12px; font-weight: 600; color: $floresta; }
+.rep-resumo-erro { color: $erro; }

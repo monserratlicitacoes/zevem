@@ -1,3 +1,4 @@
+@use 'tokens' as *;
 :host {
   display: flex;
   flex-direction: column;
@@ -24,15 +25,15 @@
 
 .ph-icone {
   width: 46px; height: 46px;
-  background: #e6f8d2; color: #0b3d2e;
+  background: $lima-claro; color: $floresta;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 
 .ph-texto {
-  h1 { font-size: 22px; font-weight: 700; color: #05261a; }
-  p  { font-size: 13px; color: #5c6f66; margin-top: 2px; }
+  h1 { font-size: 22px; font-weight: 700; color: $profundo; }
+  p  { font-size: 13px; color: $suave; margin-top: 2px; }
 }
 
 // ── Abas ─────────────────────────────────────────────────────
@@ -40,7 +41,7 @@
 
 .abas {
   display: flex;
-  border-bottom: 2px solid #dde5d9;
+  border-bottom: 2px solid $borda;
   min-width: max-content;
 }
 
@@ -51,7 +52,7 @@
   padding: 8px 22px 10px;
   font-size: 12px;
   font-weight: 600;
-  color: #5c6f66;
+  color: $suave;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
@@ -64,12 +65,12 @@
   border-radius: 8px 8px 0 0;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
   // Hover só nas abas não selecionadas (senão apaga o verde profundo da aba ativa)
-  &:not(.ativa):hover { color: #05261a; background: rgba(184, 241, 90, 0.08); }
+  &:not(.ativa):hover { color: $profundo; background: rgba(184, 241, 90, 0.08); }
   // Aba selecionada: verde profundo e texto claro, sem sublinhado
-  &.ativa { color: #f7f8f5; border-bottom-color: transparent; background: #05261a; }
+  &.ativa { color: $off-white; border-bottom-color: transparent; background: $profundo; }
   // Sem o contorno azul do navegador; anel lima só na navegação por teclado
   &:focus { outline: none; }
-  &:focus-visible { box-shadow: 0 0 0 2px #b8f15a; }
+  &:focus-visible { box-shadow: 0 0 0 2px $lima; }
   &.tipo-passivo:not(.ativa):hover { background: rgba(255, 46, 99, 0.06); }
 }
 
@@ -78,18 +79,18 @@
 .aba.ativa .aba-total {
   font-size: 12px;
   font-weight: 700;
-  color: #0b3d2e !important;
+  color: $floresta !important;
   text-transform: none;
   letter-spacing: 0;
   margin-top: 1px;
 }
 
 // Aba selecionada (fundo verde profundo): total em lima; passivos em vermelho claro
-.aba.ativa .aba-total { color: #b8f15a !important; }
+.aba.ativa .aba-total { color: $lima !important; }
 
 .aba.tipo-passivo .aba-total,
 .aba.tipo-passivo.ativa .aba-total {
-  color: #d61e4c !important;
+  color: $rosa-texto !important;
 }
 .aba.tipo-passivo.ativa .aba-total { color: #ff6b8e !important; }
 
@@ -107,7 +108,7 @@
 
 .rec-toolbar {
   padding: 12px 16px;
-  border-bottom: 1px solid #edf1e9;
+  border-bottom: 1px solid $superficie;
 }
 
 .btn-adicionar {
@@ -116,7 +117,7 @@
   gap: 6px;
   background: none;
   border: none;
-  color: #0b3d2e;
+  color: $floresta;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -126,13 +127,13 @@
   &:disabled { opacity: 0.5; cursor: default; }
 }
 
-.rec-loading { padding: 40px; text-align: center; color: #8a9d92; font-size: 14px; }
+.rec-loading { padding: 40px; text-align: center; color: $apagado; font-size: 14px; }
 
 // ── Modo somente-leitura (abas não-editáveis) ─────────────
 .rec-card.somente-leitura {
   input, select, textarea {
     pointer-events: none;
-    color: #5c6f66;
+    color: $suave;
   }
   .btn-lixeira { pointer-events: none; opacity: 0; }
   .tabela tr.tr-data:hover td { background: transparent; }
@@ -154,7 +155,7 @@
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #8a9d92;
+  color: $apagado;
 }
 
 .btn-ir-origem {
@@ -162,16 +163,16 @@
   align-items: center;
   gap: 6px;
   background: #fff;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
   border-radius: 8px;
-  color: #05261a;
+  color: $profundo;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   padding: 5px 12px;
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
-  &:hover { border-color: #b8f15a; box-shadow: 0 0 0 2px #e6f8d2; }
+  &:hover { border-color: $lima; box-shadow: 0 0 0 2px $lima-claro; }
 }
 
 // ── Tabela ───────────────────────────────────────────────────
@@ -208,9 +209,9 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    background: #f7f8f5;
-    color: #5c6f66;
-    border-bottom: 1px solid #dde5d9;
+    background: $off-white;
+    color: $suave;
+    border-bottom: 1px solid $borda;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -225,18 +226,18 @@
 
   td {
     padding: 3px 6px;
-    border-bottom: 1px solid #edf1e9;
+    border-bottom: 1px solid $superficie;
     vertical-align: middle;
     overflow: hidden;
   }
 
-  tr.tr-data:hover td { background: #f7f8f5; }
+  tr.tr-data:hover td { background: $off-white; }
   tr.tr-vazia td { height: 38px; }
 }
 
 .td-num {
   text-align: right;
-  color: #8a9d92;
+  color: $apagado;
   font-size: 12px;
   font-weight: 600;
   padding-right: 4px !important;
@@ -251,18 +252,18 @@
   border: none;
   background: transparent;
   font-size: 13px;
-  color: #05261a;
+  color: $profundo;
   outline: none;
   font-family: inherit;
   padding: 0 4px;
-  &:focus { background: #f7f8f5; border-radius: 6px; }
-  &::placeholder { color: #c3cfbf; }
+  &:focus { background: $off-white; border-radius: 6px; }
+  &::placeholder { color: $borda-forte; }
 }
 
 .td-center { text-align: center; }
 .td-valor  { padding-right: 10px !important; }
 
-.check-quit { width: 16px; height: 16px; accent-color: #b8f15a; cursor: pointer; }
+.check-quit { width: 16px; height: 16px; accent-color: $lima; cursor: pointer; }
 
 .valor-wrap {
   display: flex;
@@ -274,9 +275,9 @@
 .rs {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   flex-shrink: 0;
-  &.verde { color: #0b3d2e; }
+  &.verde { color: $floresta; }
 }
 
 .input-num {
@@ -286,15 +287,15 @@
   background: transparent;
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   outline: none;
   font-family: inherit;
   text-align: right;
   padding: 0;
   flex-shrink: 0;
-  &.verde { color: #0b3d2e; }
-  &:focus { background: #f7f8f5; border-radius: 6px; padding: 0 3px; }
-  &::placeholder { color: #c3cfbf; font-weight: 400; }
+  &.verde { color: $floresta; }
+  &:focus { background: $off-white; border-radius: 6px; padding: 0 3px; }
+  &::placeholder { color: $borda-forte; font-weight: 400; }
 }
 
 .input-inteiro {
@@ -304,13 +305,13 @@
   background: transparent;
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   outline: none;
   font-family: inherit;
   text-align: center;
   padding: 0;
-  &:focus { background: #f7f8f5; border-radius: 6px; }
-  &::placeholder { color: #c3cfbf; font-weight: 400; }
+  &:focus { background: $off-white; border-radius: 6px; }
+  &::placeholder { color: $borda-forte; font-weight: 400; }
 }
 
 .input-taxa {
@@ -320,30 +321,30 @@
   background: transparent;
   font-size: 12px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   outline: none;
   font-family: inherit;
   text-align: center;
   padding: 0;
-  &:focus { background: #f7f8f5; border-radius: 6px; padding: 0 4px; }
-  &::placeholder { color: #c3cfbf; font-weight: 400; font-size: 11px; }
+  &:focus { background: $off-white; border-radius: 6px; padding: 0 4px; }
+  &::placeholder { color: $borda-forte; font-weight: 400; font-size: 11px; }
 }
 
 .sel {
   height: 30px;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
   border-radius: 20px;
   padding: 0 8px;
   font-size: 10px;
   font-weight: 600;
-  color: #05261a;
-  background: #f7f8f5;
+  color: $profundo;
+  background: $off-white;
   outline: none;
   cursor: pointer;
   font-family: inherit;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  &:focus { border-color: #b8f15a; }
+  &:focus { border-color: $lima; }
 }
 
 .sel-modal { width: 90px; }
@@ -360,10 +361,10 @@
   border-radius: 7px;
   border: none;
   background: transparent;
-  color: #c3cfbf;
+  color: $borda-forte;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { background: #fff0f3; color: #ff2e63; } // exclusão em rosa elétrico (vermelho só para erro)
+  &:hover { background: $rosa-claro; color: $rosa; } // exclusão em rosa elétrico (vermelho só para erro)
 }
 
 // ── Total ─────────────────────────────────────────────────────
@@ -372,7 +373,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  background: #05261a; // total em destaque: verde profundo com o número em lima
+  background: $profundo; // total em destaque: verde profundo com o número em lima
   border-top: none;
   font-size: 14px;
   font-weight: 600;
@@ -383,7 +384,7 @@
 .total-valor {
   font-size: 18px;
   font-weight: 700;
-  color: #b8f15a;
+  color: $lima;
 }
 
 // ── Botão Resumo ─────────────────────────────────────────
@@ -398,16 +399,16 @@
   align-items: center;
   gap: 6px;
   background: #fff;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
   border-radius: 8px;
-  color: #05261a;
+  color: $profundo;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   padding: 6px 12px;
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
-  &:hover { border-color: #b8f15a; box-shadow: 0 0 0 2px #e6f8d2; }
+  &:hover { border-color: $lima; box-shadow: 0 0 0 2px $lima-claro; }
 }
 
 // ── Tabela Ativos Imobilizados ────────────────────────────
@@ -428,13 +429,13 @@ col.col-proj    { width: 150px; }
   border: 1.5px solid transparent;
 
   &.badge-valorizacao {
-    background: #e6f8d2;
-    color: #0b3d2e;
-    border-color: #c4f58a;
+    background: $lima-claro;
+    color: $floresta;
+    border-color: $lima-borda;
   }
   &.badge-desvalorizacao {
-    background: #fff0f3;
-    color: #d61e4c;
+    background: $rosa-claro;
+    color: $rosa-texto;
     border-color: #ffd0db;
   }
 }
@@ -448,20 +449,20 @@ col.col-proj    { width: 150px; }
 .num-proj {
   font-size: 13px;
   font-weight: 600;
-  color: #0b3d2e;
+  color: $floresta;
   text-align: right;
   white-space: nowrap;
-  &.verde  { color: #0b3d2e; }
-  &.vermelho { color: #d61e4c; }
+  &.verde  { color: $floresta; }
+  &.vermelho { color: $rosa-texto; }
 }
 
-.rs.vermelho { color: #d61e4c; }
+.rs.vermelho { color: $rosa-texto; }
 
 // ── Modal Resumo ─────────────────────────────────────────
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(5, 38, 26, 0.45);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -483,8 +484,8 @@ col.col-proj    { width: 150px; }
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px 16px;
-  border-bottom: 1px solid #edf1e9;
-  h2 { font-size: 16px; font-weight: 700; color: #05261a; margin: 0; }
+  border-bottom: 1px solid $superficie;
+  h2 { font-size: 18px; font-weight: 700; color: $profundo; margin: 0; }
 }
 
 .modal-fechar {
@@ -493,11 +494,11 @@ col.col-proj    { width: 150px; }
   justify-content: center;
   width: 30px; height: 30px;
   border: none;
-  background: #edf1e9;
+  background: $superficie;
   border-radius: 8px;
-  color: #5c6f66;
+  color: $suave;
   cursor: pointer;
-  &:hover { background: #dde5d9; color: #05261a; }
+  &:hover { background: $borda; color: $profundo; }
 }
 
 .dash-tabela-wrap { padding: 20px 24px 28px; }
@@ -511,8 +512,8 @@ col.col-proj    { width: 150px; }
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #5c6f66;
-    background: #edf1e9;
+    color: $suave;
+    background: $superficie;
     padding: 9px 12px;
     white-space: nowrap;
   }
@@ -524,14 +525,14 @@ col.col-proj    { width: 150px; }
 
 .dash-tr td {
   padding: 13px 12px;
-  border-bottom: 1px solid #edf1e9;
+  border-bottom: 1px solid $superficie;
   vertical-align: middle;
 }
 
 .dash-row-label {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   white-space: nowrap;
 }
 
@@ -546,17 +547,17 @@ col.col-proj    { width: 150px; }
 .dash-bar-bg {
   flex: 1;
   height: 10px;
-  background: #dde5d9;
+  background: $borda;
   border-radius: 99px;
   overflow: hidden;
 }
 
 .dash-bar-fill {
   height: 100%;
-  background: #0b3d2e; // verde floresta: mais escuro que o lima, como a aba selecionada
+  background: $floresta; // verde floresta: mais escuro que o lima, como a aba selecionada
   border-radius: 99px;
   transition: width 0.5s ease;
-  &.dash-bar-fill-red { background: #ff2e63; } // passivos: rosa elétrico
+  &.dash-bar-fill-red { background: $rosa; } // passivos: rosa elétrico
 }
 
 .dtd-num {
@@ -567,22 +568,22 @@ col.col-proj    { width: 150px; }
 .dash-rs {
   font-size: 12px;
   font-weight: 600;
-  color: #8a9d92;
+  color: $apagado;
   margin-right: 4px;
 }
 
 .dash-val {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
-  &.pl-positivo { color: #0b3d2e; }
-  &.pl-negativo { color: #d61e4c; }
+  color: $profundo;
+  &.pl-positivo { color: $floresta; }
+  &.pl-negativo { color: $rosa-texto; }
 }
 
 .dash-val-neg {
   font-size: 13px;
   font-weight: 600;
-  color: #d61e4c;
+  color: $rosa-texto;
   text-align: right;
   white-space: nowrap;
 }
@@ -591,14 +592,14 @@ col.col-proj    { width: 150px; }
   padding: 13px 12px;
   font-size: 13px;
   font-weight: 700;
-  color: #05261a;
-  background: #f7f8f5;
+  color: $profundo;
+  background: $off-white;
   vertical-align: middle;
-  .dash-rs { color: #5c6f66; }
+  .dash-rs { color: $suave; }
 }
 
 .dtd-classe {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
 }

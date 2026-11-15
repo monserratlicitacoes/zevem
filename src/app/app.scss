@@ -1,3 +1,4 @@
+@use 'tokens' as *;
 .app-shell {
   display: flex;
   height: 100vh;
@@ -23,11 +24,24 @@
   // Folhagem da foto da marca no topo da página, como uma névoa que se dissolve no off-white
   // (mesmo recurso da cordilheira no Monserrat). Usa só o lado esquerdo da foto, sem a pessoa.
   background:
-    linear-gradient(180deg, rgba(247, 248, 245, 0.8) 0%, rgba(247, 248, 245, 0.92) 130px, #f7f8f5 280px),
+    linear-gradient(180deg, rgba(247, 248, 245, 0.8) 0%, rgba(247, 248, 245, 0.92) 130px, $off-white 280px),
     url('/login-zevem.jpg') 0% 18% / 300% auto no-repeat,
-    #f7f8f5;
+    $off-white;
   overflow: hidden;
   min-width: 0;
   display: flex;
   flex-direction: column;
+}
+
+// Faixa de quem está usando o Zevem de um cliente (master ou planejador)
+.faixa-suporte {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 10px 20px; background: $profundo; color: $off-white; font-size: 13px;
+  border-bottom: 3px solid $lima;
+  strong { color: $lima; }
+  button {
+    border: none; border-radius: 999px; padding: 7px 16px; cursor: pointer;
+    background: $lima; color: $profundo; font: inherit; font-weight: 800;
+    &:hover { background: $lima-hover; }
+  }
 }

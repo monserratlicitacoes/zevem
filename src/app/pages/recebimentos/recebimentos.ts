@@ -2,7 +2,6 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RecebimentoService, Recebimento, CLASSES_RECEBIMENTO } from '../../services/recebimento.service';
 import { PessoaService, Pessoa } from '../../services/pessoa.service';
-import { EtapaService } from '../../services/etapa.service';
 import { VideoBadge } from '../../shared/video-badge/video-badge';
 import { JarroOrcamento } from '../../shared/jarro-orcamento/jarro-orcamento';
 import { ClassificacaoGastos } from '../../shared/classificacao-gastos/classificacao-gastos';
@@ -26,7 +25,6 @@ export class Recebimentos implements OnInit {
   constructor(
     private service: RecebimentoService,
     private pessoaService: PessoaService,
-    private etapaService: EtapaService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -41,7 +39,6 @@ export class Recebimentos implements OnInit {
       next: (lista) => {
         this.recebimentos = lista;
         this.carregando = false;
-        if (lista.length > 0) this.etapaService.marcarConcluida('recebimentos');
         this.cdr.detectChanges();
       },
       error: () => { this.carregando = false; this.cdr.detectChanges(); },
@@ -110,7 +107,6 @@ export class Recebimentos implements OnInit {
       next: (r) => {
         this.recebimentos = [...this.recebimentos, r];
         this.adicionando = false;
-        this.etapaService.marcarConcluida('recebimentos');
         this.cdr.detectChanges();
       },
       error: () => { this.adicionando = false; this.cdr.detectChanges(); },

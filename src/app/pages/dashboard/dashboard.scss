@@ -1,13 +1,6 @@
+@use 'tokens' as *;
 // Identidade Zevem
-$profundo: #05261a;
 $painel: #12392a;
-$lima: #b8f15a;
-$floresta: #0b3d2e;
-$off-white: #f7f8f5;
-$texto: #05261a;
-$suave: #5c6f66;
-$rosa-texto: #d61e4c;
-$rosa-claro: #fff0f3;
 
 :host { display: block; height: 100%; }
 
@@ -24,7 +17,7 @@ $rosa-claro: #fff0f3;
 .page-header { display: flex; align-items: center; gap: 16px; }
 .ph-icone {
   width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
-  background: #e6f8d2; color: $floresta;
+  background: $lima-claro; color: $floresta;
   display: flex; align-items: center; justify-content: center;
 }
 .ph-texto {
@@ -36,7 +29,7 @@ $rosa-claro: #fff0f3;
 .painel-geral {
   // Quadro claro: os destaques escuros ficam só nas barras e marcações
   background: #fff;
-  border: 1px solid #dde5d9;
+  border: 1px solid $borda;
   box-shadow: 0 1px 3px rgba(5, 38, 26, 0.05);
   border-radius: 18px;
   padding: 16px;
@@ -61,7 +54,7 @@ $rosa-claro: #fff0f3;
 }
 
 .cartao {
-  background: #f7f8f5;
+  background: $off-white;
   border: 1px solid #e6ece2;
   border-radius: 14px;
   padding: 14px 14px 12px 8px;
@@ -340,7 +333,7 @@ $rosa-claro: #fff0f3;
   flex-direction: column;
   gap: 6px;
   padding: 12px 12px 10px;
-  background: #f7f8f5;
+  background: $off-white;
   border: 1px solid #e6ece2;
   border-radius: 14px;
   overflow: hidden;
@@ -367,7 +360,7 @@ $rosa-claro: #fff0f3;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #dde5d9;
+  border: 1px solid $borda;
   border-radius: 50%;
   background: #fff;
   color: $profundo;
@@ -382,10 +375,10 @@ $rosa-claro: #fff0f3;
 .verso-rotulo { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: $suave; }
 .verso-nivel {
   font-size: 10px; font-weight: 800; border-radius: 999px; padding: 2px 8px; white-space: nowrap;
-  background: #edf1e9; color: $profundo;
+  background: $superficie; color: $profundo;
 }
-.verso--elevado .verso-nivel { background: #fff0f3; color: #d61e4c; }
-.verso--saudavel .verso-nivel { background: #e6f8d2; color: $floresta; }
+.verso--elevado .verso-nivel { background: $rosa-claro; color: $rosa-texto; }
+.verso--saudavel .verso-nivel { background: $lima-claro; color: $floresta; }
 
 .verso-texto {
   flex: 1;
@@ -405,8 +398,8 @@ $rosa-claro: #fff0f3;
   li { position: relative; padding-left: 14px; font-weight: 600; }
   li::before { content: ''; position: absolute; left: 0; top: 0.45em; width: 7px; height: 7px; border-radius: 2px; background: $profundo; }
 }
-.verso--elevado .verso-texto li::before { background: #ff2e63; }
-.verso--saudavel .verso-texto li::before { background: #0b3d2e; }
+.verso--elevado .verso-texto li::before { background: $rosa; }
+.verso--saudavel .verso-texto li::before { background: $floresta; }
 .verso-chamada { font-size: 14px; font-weight: 800; color: $floresta; letter-spacing: 0.02em; }
 .verso-frase { font-weight: 700; font-style: italic; color: $profundo; }
 
@@ -423,7 +416,7 @@ $rosa-claro: #fff0f3;
   margin-top: 8px;
   padding: 8px 10px;
   border-radius: 10px;
-  background: #f7f8f5;
+  background: $off-white;
   border: 1px solid #e6ece2;
   display: flex;
   flex-direction: column;
@@ -442,17 +435,17 @@ $rosa-claro: #fff0f3;
   margin-top: 8px;
   padding: 8px 10px;
   border-radius: 10px;
-  background: #f7f8f5;
-  border-left: 3px solid #05261a;
+  background: $off-white;
+  border-left: 3px solid $profundo;
   display: flex;
   flex-direction: column;
   gap: 2px;
   font-size: 11px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
 }
-.verso--elevado .verso-objetivo { border-left-color: #ff2e63; }
-.verso--saudavel .verso-objetivo { border-left-color: #0b3d2e; }
+.verso--elevado .verso-objetivo { border-left-color: $rosa; }
+.verso--saudavel .verso-objetivo { border-left-color: $floresta; }
 .verso-intro { font-weight: 700; }
 
 // Prévia no verso: só a abertura, esmaecendo no fim, com o botão "Ver mais"
@@ -470,15 +463,15 @@ $rosa-claro: #fff0f3;
   padding: 5px 12px;
   border: none;
   border-radius: 999px;
-  background: #05261a;
+  background: $profundo;
   color: #fff;
   font-family: inherit;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
-  &:hover { background: #b8f15a; color: #05261a; }
-  &:focus-visible { outline: 2px solid #b8f15a; outline-offset: 2px; }
+  &:hover { background: $lima; color: $profundo; }
+  &:focus-visible { outline: 2px solid $lima; outline-offset: 2px; }
 }
 
 // ── Modal do diagnóstico completo ──
@@ -490,7 +483,7 @@ $rosa-claro: #fff0f3;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(5, 38, 26, 0.4);
+  background: rgba(5, 38, 26, 0.45);
   backdrop-filter: blur(3px);
   animation: modal-fundo 0.18s ease;
 }
@@ -511,11 +504,11 @@ $rosa-claro: #fff0f3;
   align-items: center;
   gap: 12px;
   padding: 18px 22px 14px;
-  border-bottom: 1px solid #edf1e9;
+  border-bottom: 1px solid $superficie;
   > div { flex: 1; min-width: 0; }
-  h2 { margin: 2px 0 0; font-size: 16px; font-weight: 700; color: #05261a; }
+  h2 { margin: 2px 0 0; font-size: 18px; font-weight: 700; color: $profundo; }
 }
-.modal-diag-sub { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #5c6f66; }
+.modal-diag-sub { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: $suave; }
 .modal-fechar {
   flex-shrink: 0;
   display: flex;
@@ -525,11 +518,11 @@ $rosa-claro: #fff0f3;
   height: 30px;
   border: none;
   border-radius: 8px;
-  background: #edf1e9;
-  color: #5c6f66;
+  background: $superficie;
+  color: $suave;
   cursor: pointer;
-  &:hover { background: #dde5d9; color: #05261a; }
-  &:focus-visible { outline: 2px solid #b8f15a; outline-offset: 2px; }
+  &:hover { background: $borda; color: $profundo; }
+  &:focus-visible { outline: 2px solid $lima; outline-offset: 2px; }
 }
 .modal-diag-texto {
   padding: 16px 22px 22px;
@@ -556,7 +549,7 @@ $rosa-claro: #fff0f3;
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  border: 1px solid #dde5d9;
+  border: 1px solid $borda;
   border-radius: 999px;
   background: #fff;
   color: $profundo;
@@ -661,7 +654,7 @@ $noite-suave: #94ad9f;
   .verso-calculo, .verso-objetivo { background: $noite-quadro; border-color: $noite-borda; }
   .verso-objetivo { color: $noite-texto; border-left-color: $noite-suave; }
   .verso--saudavel .verso-objetivo { border-left-color: $lima; }
-  .verso--elevado .verso-objetivo { border-left-color: #ff2e63; }
+  .verso--elevado .verso-objetivo { border-left-color: $rosa; }
   .verso-calculo-titulo { color: $noite-suave; }
   .vc-linha { color: $noite-texto; }
   .vc-total { border-top-color: $noite-borda; }

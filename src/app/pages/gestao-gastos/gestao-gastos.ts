@@ -1408,7 +1408,7 @@ export class GestaoGastos implements OnInit {
   }
 
   rotuloOrigem(s: GastoSuspenso): string {
-    return s.origem === 'whatsapp' ? 'WhatsApp' : s.origem === 'fatura' ? 'Fatura' : 'Manual';
+    return s.origem === 'whatsapp' ? 'WhatsApp' : s.origem === 'fatura' ? 'Fatura' : s.origem === 'fechamento' ? 'Fechamento do mês' : 'Manual';
   }
 
   // ── Importar fatura do cartão ──────────────────────────────

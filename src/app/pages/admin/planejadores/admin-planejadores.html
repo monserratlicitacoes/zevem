@@ -1,0 +1,196 @@
+<div class="page">
+  <header class="page-header">
+    <div class="ph-texto">
+      <h1>Planejadores</h1>
+      <p>Planejadores financeiros associados: cada um convida os próprios clientes pelo Zevem.</p>
+    </div>
+    <div class="ph-botoes">
+      <button type="button" class="btn-lancar" (click)="abrirConvite()">
+        <svg viewBox="0 0 20 20" fill="none" width="15" height="15" aria-hidden="true"><path d="M3 5.5h14v9H3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m3.5 6 6.5 5 6.5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Enviar convite
+      </button>
+    </div>
+  </header>
+
+
+  @if (carregando) {
+    <p class="aviso">Carregando...</p>
+  } @else if (erro) {
+    <p class="aviso aviso-erro">{{ erro }}</p>
+  } @else {
+    <section class="kpis">
+      <div class="kpi destaque"><span>Planejadores ativos</span><strong>{{ ativos }}</strong></div>
+      <div class="kpi"><span>Clientes de planejadores</span><strong>{{ clientesAtivos }}</strong><small>com acesso</small></div>
+      <div class="kpi"><span>Convites aguardando</span><strong>{{ convites.length }}</strong></div>
+    </section>
+
+    <section class="cartao">
+      <h2>Planejadores cadastrados</h2>
+      <div class="tabela-wrap">
+        <table class="grade">
+          <thead><tr><th>Planejador</th><th>Contato</th><th>CPF</th><th class="num">Clientes</th><th>Último acesso</th><th>Situação</th><th></th></tr></thead>
+          <tbody>
+            @for (p of planejadores; track p.id) {
+              <tr [class.removido]="!p.ativo">
+                <td><strong>{{ p.nome }}</strong><span class="sub">desde {{ data(p.criado_em) }}</span></td>
+                <td>{{ p.email }}<span class="sub">{{ mascaraTelefone(p.telefone) || 'sem telefone' }}</span></td>
+                <td>{{ mascaraCpf(p.cpf) }}</td>
+                <td class="num">
+                  <strong>{{ p.clientes_ativos }}</strong>
+                  @if (p.clientes_total > p.clientes_ativos) { <span class="sub">{{ p.clientes_total - p.clientes_ativos }} sem acesso</span> }
+                  @if (p.convites_pendentes) { <span class="sub">{{ p.convites_pendentes }} convite(s) em aberto</span> }
+                </td>
+                <td>{{ diasDesde(p.ultimo_acesso) }}</td>
+                <td>
+                  @if (p.ativo) { <span class="selo ok">Ativo</span> }
+                  @else { <span class="selo critico">Acesso removido</span><span class="sub">em {{ data(p.bloqueado_em) }}</span> }
+                </td>
+                <td>
+                  <div class="acoes-linha">
+                    <button type="button" class="botao" (click)="verClientes(p)" [attr.aria-expanded]="aberto === p.id">{{ aberto === p.id ? 'Fechar' : 'Ver clientes' }}</button>
+                    @if (p.ativo) {
+                      <button type="button" class="botao perigo" (click)="removerPlanejador(p)">Remover acesso</button>
+                    } @else {
+                      <button type="button" class="botao" (click)="devolverPlanejador(p)">Devolver acesso</button>
+                    }
+                  </div>
+                </td>
+              </tr>
+              @if (aberto === p.id) {
+                <tr class="detalhe">
+                  <td colspan="7">
+                    @if (carregandoClientes) {
+                      <p class="aviso">Carregando clientes...</p>
+                    } @else if (!clientes.length) {
+                      <p class="aviso">{{ p.nome }} ainda não tem clientes cadastrados.</p>
+                    } @else {
+                      <table class="grade interna">
+                        <thead><tr><th>Cliente</th><th>Contato</th><th>Cadastro</th><th>Último acesso</th><th>Situação</th><th></th></tr></thead>
+                        <tbody>
+                          @for (c of clientes; track c.id) {
+                            <tr [class.removido]="!c.ativo">
+                              <td>@if (c.ativo) { <button type="button" class="nome-cliente" (click)="acessar(c)" [title]="'Abrir o Zevem de ' + c.nome">{{ c.nome }}</button> } @else { {{ c.nome }} }</td>
+                              <td>{{ c.email }}<span class="sub">{{ c.telefone || 'sem telefone' }}</span></td>
+                              <td>{{ data(c.criado_em) }}</td>
+                              <td>{{ diasDesde(c.ultimo_acesso) }}</td>
+                              <td>
+                                @if (c.ativo) { <span class="selo ok">Ativo</span> }
+                                @else { <span class="selo critico">Acesso removido</span><span class="sub">{{ c.bloqueado_pelo_master ? 'pelo master' : 'pelo planejador' }}</span> }
+                              </td>
+                              <td>
+                                <div class="acoes-linha">
+                                  <button type="button" class="botao" [class.perigo]="c.ativo" (click)="alternarCliente(c, p)">{{ c.ativo ? 'Remover acesso' : 'Devolver acesso' }}</button>
+                                </div>
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    }
+                  </td>
+                </tr>
+              }
+            } @empty {
+              <tr><td colspan="7" class="vazio">Nenhum planejador cadastrado ainda.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    @if (convites.length) {
+      <section class="cartao">
+        <h2>Convites de planejador em aberto</h2>
+        <div class="tabela-wrap">
+          <table class="grade">
+            <thead><tr><th>Convidado</th><th>Contato</th><th>Situação</th><th>Enviado em</th><th>Vale até</th><th></th></tr></thead>
+            <tbody>
+              @for (c of convites; track c.id) {
+                <tr>
+                  <td>{{ c.nome }}<span class="sub">CPF {{ mascaraCpf(c.cpf || '') }}</span></td>
+                  <td>{{ c.email }}<span class="sub">{{ mascaraTelefone(c.telefone || '') }}</span></td>
+                  <td>
+                    <span [class]="'selo ' + situacao[c.situacao].classe">{{ situacao[c.situacao].rotulo }}</span>
+                    @if (c.situacao === 'pendente' && c.erro_envio) { <span class="sub vermelho" [title]="c.erro_envio">e-mail não saiu</span> }
+                  </td>
+                  <td>{{ data(c.criado_em) }}</td>
+                  <td>{{ data(c.expira_em) }}</td>
+                  <td>
+                    <div class="acoes-linha">
+                      @if (c.situacao === 'pendente') {
+                        <button type="button" class="botao" (click)="copiar(c)">{{ copiado === c.id ? 'Copiado!' : 'Copiar link' }}</button>
+                        <button type="button" class="botao" (click)="reenviar(c)">Reenviar</button>
+                        <button type="button" class="botao perigo" (click)="cancelarConvite(c)">Cancelar</button>
+                      } @else {
+                        <button type="button" class="botao" (click)="reenviar(c)">Enviar de novo</button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+
+  <!-- Novo planejador: formulário e resultado do convite (também abre ao reenviar um convite) -->
+  @if (conviteAberto) {
+    <div class="modal-overlay" (click)="fecharConvite()">
+      <div class="modal-convite" role="dialog" aria-modal="true" aria-labelledby="titulo-novo-planejador" (click)="$event.stopPropagation()">
+        <div class="modal-topo">
+          <h2 id="titulo-novo-planejador">{{ enviado ? 'Convite criado' : 'Novo planejador' }}</h2>
+          <button type="button" class="modal-fechar" (click)="fecharConvite()" aria-label="Fechar">
+            <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        @if (enviado; as c) {
+          <div class="resultado" [class.falhou]="c.aviso_email">
+            @if (c.aviso_email) {
+              <p><strong>O e-mail não saiu.</strong> O convite para {{ c.email }} foi criado: copie o link e mande ao planejador (WhatsApp, por exemplo).</p>
+            } @else {
+              <p><strong>Convite enviado para {{ c.email }}.</strong> Se preferir, mande o link também por outro canal.</p>
+            }
+            @if (c.link) {
+              <div class="link">
+                <input type="text" [value]="c.link" readonly (focus)="$any($event.target).select()" aria-label="Link do convite" />
+                <button type="button" class="botao" (click)="copiar(c)">{{ copiado === c.id ? 'Copiado!' : 'Copiar link' }}</button>
+              </div>
+            }
+          </div>
+          <div class="modal-acoes">
+            <button type="button" class="botao" (click)="novoConvite()">Convidar outro</button>
+            <button type="button" class="botao primario" (click)="fecharConvite()">Fechar</button>
+          </div>
+        } @else {
+          <p class="ajuda">O planejador recebe um link por e-mail para criar a senha. Depois ele entra em "Meus clientes" e convida os clientes dele. O convite vale por 30 dias.</p>
+          <form class="form-planejador" (ngSubmit)="enviar()">
+            <label class="campo nome">
+              <span>Nome completo</span>
+              <input type="text" [(ngModel)]="form.nome" name="nome" maxlength="100" required autofocus />
+            </label>
+            <label class="campo nome">
+              <span>E-mail</span>
+              <input type="email" [(ngModel)]="form.email" name="email" placeholder="planejador@email.com" required />
+            </label>
+            <label class="campo">
+              <span>CPF</span>
+              <input type="text" inputmode="numeric" [ngModel]="form.cpf" (ngModelChange)="form.cpf = mascaraCpf($event)" name="cpf" placeholder="000.000.000-00" required />
+            </label>
+            <label class="campo">
+              <span>Telefone</span>
+              <input type="tel" [ngModel]="form.telefone" (ngModelChange)="form.telefone = mascaraTelefone($event)" name="telefone" placeholder="(62) 99999-9999" required />
+            </label>
+            @if (erroEnvio) { <p class="erro">{{ erroEnvio }}</p> }
+            <div class="modal-acoes">
+              <button type="button" class="botao" (click)="fecharConvite()">Cancelar</button>
+              <button type="submit" class="botao primario" [disabled]="enviando || !formOk">{{ enviando ? 'Enviando…' : 'Enviar convite' }}</button>
+            </div>
+          </form>
+        }
+      </div>
+    </div>
+  }
+</div>

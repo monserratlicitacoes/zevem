@@ -59,7 +59,7 @@ export interface LancamentoReceita {
   descricao: string;
 }
 
-export type OrigemLancamento = 'manual' | 'whatsapp' | 'fatura';
+export type OrigemLancamento = 'manual' | 'whatsapp' | 'fatura' | 'fechamento'; // fechamento = valor estimado de item mensal comprometido sem gasto no mês
 
 export interface LancamentoGasto {
   id?: number;
@@ -114,6 +114,7 @@ export interface ResumoImportacao {
   suspensos: number;
   duplicados: number;
   ja_em_suspenso: number;
+  ja_lancados?: number; // já lançados por uma importação anterior (mesma compra ou parcela já prevista)
   ignorados: number;
 }
 

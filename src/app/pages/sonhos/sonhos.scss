@@ -1,3 +1,4 @@
+@use 'tokens' as *;
 :host {
   display: flex;
   flex-direction: column;
@@ -25,8 +26,8 @@
 .ph-icone {
   width: 46px;
   height: 46px;
-  background: #e6f8d2;
-  color: #0b3d2e;
+  background: $lima-claro;
+  color: $floresta;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -35,8 +36,8 @@
 }
 
 .ph-texto {
-  h1 { font-size: 22px; font-weight: 700; color: #05261a; }
-  p  { font-size: 13px; color: #5c6f66; margin-top: 2px; }
+  h1 { font-size: 22px; font-weight: 700; color: $profundo; }
+  p  { font-size: 13px; color: $suave; margin-top: 2px; }
 }
 
 // ── Card ─────────────────────────────────────────────────────
@@ -53,7 +54,7 @@
 
 .rec-toolbar {
   padding: 12px 16px;
-  border-bottom: 1px solid #edf1e9;
+  border-bottom: 1px solid $superficie;
 }
 
 .btn-adicionar {
@@ -62,7 +63,7 @@
   gap: 6px;
   background: none;
   border: none;
-  color: #0b3d2e;
+  color: $floresta;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -75,7 +76,7 @@
 .rec-loading {
   padding: 40px;
   text-align: center;
-  color: #8a9d92;
+  color: $apagado;
   font-size: 14px;
 }
 
@@ -86,7 +87,7 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  color: #8a9d92;
+  color: $apagado;
   font-size: 14px;
   font-weight: 600;
 }
@@ -107,9 +108,9 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    background: #f7f8f5;
-    color: #5c6f66;
-    border-bottom: 1px solid #dde5d9;
+    background: $off-white;
+    color: $suave;
+    border-bottom: 1px solid $borda;
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
@@ -126,11 +127,11 @@
 
   td {
     padding: 6px 10px;
-    border-bottom: 1px solid #edf1e9;
+    border-bottom: 1px solid $superficie;
     vertical-align: middle;
   }
 
-  tr.tr-data:hover td { background: #f7f8f5; }
+  tr.tr-data:hover td { background: $off-white; }
 }
 
 // Larguras das colunas via th
@@ -150,7 +151,7 @@
 // ── Célula de número de linha ─────────────────────────────────
 .td-num {
   text-align: right;
-  color: #8a9d92;
+  color: $apagado;
   font-size: 12px;
   font-weight: 600;
   padding-right: 6px !important;
@@ -165,12 +166,12 @@
   border: none;
   background: transparent;
   font-size: 13px;
-  color: #05261a;
+  color: $profundo;
   outline: none;
   font-family: inherit;
   padding: 0 4px;
-  &:focus { background: #f7f8f5; border-radius: 6px; }
-  &::placeholder { color: #c3cfbf; }
+  &:focus { background: $off-white; border-radius: 6px; }
+  &::placeholder { color: $borda-forte; }
 }
 
 // ── Células de valor ──────────────────────────────────────────
@@ -196,7 +197,7 @@
 .rs {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   flex-shrink: 0;
 }
 
@@ -214,14 +215,14 @@ input[type=number] {
   background: transparent;
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   outline: none;
   font-family: inherit;
   text-align: right;
   padding: 0;
   flex-shrink: 0;
-  &:focus { background: #f7f8f5; border-radius: 6px; padding: 0 4px; }
-  &::placeholder { color: #c3cfbf; font-weight: 400; }
+  &:focus { background: $off-white; border-radius: 6px; padding: 0 4px; }
+  &::placeholder { color: $borda-forte; font-weight: 400; }
 }
 
 // ── Prazo e Rentabilidade ─────────────────────────────────────
@@ -241,18 +242,18 @@ input[type=number] {
   background: transparent;
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   outline: none;
   font-family: inherit;
   text-align: center;
   padding: 0;
-  &:focus { background: #f7f8f5; border-radius: 6px; }
+  &:focus { background: $off-white; border-radius: 6px; }
 }
 
 .unit-label {
   font-size: 12px;
   font-weight: 600;
-  color: #8a9d92;
+  color: $apagado;
 }
 
 // ── Data Início ───────────────────────────────────────────────
@@ -263,20 +264,20 @@ input[type=number] {
   background: transparent;
   font-size: 12px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   outline: none;
   font-family: inherit;
   text-align: center;
   padding: 0;
-  &:focus { background: #f7f8f5; border-radius: 6px; }
-  &::placeholder { color: #c3cfbf; }
+  &:focus { background: $off-white; border-radius: 6px; }
+  &::placeholder { color: $borda-forte; }
 }
 
 // ── Colunas calculadas (readonly) ─────────────────────────────
 .td-readonly {
   font-size: 13px;
   font-weight: 600;
-  color: #0b3d2e;
+  color: $floresta;
   white-space: nowrap;
 }
 
@@ -294,18 +295,18 @@ input[type=number] {
 .mim-rs {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
 }
 
 .mim-val {
   font-size: 14px;
   font-weight: 700;
-  color: #0b3d2e;
+  color: $floresta;
 }
 
 .mim-vazio {
   font-size: 13px;
-  color: #c3cfbf;
+  color: $borda-forte;
 }
 
 // ── Lixeira ───────────────────────────────────────────────────
@@ -320,10 +321,10 @@ input[type=number] {
   border-radius: 7px;
   border: none;
   background: transparent;
-  color: #c3cfbf;
+  color: $borda-forte;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { background: #fff0f3; color: #ff2e63; } // exclusão em rosa elétrico (vermelho só para erro)
+  &:hover { background: $rosa-claro; color: $rosa; } // exclusão em rosa elétrico (vermelho só para erro)
 }
 
 // ── Toolbar botões ────────────────────────────────────────────
@@ -338,16 +339,16 @@ input[type=number] {
   align-items: center;
   gap: 6px;
   background: #fff;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
   border-radius: 8px;
-  color: #05261a;
+  color: $profundo;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   padding: 6px 12px;
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
-  &:hover { border-color: #b8f15a; box-shadow: 0 0 0 2px #e6f8d2; }
+  &:hover { border-color: $lima; box-shadow: 0 0 0 2px $lima-claro; }
 }
 
 .btn-simulador {
@@ -355,17 +356,17 @@ input[type=number] {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #e6f8d2;
-  border: 1.5px solid #c4f58a;
+  background: $lima-claro;
+  border: 1.5px solid $lima-borda;
   border-radius: 8px;
-  color: #0b3d2e;
+  color: $floresta;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   padding: 6px 12px;
   font-family: inherit;
   transition: background 0.15s, box-shadow 0.15s;
-  &:hover { background: #c4f58a; box-shadow: 0 0 0 2px #e6f8d2; }
+  &:hover { background: $lima-borda; box-shadow: 0 0 0 2px $lima-claro; }
 }
 
 // ── Total ─────────────────────────────────────────────────────
@@ -374,7 +375,7 @@ input[type=number] {
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  background: #05261a; // total em destaque: verde profundo com o número em lima
+  background: $profundo; // total em destaque: verde profundo com o número em lima
   border-top: none;
   font-size: 14px;
   font-weight: 600;
@@ -385,14 +386,14 @@ input[type=number] {
 .total-valor {
   font-size: 18px;
   font-weight: 700;
-  color: #b8f15a;
+  color: $lima;
 }
 
 // ── Modal Resumo ──────────────────────────────────────────────
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(5, 38, 26, 0.45);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -415,8 +416,8 @@ input[type=number] {
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px 16px;
-  border-bottom: 1px solid #edf1e9;
-  h2 { font-size: 16px; font-weight: 700; color: #05261a; margin: 0; }
+  border-bottom: 1px solid $superficie;
+  h2 { font-size: 18px; font-weight: 700; color: $profundo; margin: 0; }
 }
 
 .modal-fechar {
@@ -426,11 +427,11 @@ input[type=number] {
   width: 30px;
   height: 30px;
   border: none;
-  background: #edf1e9;
+  background: $superficie;
   border-radius: 8px;
-  color: #5c6f66;
+  color: $suave;
   cursor: pointer;
-  &:hover { background: #dde5d9; color: #05261a; }
+  &:hover { background: $borda; color: $profundo; }
 }
 
 .dash-tabela-wrap { padding: 20px 24px 28px; }
@@ -444,8 +445,8 @@ input[type=number] {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #5c6f66;
-    background: #edf1e9;
+    color: $suave;
+    background: $superficie;
     padding: 9px 12px;
     white-space: nowrap;
   }
@@ -458,14 +459,14 @@ input[type=number] {
 
 .dash-tr td {
   padding: 12px 12px;
-  border-bottom: 1px solid #edf1e9;
+  border-bottom: 1px solid $superficie;
   vertical-align: middle;
 }
 
 .dash-row-label {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   white-space: nowrap;
 }
 
@@ -480,14 +481,14 @@ input[type=number] {
 .dash-bar-bg {
   flex: 1;
   height: 10px;
-  background: #dde5d9;
+  background: $borda;
   border-radius: 99px;
   overflow: hidden;
 }
 
 .dash-bar-fill {
   height: 100%;
-  background: #0b3d2e; // verde floresta: mais escuro que o lima, como a aba selecionada
+  background: $floresta; // verde floresta: mais escuro que o lima, como a aba selecionada
   border-radius: 99px;
   transition: width 0.5s ease;
 }
@@ -500,30 +501,30 @@ input[type=number] {
 .dash-rs {
   font-size: 12px;
   font-weight: 600;
-  color: #8a9d92;
+  color: $apagado;
   margin-right: 4px;
 }
 
 .dash-val {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
 }
 
 .dash-tr-total td {
   padding: 12px 12px;
   font-size: 13px;
   font-weight: 700;
-  background: #f7f8f5;
+  background: $off-white;
   vertical-align: middle;
-  .dash-rs { color: #5c6f66; }
-  .dash-val { color: #0b3d2e; font-size: 14px; }
+  .dash-rs { color: $suave; }
+  .dash-val { color: $floresta; font-size: 14px; }
 }
 
 .dtd-classe {
   font-size: 13px;
   font-weight: 600;
-  color: #40534a;
+  color: $texto-2;
 }
 
 // ── Modal Simulador ───────────────────────────────────────────
@@ -542,7 +543,7 @@ input[type=number] {
 }
 
 .sim-abas-wrap {
-  border-bottom: 2px solid #dde5d9;
+  border-bottom: 2px solid $borda;
   padding: 0 24px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -565,7 +566,7 @@ input[type=number] {
   padding: 12px 18px 13px;
   font-size: 12px;
   font-weight: 600;
-  color: #5c6f66;
+  color: $suave;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
@@ -578,18 +579,18 @@ input[type=number] {
   transition: color 0.15s, border-color 0.15s, background 0.15s;
   border-radius: 8px 8px 0 0;
 
-  &:hover { color: #05261a; background: rgba(184, 241, 90, 0.08); }
+  &:hover { color: $profundo; background: rgba(184, 241, 90, 0.08); }
 
   // Aba selecionada: verde profundo e texto claro (mesmo padrão das abas de Gastos, Ativos & Passivos etc.)
   &.ativa {
-    color: #f7f8f5;
+    color: $off-white;
     border-bottom-color: transparent;
-    background: #05261a;
+    background: $profundo;
   }
 
   // Sem o contorno azul do navegador; anel lima só na navegação por teclado
   &:focus { outline: none; }
-  &:focus-visible { box-shadow: 0 0 0 2px #b8f15a; }
+  &:focus-visible { box-shadow: 0 0 0 2px $lima; }
 }
 
 .sim-conteudo {
@@ -620,31 +621,31 @@ input[type=number] {
 .sim-label {
   font-size: 13px;
   font-weight: 600;
-  color: #40534a;
-  strong { color: #05261a; }
+  color: $texto-2;
+  strong { color: $profundo; }
 }
 
 .sim-input {
   height: 42px;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
   border-radius: 10px;
   padding: 0 14px;
   font-size: 14px;
-  color: #05261a;
+  color: $profundo;
   background: #fff;
   outline: none;
   font-family: inherit;
   transition: border-color 0.15s;
-  &:focus { border-color: #b8f15a; box-shadow: 0 0 0 3px #e6f8d2; }
-  &::placeholder { color: #c3cfbf; }
+  &:focus { border-color: $lima; box-shadow: 0 0 0 3px $lima-claro; }
+  &::placeholder { color: $borda-forte; }
 }
 
 
 .btn-buscar-fipe {
   height: 42px;
   padding: 0 16px;
-  background: #b8f15a;
-  color: #05261a;
+  background: $lima;
+  color: $profundo;
   font-size: 13px;
   font-weight: 600;
   border: none;
@@ -652,7 +653,7 @@ input[type=number] {
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s;
-  &:hover:not(:disabled) { background: #8fe04a; }
+  &:hover:not(:disabled) { background: $lima-hover; }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
@@ -661,18 +662,18 @@ input[type=number] {
   align-items: center;
   gap: 8px;
   height: 42px;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
   border-radius: 10px;
   padding: 0 14px;
   background: #fff;
   transition: border-color 0.15s, box-shadow 0.15s;
-  &:focus-within { border-color: #b8f15a; box-shadow: 0 0 0 3px #e6f8d2; }
+  &:focus-within { border-color: $lima; box-shadow: 0 0 0 3px $lima-claro; }
 }
 
 .sim-rs {
   font-size: 13px;
   font-weight: 600;
-  color: #8a9d92;
+  color: $apagado;
   flex-shrink: 0;
 }
 
@@ -683,12 +684,12 @@ input[type=number] {
   background: transparent;
   font-size: 14px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   outline: none;
   font-family: inherit;
   text-align: right;
   padding: 0;
-  &::placeholder { color: #c3cfbf; font-weight: 400; }
+  &::placeholder { color: $borda-forte; font-weight: 400; }
 }
 
 .sim-meses {
@@ -696,12 +697,12 @@ input[type=number] {
   align-items: center;
   gap: 10px;
   height: 42px;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
   border-radius: 10px;
   padding: 0 14px;
   background: #fff;
   transition: border-color 0.15s;
-  &:focus-within { border-color: #b8f15a; box-shadow: 0 0 0 3px #e6f8d2; }
+  &:focus-within { border-color: $lima; box-shadow: 0 0 0 3px $lima-claro; }
 
   input {
     flex: 1;
@@ -709,7 +710,7 @@ input[type=number] {
     background: transparent;
     font-size: 14px;
     font-weight: 600;
-    color: #05261a;
+    color: $profundo;
     outline: none;
     font-family: inherit;
     padding: 0;
@@ -721,7 +722,7 @@ input[type=number] {
 .sim-unit {
   font-size: 13px;
   font-weight: 600;
-  color: #8a9d92;
+  color: $apagado;
   flex-shrink: 0;
 }
 
@@ -730,33 +731,33 @@ input[type=number] {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #8a9d92;
+  color: $apagado;
   margin: 0;
 }
 
 .sim-select {
   height: 42px;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
   border-radius: 10px;
   padding: 0 14px;
   font-size: 13px;
-  color: #05261a;
+  color: $profundo;
   background: #fff;
   outline: none;
   font-family: inherit;
   cursor: pointer;
   width: 100%;
   transition: border-color 0.15s;
-  &:focus { border-color: #b8f15a; box-shadow: 0 0 0 3px #e6f8d2; }
-  &:disabled { background: #f7f8f5; color: #8a9d92; cursor: default; }
-  &.sim-select-disabled { background: #f7f8f5; color: #8a9d92; cursor: default; }
+  &:focus { border-color: $lima; box-shadow: 0 0 0 3px $lima-claro; }
+  &:disabled { background: $off-white; color: $apagado; cursor: default; }
+  &.sim-select-disabled { background: $off-white; color: $apagado; cursor: default; }
 }
 
 .sim-badge-fipe {
   display: inline-flex;
   align-items: center;
-  background: #e6f8d2;
-  color: #0b3d2e;
+  background: $lima-claro;
+  color: $floresta;
   font-size: 10px;
   font-weight: 600;
   border-radius: 6px;
@@ -768,8 +769,8 @@ input[type=number] {
 
 
 .fac-filho-card {
-  background: #f7f8f5;
-  border: 1.5px solid #dde5d9;
+  background: $off-white;
+  border: 1.5px solid $borda;
   border-radius: 14px;
   padding: 20px 22px;
   margin-bottom: 12px;
@@ -787,7 +788,7 @@ input[type=number] {
 .fac-filho-titulo {
   font-size: 13px;
   font-weight: 600;
-  color: #132a20;
+  color: $profundo;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -795,7 +796,7 @@ input[type=number] {
 .fac-filho-nome {
   font-weight: 500;
   text-transform: none;
-  color: #5c6f66;
+  color: $suave;
 }
 
 .fac-filho-remover {
@@ -804,10 +805,10 @@ input[type=number] {
   justify-content: center;
   width: 28px;
   height: 28px;
-  background: #fff0f3;
+  background: $rosa-claro;
   border: none;
   border-radius: 8px;
-  color: #ff2e63;
+  color: $rosa;
   cursor: pointer;
   transition: background 0.15s;
   &:hover { background: #ffd0db; }
@@ -821,14 +822,14 @@ input[type=number] {
 
 .sim-hint {
   font-size: 12px;
-  color: #8a9d92;
+  color: $apagado;
   line-height: 1.5;
   font-style: italic;
 }
 
 .sim-switch-val {
   font-size: 13px;
-  color: #5c6f66;
+  color: $suave;
 }
 
 .sim-switch-box {
@@ -836,7 +837,7 @@ input[type=number] {
   align-items: center;
   gap: 10px;
   height: 42px;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
   border-radius: 10px;
   padding: 0 14px;
   background: #fff;
@@ -857,14 +858,14 @@ input[type=number] {
 
 .fac-res-linha {
   font-size: 12px;
-  color: #05261a;
+  color: $profundo;
   strong { font-weight: 600; }
 }
 
 .fac-res-total {
   font-size: 18px;
   font-weight: 700;
-  color: #0f4a2f;
+  color: $floresta;
   margin-left: auto;
   white-space: nowrap;
 }
@@ -876,9 +877,9 @@ input[type=number] {
   padding: 0 16px;
   height: 38px;
   background: #fff;
-  border: 1.5px dashed #b8f15a;
+  border: 1.5px dashed $lima;
   border-radius: 10px;
-  color: #0f4a2f;
+  color: $floresta;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -892,7 +893,7 @@ input[type=number] {
   flex: 1;
   text-align: right;
   font-size: 13px;
-  color: #8a9d92;
+  color: $apagado;
   font-style: italic;
 }
 
@@ -902,15 +903,15 @@ input[type=number] {
   align-items: center;
   justify-content: space-between;
   padding: 16px 18px;
-  background: #f7f8f5;
+  background: $off-white;
   border-radius: 12px;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
 }
 
 .sim-switch-label {
   font-size: 14px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
 }
 
 .switch {
@@ -918,7 +919,7 @@ input[type=number] {
   width: 44px;
   height: 24px;
   border-radius: 99px;
-  background: #dde5d9;
+  background: $borda;
   border: none;
   cursor: pointer;
   padding: 0;
@@ -926,7 +927,7 @@ input[type=number] {
   flex-shrink: 0;
 
   // Ligado: verde profundo (padrão de todos os switches do app)
-  &.on { background: #05261a; }
+  &.on { background: $profundo; }
   &:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(184, 241, 90, 0.35); }
 }
 
@@ -950,25 +951,25 @@ input[type=number] {
   flex-direction: column;
   gap: 20px;
   padding: 20px;
-  background: #f7f8f5;
+  background: $off-white;
   border-radius: 12px;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
 }
 
 .sim-field-readonly .sim-money {
-  background: #edf1e9;
-  border-color: #dde5d9;
+  background: $superficie;
+  border-color: $borda;
   pointer-events: none;
 }
 
-.sim-resultado { background: #edf1e9; border-color: #dde5d9; }
+.sim-resultado { background: $superficie; border-color: $borda; }
 
 .sim-resultado-val {
   flex: 1;
   text-align: right;
   font-size: 16px;
   font-weight: 700;
-  color: #0b3d2e;
+  color: $floresta;
 }
 
 .sim-valor-ia-wrap {
@@ -985,8 +986,8 @@ input[type=number] {
   gap: 6px;
   padding: 0 16px;
   height: 42px;
-  background: #b8f15a;
-  color: #05261a;
+  background: $lima;
+  color: $profundo;
   border: none;
   border-radius: 10px;
   font-size: 12px;
@@ -996,7 +997,7 @@ input[type=number] {
   white-space: nowrap;
   transition: background 0.15s, opacity 0.15s;
   flex-shrink: 0;
-  &:hover { background: #c8f67a; }
+  &:hover { background: $lima-hover; }
   &:disabled { opacity: 0.6; cursor: default; }
 }
 
@@ -1013,13 +1014,13 @@ input[type=number] {
 
 .sim-erro {
   font-size: 12px;
-  color: #ef4444;
+  color: $erro;
   font-weight: 600;
 }
 
 .sim-hint {
   font-size: 11px;
-  color: #8a9d92;
+  color: $apagado;
   font-style: italic;
 }
 
@@ -1027,8 +1028,8 @@ input[type=number] {
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #f7f8f5;
-  border: 1.5px solid #dde5d9;
+  background: $off-white;
+  border: 1.5px solid $borda;
   border-radius: 12px;
   padding: 16px 20px;
   margin-top: 4px;
@@ -1043,7 +1044,7 @@ input[type=number] {
 
 .sim-dep-label {
   font-size: 12px;
-  color: #5c6f66;
+  color: $suave;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -1054,7 +1055,7 @@ input[type=number] {
 .sim-dep-val {
   font-size: 20px;
   font-weight: 600;
-  color: #132a20;
+  color: $profundo;
 }
 
 
@@ -1068,33 +1069,33 @@ input[type=number] {
 .sim-dep-rs {
   font-size: 13px;
   font-weight: 600;
-  color: #0b3d2e;
+  color: $floresta;
   flex-shrink: 0;
 }
 
 .sim-dep-input {
   font-size: 20px;
   font-weight: 600;
-  color: #0b3d2e;
+  color: $floresta;
   border: none;
-  border-bottom: 1.5px dashed #b8f15a;
+  border-bottom: 1.5px dashed $lima;
   background: transparent;
   outline: none;
   width: 100%;
   font-family: inherit;
-  &:focus { border-bottom-color: #0b3d2e; }
+  &:focus { border-bottom-color: $floresta; }
 }
 
 .sim-dep-arrow {
   font-size: 20px;
-  color: #c3cfbf;
+  color: $borda-forte;
   flex-shrink: 0;
 }
 
 .sim-resultado-carro {
   margin-top: 8px;
   padding-top: 16px;
-  border-top: 1.5px solid #edf1e9;
+  border-top: 1.5px solid $superficie;
   // Espaçamento único entre todos os blocos do resultado (título, câmbio, cards, total, botão)
   display: flex;
   flex-direction: column;
@@ -1111,8 +1112,8 @@ input[type=number] {
 }
 
 .sim-res-item {
-  background: #f7f8f5;
-  border: 1.5px solid #dde5d9;
+  background: $off-white;
+  border: 1.5px solid $borda;
   border-radius: 12px;
   padding: 14px 16px;
   display: flex;
@@ -1124,8 +1125,8 @@ input[type=number] {
 .sim-res-total {
   margin-top: 4px;
   // Caixa de destaque: verde profundo com número em lima (mesmo padrão dos cards de resumo da Gestão)
-  background: #05261a;
-  border: 1.5px solid #05261a;
+  background: $profundo;
+  border: 1.5px solid $profundo;
   border-radius: 12px;
   padding: 14px 20px;
   display: flex;
@@ -1136,13 +1137,13 @@ input[type=number] {
   .sim-res-label {
     font-size: 14px;
     font-weight: 600;
-    color: #f7f8f5;
+    color: $off-white;
   }
 
   .sim-res-val {
     font-size: 26px;
     font-weight: 700;
-    color: #b8f15a;
+    color: $lima;
   }
 }
 
@@ -1157,32 +1158,32 @@ input[type=number] {
     align-items: center;
     gap: 6px;
     background: #fff;
-    border: 1.5px solid #dde5d9;
+    border: 1.5px solid $borda;
     border-radius: 20px;
     padding: 5px 12px;
     font-size: 12px;
-    color: #40534a;
+    color: $texto-2;
     font-weight: 500;
 
-    strong { color: #132a20; font-weight: 600; }
+    strong { color: $profundo; font-weight: 600; }
     .chip-flag { font-size: 14px; line-height: 1; }
   }
 }
 
 .sim-res-label {
   font-size: 12px;
-  color: #5c6f66;
+  color: $suave;
   font-weight: 500;
 }
 
 .sim-res-val {
   font-size: 20px;
   font-weight: 600;
-  color: #132a20;
+  color: $profundo;
 }
 
 .sim-res-destaque {
-  color: #0b3d2e;
+  color: $floresta;
 }
 
 .btn-adicionar-sonho {
@@ -1192,15 +1193,15 @@ input[type=number] {
   margin-top: 16px;
   padding: 0 20px;
   height: 42px;
-  background: #b8f15a;
-  color: #05261a;
+  background: $lima;
+  color: $profundo;
   font-size: 13px;
   font-weight: 600;
   border: none;
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s;
-  &:hover { background: #8fe04a; }
+  &:hover { background: $lima-hover; }
 }
 
 .sim-tab-placeholder {
@@ -1208,7 +1209,7 @@ input[type=number] {
   align-items: center;
   justify-content: center;
   min-height: 200px;
-  color: #8a9d92;
+  color: $apagado;
   font-size: 14px;
   font-weight: 500;
 }
@@ -1230,9 +1231,9 @@ input[type=number] {
 
 // Valor calculado (somente leitura): mesmo tom de campo travado
 .sim-money.sim-money-leitura {
-  background: #f7f8f5;
-  &:focus-within { border-color: #dde5d9; box-shadow: none; }
-  input { cursor: default; color: #05261a; font-weight: 700; }
+  background: $off-white;
+  &:focus-within { border-color: $borda; box-shadow: none; }
+  input { cursor: default; color: $profundo; font-weight: 700; }
 }
 
 // Linha de apoio dentro da caixa de destaque (ex.: prazo do investimento mensal)
@@ -1251,7 +1252,7 @@ input[type=number] {
     background: #fff;
     z-index: 2;
   }
-  th.col-num, th.col-nome { background: #f7f8f5; z-index: 3; }
+  th.col-num, th.col-nome { background: $off-white; z-index: 3; }
 
   th.col-num, td.td-num {
     left: 0;
@@ -1263,9 +1264,9 @@ input[type=number] {
   th.col-nome, td.td-nome {
     left: 44px;
     // Linha que separa as colunas travadas do restante quando a grade rola
-    box-shadow: inset -1px 0 0 #dde5d9, 6px 0 8px -6px rgba(5, 38, 26, 0.12);
+    box-shadow: inset -1px 0 0 $borda, 6px 0 8px -6px rgba(5, 38, 26, 0.12);
   }
-  tr.tr-data:hover td.td-num, tr.tr-data:hover td.td-nome { background: #f7f8f5; }
+  tr.tr-data:hover td.td-num, tr.tr-data:hover td.td-nome { background: $off-white; }
 }
 
 // Colunas calculadas (não editáveis): fundo sombreado e cursor padrão

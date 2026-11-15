@@ -195,7 +195,9 @@ module.exports = function registrarWhatsapp(ctx) {
   function pessoaPorTelefone(telefone) {
     const chave = chaveTelefone(telefone);
     if (!chave) return [];
-    return db.prepare('SELECT id, usuario_id, nome, telefone FROM pessoas WHERE telefone_indice = ? AND telefone_verificado = 1').all(indice(chave))
+    // Conta com acesso removido não é reconhecida pelo WhatsApp
+    return db.prepare(`SELECT p.id, p.usuario_id, p.nome, p.telefone FROM pessoas p JOIN usuarios u ON u.id = p.usuario_id
+      WHERE p.telefone_indice = ? AND p.telefone_verificado = 1 AND u.bloqueado_em IS NULL`).all(indice(chave))
       .map((p) => ({ ...p, telefone: decifrar(p.telefone) }));
   }
 
@@ -245,7 +247,6 @@ module.exports = function registrarWhatsapp(ctx) {
   // Mensais: meta do mês − realizado no mês. Eventuais: limite anual − a janela de 12 meses mais cheia
   // que contém o mês (cada parcela pesa no mês em que cai).
   const indiceMes = (iso) => { const [a, m] = iso.split('-').map(Number); return a * 12 + (m - 1); };
-  const chaveMes = (idx) => `${Math.floor(idx / 12)}-${String((idx % 12) + 1).padStart(2, '0')}`;
   const ehEventual = (g) => String(g.classe || '').startsWith('Eventual');
 
   function saldoItem(usuarioId, g, mes) {
@@ -702,7 +703,16 @@ Preencha todos os campos; use listas vazias, 0 e "" no que não se aplicar.`;
     res.json({ ok: true, ia: !!process.env.ANTHROPIC_API_KEY, modelo: process.env.WHATSAPP_MODELO_IA || MODELO_PADRAO, hora: new Date().toISOString() });
   });
 
+  // Mensagens sendo processadas agora (a IA leva alguns segundos): o provedor pode reenviar a mesma
+  // por timeout antes de o registro ser gravado; a segunda entrega não lança de novo.
+  const emProcessamento = new Set();
   app.post('/integracao/whatsapp/mensagens', authIntegracao, async (req, res) => {
+    const id = req.body?.mensagem_id ? String(req.body.mensagem_id) : null;
+    if (id && emProcessamento.has(id)) return res.json({ mensagem_id: id, acao: 'processando', repetida: true, resposta: null, intencao: null });
+    if (id) emProcessamento.add(id);
+    try { await receberMensagem(req, res); } finally { if (id) emProcessamento.delete(id); }
+  });
+  async function receberMensagem(req, res) {
     const { mensagem_id, telefone, tipo = 'texto', texto = '' } = req.body || {};
     if (!telefone) return res.status(400).json({ erro: 'Informe o telefone de quem enviou' });
     if (!['texto', 'audio'].includes(tipo)) return res.status(400).json({ erro: 'tipo deve ser "texto" ou "audio"' });
@@ -731,12 +741,13 @@ Preencha todos os campos; use listas vazias, 0 e "" no que não se aplicar.`;
     const saida = await processarMensagem({ usuarioId: pessoa.usuario_id, pessoa, texto, tipo });
     const id = registrarMensagem({ usuarioId: pessoa.usuario_id, pessoa, telefone, mensagemId: mensagem_id, tipo, texto }, saida);
     res.json({ id, mensagem_id: mensagem_id || null, acao: saida.acao, intencao: saida.intencao, resposta: saida.resposta, detalhes: saida.detalhes ?? null });
-  });
+  }
 
   function confirmarTelefone(telefone, codigo) {
     const chave = indice(chaveTelefone(telefone));
-    const pessoa = chave && db.prepare(`SELECT id, usuario_id, nome FROM pessoas WHERE telefone_indice = ? AND telefone_codigo = ?
-      AND telefone_codigo_expira > ?`).get(chave, crypto.createHash('sha256').update(codigo).digest('hex'), Date.now());
+    // Conta com acesso removido não liga o WhatsApp
+    const pessoa = chave && db.prepare(`SELECT p.id, p.usuario_id, p.nome FROM pessoas p JOIN usuarios u ON u.id = p.usuario_id AND u.bloqueado_em IS NULL
+      WHERE p.telefone_indice = ? AND p.telefone_codigo = ? AND p.telefone_codigo_expira > ?`).get(chave, crypto.createHash('sha256').update(codigo).digest('hex'), Date.now());
     if (!pessoa) return { acao: 'codigo_invalido', resposta: 'Código inválido ou expirado. Gere um novo em Configurações › Pessoas, no Zevem.' };
     if (db.prepare('SELECT 1 FROM pessoas WHERE telefone_indice = ? AND telefone_verificado = 1 AND usuario_id <> ?').get(chave, pessoa.usuario_id)) {
       return { acao: 'numero_ambiguo', resposta: 'Este número já está confirmado em outra conta do Zevem. Fale com o suporte.' };
@@ -751,6 +762,9 @@ Preencha todos os campos; use listas vazias, 0 e "" no que não se aplicar.`;
     const lote = db.transaction(() => {
       // Aviso que ficou mais de 24h sem ser enviado perdeu o sentido (ex.: "vence hoje"): não vai mais
       db.prepare(`UPDATE avisos SET status = 'expirado' WHERE status IN ('pendente', 'reservado') AND criado_em < datetime('now', '-24 hours')`).run();
+      // Aviso de quem perdeu o acesso depois de o aviso ser criado não sai mais
+      db.prepare(`UPDATE avisos SET status = 'expirado' WHERE status IN ('pendente', 'reservado')
+        AND usuario_id IN (SELECT id FROM usuarios WHERE bloqueado_em IS NOT NULL)`).run();
       const ids = db.prepare(`SELECT id FROM avisos WHERE status = 'pendente'
         OR (status = 'reservado' AND reservado_em < datetime('now', '-10 minutes')) ORDER BY criado_em, id LIMIT ?`).all(limite).map((r) => r.id);
       if (!ids.length) return [];

@@ -1,15 +1,11 @@
-$profundo: #05261a;
-$suave: #5c6f66;
-$borda: #dde5d9;
-$fundo: #f7f8f5;
-$lima: #b8f15a;
-$rosa: #ff2e63;
+@use 'tokens' as *;
+$fundo: $off-white;
 
 .modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(5, 38, 26, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -32,7 +28,7 @@ $rosa: #ff2e63;
   justify-content: space-between;
   gap: 16px;
   padding: 20px 24px 16px;
-  border-bottom: 1px solid #edf1e9;
+  border-bottom: 1px solid $superficie;
   h2 { font-size: 18px; font-weight: 700; color: $profundo; }
   p { font-size: 13px; color: $suave; margin-top: 2px; }
 }
@@ -46,7 +42,7 @@ $rosa: #ff2e63;
   height: 30px;
   border: none;
   border-radius: 8px;
-  background: #edf1e9;
+  background: $superficie;
   color: $suave;
   cursor: pointer;
   &:hover { background: $borda; color: $profundo; }
@@ -75,7 +71,7 @@ $rosa: #ff2e63;
   align-items: center;
   gap: 10px;
   background: $profundo;
-  color: #f7f8f5;
+  color: $off-white;
   border-radius: 999px;
   padding: 10px 18px 10px 10px;
   font-size: 14px;
@@ -101,13 +97,13 @@ $rosa: #ff2e63;
   margin-bottom: 8px;
   padding: 2px 10px;
   border-radius: 999px;
-  background: #e6f8d2;
-  color: #0b3d2e;
+  background: $lima-claro;
+  color: $floresta;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  &.nao { background: #edf1e9; color: $suave; }
+  &.nao { background: $superficie; color: $suave; }
 }
 
 .tipo {
@@ -136,7 +132,7 @@ $rosa: #ff2e63;
     position: relative;
     padding-left: 13px;
     font-size: 12px;
-    color: #40534a;
+    color: $texto-2;
     line-height: 1.35;
     &::before {
       content: '';
@@ -159,11 +155,11 @@ $rosa: #ff2e63;
   margin: 16px 24px 22px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #fff0f3;
+  background: $rosa-claro;
   border: 1px solid #ffd0db;
-  color: #d61e4c;
+  color: $rosa-texto;
   svg { flex-shrink: 0; margin-top: 1px; }
-  p { font-size: 12px; line-height: 1.45; color: #40534a; }
+  p { font-size: 12px; line-height: 1.45; color: $texto-2; }
   strong { color: $profundo; }
 }
 

@@ -77,7 +77,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (s of sonhos; track $index; let i = $index) {
+            @for (s of sonhos; track s.id; let i = $index) {
               <tr class="tr-data">
                 <td class="td-num">{{ i + 1 }}</td>
 

@@ -1,19 +1,29 @@
-@if (auth.isLoggedIn) {
+@if (auth.isLoggedIn && !telaPublica()) {
   <div class="app-shell">
     <app-sidebar />
     <div class="app-shell-main">
+      <!-- Master ou planejador usando o Zevem de um cliente -->
+      @if (auth.suporte(); as s) {
+        <div class="faixa-suporte" role="status">
+          <span>Você está no Zevem de <strong>{{ s.cliente }}</strong>. O que você alterar fica salvo na conta do cliente.</span>
+          <button type="button" (click)="auth.voltarDaContaDoCliente()">Voltar para minha conta</button>
+        </div>
+      }
       <div class="app-shell-body">
         <main class="app-shell-content">
           <router-outlet />
         </main>
-        <app-video-panel />
+        @if (mostrarVideo()) { <app-video-panel /> }
       </div>
     </div>
   </div>
-  <!-- Avisos de acesso só depois do vídeo de boas-vindas -->
-  @if (boasVindas.resolvido() && !boasVindas.aberto()) { <app-comunicado-acesso /> }
-  @if (layout.anuncioPlanejador()) { <app-anuncio-planejador (fechar)="layout.anuncioPlanejador.set(false)" /> }
-  @if (boasVindas.aberto(); as sessao) { <app-boas-vindas [sessao]="sessao" /> }
+  <!-- Avisos de acesso só depois do vídeo de boas-vindas; nada disso para quem está na conta de
+       um cliente (não marca como lido nem como visto no lugar dele) -->
+  @if (!auth.suporte()) {
+    @if (boasVindas.resolvido() && !boasVindas.aberto()) { <app-comunicado-acesso /> }
+    @if (layout.anuncioPlanejador() && !auth.temPlanejador()) { <app-anuncio-planejador (fechar)="layout.anuncioPlanejador.set(false)" /> }
+    @if (boasVindas.aberto(); as sessao) { <app-boas-vindas [sessao]="sessao" /> }
+  }
 } @else {
   <router-outlet />
 }

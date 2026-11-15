@@ -62,8 +62,22 @@ export class VideoPanel {
 
   constructor() {
     this.cfg.carregar();
-    // Trocou de página: volta para a capa do vídeo principal da nova etapa
-    effect(() => { this.etapaAtivaId(); this.selecionado.set(null); this.tocando.set(false); });
+    // Trocou de página: volta para a capa do vídeo principal da nova etapa. O painel abre sozinho só
+    // enquanto faltar vídeo da página para assistir; com todos vistos, entra recolhido (o usuário
+    // ainda pode abrir pela seta) e volta a abrir numa página com vídeo por ver. Só olha na troca de página, para não fechar no meio de um vídeo.
+    effect(() => {
+      const etapa = this.etapaAtivaId();
+      this.selecionado.set(null);
+      this.tocando.set(false);
+      untracked(() => {
+        const videos = this.grupos().flatMap((g) => [g.principal, ...(g.subvideos ?? [])]);
+        if (!videos.length) return;
+        const todosVistos = videos.every((v) => this.assistidos.assistido(etapa, v.titulo));
+        // Recolher que o usuário fez à mão é respeitado; só desfaz o que o próprio painel recolheu
+        if (todosVistos && !this.layout.videoColapsado()) { this.layout.videoColapsado.set(true); this.layout.videoRecolhidoAuto = true; }
+        else if (!todosVistos && this.layout.videoRecolhidoAuto) { this.layout.videoColapsado.set(false); this.layout.videoRecolhidoAuto = false; }
+      });
+    });
     // Clique no selo rosa de uma página: toca o vídeo indicado
     effect(() => {
       const p = this.layout.videoPedido();

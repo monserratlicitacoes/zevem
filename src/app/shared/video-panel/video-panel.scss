@@ -1,10 +1,11 @@
+@use 'tokens' as *;
 :host { display: flex; }
 
 .video-panel {
   flex-shrink: 0;
   height: 100%;
   background: #fff;
-  border-left: 1px solid #dde5d9;
+  border-left: 1px solid $borda;
   overflow: hidden;
   transition: width 0.22s ease;
   display: flex;
@@ -40,14 +41,14 @@
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  color: #40534a;
+  color: $texto-2;
   font-size: 11px;
   font-weight: 600;
   transition: background 0.15s;
 
   span { writing-mode: vertical-rl; }
 
-  &:hover { background: #f7f8f5; color: #05261a; }
+  &:hover { background: $off-white; color: $profundo; }
 }
 
 // Único elemento colorido do app: o ícone de play, sempre indicando "isso leva a um vídeo".
@@ -55,7 +56,7 @@
 // semânticas já usadas (vermelho = erro, azul = tag "Trabalho Extra"/cartão).
 .vp-play-mini {
   display: flex;
-  color: #ff2e63;
+  color: $rosa;
   writing-mode: horizontal-tb;
 }
 
@@ -65,11 +66,11 @@
   justify-content: space-between;
   font-size: 14px;
   font-weight: 700;
-  color: #05261a;
+  color: $profundo;
 }
 
 .vp-recolher {
-  background: #edf1e9;
+  background: $superficie;
   border: none;
   width: 26px;
   height: 26px;
@@ -78,9 +79,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #40534a;
+  color: $texto-2;
   transition: background 0.15s;
-  &:hover { background: #dde5d9; }
+  &:hover { background: $borda; }
 }
 
 .vp-player {
@@ -99,7 +100,7 @@
   aspect-ratio: 16 / 9; // mesma proporção do vídeo do YouTube
   flex-direction: column;
   gap: 10px;
-  background: radial-gradient(80% 80% at 50% 40%, #0b3d2e 0%, #05261a 70%);
+  background: radial-gradient(80% 80% at 50% 40%, $floresta 0%, $profundo 70%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,7 +111,7 @@
   height: 52px;
   border-radius: 50%;
   // Rosa elétrico: tudo que leva aos vídeos de instrução
-  background: #ff2e63;
+  background: $rosa;
   color: #fff;
   box-shadow: 0 0 0 6px rgba(255, 46, 99, 0.18), 0 6px 20px rgba(255, 46, 99, 0.4);
   border: none;
@@ -127,16 +128,16 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #f7f8f5;
-  border: 1.5px solid #dde5d9;
+  background: $off-white;
+  border: 1.5px solid $borda;
   border-radius: 10px;
   padding: 10px;
   font-size: 12px;
   font-weight: 600;
-  color: #40534a;
+  color: $texto-2;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { border-color: #ff2e63; color: #d61e4c; }
+  &:hover { border-color: $rosa; color: $rosa-texto; }
 }
 
 // ── Lista de vídeos da etapa (principal + subvídeos) ──
@@ -144,7 +145,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  h3 { font-size: 13px; font-weight: 700; color: #05261a; margin-bottom: 8px; }
+  h3 { font-size: 13px; font-weight: 700; color: $profundo; margin-bottom: 8px; }
 }
 .vp-lista-item {
   display: flex;
@@ -158,20 +159,20 @@
   padding: 7px 8px;
   font-family: inherit;
   font-size: 12px;
-  color: #40534a;
+  color: $texto-2;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
-  &:hover { background: #f7f8f5; color: #05261a; }
-  &.atual { background: #fff0f3; color: #d61e4c; font-weight: 700; }
+  &:hover { background: $off-white; color: $profundo; }
+  &.atual { background: $rosa-claro; color: $rosa-texto; font-weight: 700; }
 }
-.vp-lista-principal { font-weight: 700; color: #05261a; }
+.vp-lista-principal { font-weight: 700; color: $profundo; }
 // Subvídeos recuados com uma linha-guia à esquerda
 .vp-lista-sub {
   margin-left: 12px;
   width: calc(100% - 12px);
   border-left: 2px solid #e6ece2;
   border-radius: 0 8px 8px 0;
-  &.atual { border-left-color: #ff2e63; }
+  &.atual { border-left-color: $rosa; }
 }
 .vp-lista-icone {
   flex-shrink: 0;
@@ -182,9 +183,9 @@
   align-items: center;
   justify-content: center;
   background: #e6ece2;
-  color: #40534a;
+  color: $texto-2;
   .vp-lista-sub & { width: 17px; height: 17px; }
-  .atual & { background: #ff2e63; color: #fff; }
+  .atual & { background: $rosa; color: #fff; }
 }
 
 // Botão de chamada no pé do painel (ex.: curso de quitação de dívidas): abre o link em nova aba
@@ -194,7 +195,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #ff2e63;
+  background: $rosa;
   border-radius: 10px;
   color: #fff;
   font-size: 13px;
@@ -206,5 +207,5 @@
   transition: background 0.15s, box-shadow 0.15s;
   &:hover { background: #e8164d; box-shadow: 0 0 0 3px #ffe3ea; }
   // Sem link ainda: mantém o rosa cheio, só não reage ao clique
-  &.inativo { cursor: default; &:hover { background: #ff2e63; box-shadow: none; } }
+  &.inativo { cursor: default; &:hover { background: $rosa; box-shadow: none; } }
 }

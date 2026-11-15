@@ -1,12 +1,7 @@
-$profundo: #05261a;
-$floresta: #0b3d2e;
-$lima: #b8f15a;
-$lima-claro: #e6f8d2;
-$borda: #dde5d9;
-$suave: #5c6f66;
+@use 'tokens' as *;
 
 .fundo {
-  position: fixed; inset: 0; z-index: 1100; background: rgba(5, 38, 26, .45);
+  position: fixed; inset: 0; z-index: 1100; background: rgba(5, 38, 26, 0.45);
   display: flex; align-items: flex-start; justify-content: center; padding: 5vh 16px 16px; overflow-y: auto;
 }
 .anuncio {
@@ -20,7 +15,7 @@ $suave: #5c6f66;
 }
 
 // ── Vitrine: foto + chamada ──
-.vitrine { display: grid; grid-template-columns: 260px minmax(0, 1fr); background: $profundo; color: #f7f8f5; }
+.vitrine { display: grid; grid-template-columns: 260px minmax(0, 1fr); background: $profundo; color: $off-white; }
 .foto { position: relative; min-height: 300px; background: #10301f;
   img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; } }
 .foto-vazia { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: $lima; opacity: .5; }
@@ -46,10 +41,10 @@ h2 { font-size: 20px; line-height: 1.3; font-weight: 800; color: #fff; padding-r
   input, select {
     border: 1px solid $borda; border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 13px; color: $profundo; background: #fff;
     &:focus { outline: none; border-color: $floresta; box-shadow: 0 0 0 3px rgba(184, 241, 90, .25); }
-    &.invalido { border-color: #ff2e63; }
+    &.invalido { border-color: $rosa; }
   } }
 .campo-largo { grid-column: 1 / -1; }
-.erro { grid-column: 1 / -1; font-size: 12px; color: #d61e4c; }
+.erro { grid-column: 1 / -1; font-size: 12px; color: $rosa-texto; }
 .agendar {
   grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 10px;
   background: var(--cor-fundo, #{$lima}); color: var(--cor-texto, #{$profundo}); border: none; border-radius: 12px; padding: 15px 20px;

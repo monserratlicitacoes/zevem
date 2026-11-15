@@ -22,9 +22,9 @@ export interface VideosPagina extends GrupoVideos {
   chamada?: ChamadaPainel;
 }
 
-// Vídeo de teste, igual em todas as páginas até os vídeos definitivos ficarem prontos.
-const VIDEO_TESTE = 'https://www.youtube.com/watch?v=nLd6h5td8G4';
-const teste = (titulo: string): VideoEtapa => ({ titulo, link: VIDEO_TESTE });
+// Sem link padrão: cada vídeo mostra "Vídeo em breve" até o master colar o link em Master → Vídeos.
+// (Até 2026-11-10 todos apontavam para um vídeo de teste do YouTube.)
+const teste = (titulo: string): VideoEtapa => ({ titulo, link: '' });
 
 export const VIDEOS_ETAPAS: Record<string, VideosPagina> = {
   dashboard: {

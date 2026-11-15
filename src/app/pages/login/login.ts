@@ -30,13 +30,12 @@ export class Login {
     this.erro = '';
     this.auth.login(this.email, this.senha).subscribe({
       next: () => {
-        this.carregando = false;
-        this.router.navigate(['/recebimentos']);
+        this.auth.telaInicial().subscribe((rota) => { this.carregando = false; this.router.navigateByUrl(rota); });
       },
       error: (e) => {
         this.carregando = false;
-        this.erro = e.error?.erro === 'EMAIL_NAO_CONFIRMADO'
-          ? (e.error?.mensagem || 'Confirme seu e-mail antes de entrar.')
+        this.erro = e.error?.erro === 'EMAIL_NAO_CONFIRMADO' || e.error?.erro === 'ACESSO_REMOVIDO'
+          ? (e.error?.mensagem || 'Não foi possível entrar.')
           : e?.status === 0
             ? 'Sem conexão com o servidor. Tente novamente em instantes.'
             : e?.status === 429
@@ -52,8 +51,7 @@ export class Login {
     this.erro = '';
     this.auth.devLogin().subscribe({
       next: () => {
-        this.carregando = false;
-        this.router.navigate(['/recebimentos']);
+        this.auth.telaInicial().subscribe((rota) => { this.carregando = false; this.router.navigateByUrl(rota); });
       },
       error: (e) => {
         this.carregando = false;

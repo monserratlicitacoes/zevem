@@ -39,6 +39,16 @@
         <option [ngValue]="3">Utilização 3 ou mais</option>
         <option [ngValue]="4">Utilização 4 ou mais</option>
       </select>
+      <select [(ngModel)]="planejadorFiltro" name="planejador" aria-label="Planejador">
+        <option value="">Todos os planejadores</option>
+        <option value="sem">Sem planejador</option>
+        @for (p of planejadores; track p.id) { <option [ngValue]="p.id">{{ p.nome }}</option> }
+      </select>
+      <select [(ngModel)]="situacaoAcesso" name="acesso" aria-label="Acesso">
+        <option value="ativos">Com acesso</option>
+        <option value="removidos">Acesso removido</option>
+        <option value="">Com e sem acesso</option>
+      </select>
       <span class="contagem">{{ filtradas.length }} de {{ linhas.length }}</span>
     </div>
 
@@ -52,59 +62,81 @@
             <th class="ordenavel num" (click)="ordenar('renda')">Renda mensal<span class="seta">{{ seta('renda') }}</span></th>
             <th class="ordenavel num" (click)="ordenar('patrimonio')">Patrimônio fin.<span class="seta">{{ seta('patrimonio') }}</span></th>
             <th class="ordenavel centro" (click)="ordenar('saude')">Saúde<span class="seta">{{ seta('saude') }}</span></th>
-            <th class="ordenavel num" (click)="ordenar('comprometimento')">Comprom.<span class="seta">{{ seta('comprometimento') }}</span></th>
+            <th class="ordenavel centro" (click)="ordenar('comprometimento')">Comprom.<span class="seta">{{ seta('comprometimento') }}</span></th>
             <th class="centro">Jarro</th>
-            <th class="ordenavel num" (click)="ordenar('videos')">Vídeos<span class="seta">{{ seta('videos') }}</span></th>
-            <th class="ordenavel" (click)="ordenar('ultimo_gasto')">Último gasto<span class="seta">{{ seta('ultimo_gasto') }}</span></th>
-            <th class="ordenavel" (click)="ordenar('utilizacao')">Utilização<span class="seta">{{ seta('utilizacao') }}</span></th>
+            <th class="ordenavel centro" (click)="ordenar('videos')">Vídeos<span class="seta">{{ seta('videos') }}</span></th>
+            <th class="ordenavel centro" (click)="ordenar('ultimo_gasto')">Último gasto<span class="seta">{{ seta('ultimo_gasto') }}</span></th>
+            <th class="ordenavel centro" (click)="ordenar('utilizacao')">Utilização<span class="seta">{{ seta('utilizacao') }}</span></th>
+            <th class="centro">Planejador</th>
+            <th class="centro">Acesso</th>
           </tr>
         </thead>
         <tbody>
           @for (c of filtradas; track c.id) {
-            <tr>
+            <tr [class.removido]="!c.ativo">
               <td>
-                <strong>{{ c.nome }}</strong>@if (c.master) { <span class="selo">master</span> }
+                @if (!c.master && c.ativo) { <strong><button type="button" class="nome-cliente" (click)="acessar(c)" [title]="'Abrir o Zevem de ' + c.nome">{{ c.nome }}</button></strong> } @else { <strong>{{ c.nome }}</strong> }@if (c.master) { <span class="selo">master</span> }
                 <span class="sub" [title]="c.ultimo_acesso ?? ''">acesso {{ diasDesde(c.ultimo_acesso) }}</span>
               </td>
               <td>
-                {{ c.email }}
+                <!-- O e-mail pode quebrar no @ quando falta espaço -->{{ c.email.split('@')[0] }}<wbr>@{{ c.email.split('@')[1] }}
                 <span class="sub">{{ c.telefone || 'sem telefone' }}</span>
               </td>
               <td class="centro">{{ c.casado ? 'Sim' : 'Não' }}</td>
-              <td class="num">{{ moeda(c.renda_mensal) }}</td>
-              <td class="num">{{ moeda(c.patrimonio_financeiro) }}</td>
+              <!-- Valores em formato contábil: R$ encostado à esquerda, número à direita -->
+              <td><span class="contabil"><span>R$</span><span>{{ numero(c.renda_mensal) }}</span></span></td>
+              <td><span class="contabil"><span>R$</span><span>{{ numero(c.patrimonio_financeiro) }}</span></span></td>
               <td class="centro">
                 @if (c.nivel_saude !== null) {
                   <span class="selo" [class]="'selo ' + (faixa(c.nivel_saude) === 'critico' ? 'critico' : faixa(c.nivel_saude) === 'atencao' ? 'atencao' : 'ok')" [title]="c.nivel_saude_motivo">{{ c.nivel_saude }}</span>
                 } @else { <span class="selo" title="Sem receita mensal cadastrada">—</span> }
               </td>
-              <td class="num">
+              <td class="centro">
                 @if (c.grau_comprometimento !== null) {
                   <span class="selo" [class]="'selo ' + classeComprometimento(c.grau_comprometimento)">{{ c.grau_comprometimento.toFixed(1).replace('.', ',') }}%</span>
                 } @else { — }
               </td>
               <td class="centro">
-                <button type="button" class="botao botao-jarro" (click)="jarro = c" [attr.aria-label]="'Ver o Jarro do Orçamento de ' + c.nome">
+                <button type="button" class="botao botao-jarro" (click)="jarro = c" [title]="'Ver o Jarro do Orçamento de ' + c.nome" [attr.aria-label]="'Ver o Jarro do Orçamento de ' + c.nome">
                   <svg viewBox="0 0 20 20" fill="none" width="14" height="14" aria-hidden="true"><path d="M7 2.5h6M7.5 2.5v2.2C5.4 5.6 4 7.6 4 10v5a2.5 2.5 0 0 0 2.5 2.5h7A2.5 2.5 0 0 0 16 15v-5c0-2.4-1.4-4.4-3.5-5.3V2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 11.5h12" stroke="currentColor" stroke-width="1.5"/></svg>
-                  Ver
                 </button>
               </td>
-              <td class="num">{{ c.videosPct }}%</td>
-              <td>
-                @if (c.ultimo_gasto; as g) {
-                  {{ moeda(g.valor) }} · {{ data(g.data) }}
-                  <span class="sub" [title]="g.descricao">{{ g.item || g.descricao }} · lançado {{ data(g.criado_em) }}</span>
-                } @else { <span class="sub">nenhum</span> }
+              <td class="centro">{{ c.videosPct }}%</td>
+              <td class="centro">
+                <!-- Só há quantos dias o cliente lançou o último gasto (sinal de uso, não do que gastou) -->
+                @if (c.ultimo_gasto; as g) { <span class="nowrap" [title]="'Último gasto lançado ' + diasDesde(g.criado_em)">{{ dias(g.criado_em) }}d</span> } @else { <span class="sub" title="Nenhum gasto lançado">—</span> }
               </td>
-              <td>
-                <div class="utilizacao" [title]="'Acesso ' + c.utilizacao_partes.acesso + ' · lançamentos ' + c.utilizacao_partes.lancamentos.toFixed(2) + ' · cadastro ' + c.utilizacao_partes.cadastro + ' · WhatsApp ' + c.utilizacao_partes.whatsapp.toFixed(2) + ' · vídeos ' + (c.videosPct / 100).toFixed(2)">
-                  <strong>{{ c.utilizacao.toFixed(1).replace('.', ',') }}</strong>
-                  <span class="barra"><span [style.width.%]="c.utilizacao * 20"></span></span>
-                </div>
+              <td class="centro">
+                <!-- Só a nota (sem barra, para poupar espaço); o detalhe fica no título -->
+                <strong class="utilizacao" [title]="'Acesso ' + c.utilizacao_partes.acesso + ' · lançamentos ' + c.utilizacao_partes.lancamentos.toFixed(2) + ' · cadastro ' + c.utilizacao_partes.cadastro + ' · WhatsApp ' + c.utilizacao_partes.whatsapp.toFixed(2) + ' · vídeos ' + (c.videosPct / 100).toFixed(2)">{{ c.utilizacao.toFixed(1).replace('.', ',') }}</strong>
+              </td>
+              <td class="centro">
+                @if (c.master) { <span class="sub">—</span> }
+                @else {
+                  <!-- Só as iniciais num ícone; o nome aparece ao passar o mouse e o clique abre a troca do planejador -->
+                  <button type="button" class="avatar-planejador" [class.vazio]="!c.planejador_id" (click)="abrirTroca(c)"
+                    [title]="c.planejador_id ? nomePlanejador(c.planejador_id) : 'Sem planejador'" [attr.aria-label]="'Planejador de ' + c.nome + ': ' + nomePlanejador(c.planejador_id) + '. Trocar'">
+                    {{ c.planejador_id ? nomeCurto(nomePlanejador(c.planejador_id)) : '+' }}
+                  </button>
+                }
+              </td>
+              <td class="centro">
+                @if (c.master) { <span class="selo ok">Ativo</span> }
+                @else {
+                  <!-- Só o ícone; o que ele faz fica no título e no aria-label -->
+                  <button type="button" class="botao botao-icone" [class.perigo]="c.ativo" (click)="alternarAcesso(c)"
+                    [title]="c.ativo ? 'Remover acesso' : 'Devolver acesso (removido em ' + data(c.bloqueado_em) + ')'" [attr.aria-label]="(c.ativo ? 'Remover o acesso de ' : 'Devolver o acesso de ') + c.nome">
+                    @if (c.ativo) {
+                      <svg viewBox="0 0 20 20" fill="none" width="15" height="15" aria-hidden="true"><circle cx="8" cy="6.5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 16.5c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5M13 9h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    } @else {
+                      <svg viewBox="0 0 20 20" fill="none" width="15" height="15" aria-hidden="true"><circle cx="8" cy="6.5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 16.5c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5M15.5 6.5v5M13 9h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    }
+                  </button>
+                }
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="11" class="vazio">Nenhum cliente com esses filtros.</td></tr>
+            <tr><td colspan="13" class="vazio">Nenhum cliente com esses filtros.</td></tr>
           }
         </tbody>
       </table>
@@ -112,6 +144,36 @@
     <p class="nota">Utilização (0 a 5): média de acesso recente, gastos lançados em 30 dias, cadastro preenchido, uso do WhatsApp e vídeos assistidos. Passe o mouse sobre a nota para ver cada parte.</p>
   }
 
+  <!-- Trocar o planejador do cliente -->
+  @if (troca; as t) {
+    <div class="modal-overlay" (click)="troca = null">
+      <div class="modal-convite modal-troca" role="dialog" aria-modal="true" aria-labelledby="titulo-troca" (click)="$event.stopPropagation()">
+        <div class="modal-topo">
+          <h2 id="titulo-troca">Planejador de {{ t.cliente.nome }}</h2>
+          <button type="button" class="modal-fechar" (click)="troca = null" aria-label="Fechar">
+            <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <ul class="opcoes-planejador" role="radiogroup">
+          <li><label [class.marcado]="t.escolha === null">
+            <input type="radio" name="troca-planejador" [value]="null" [(ngModel)]="t.escolha" />
+            <span class="avatar-planejador vazio" aria-hidden="true">—</span> Sem planejador (cliente direto do Zevem)
+          </label></li>
+          @for (p of planejadores; track p.id) {
+            <li><label [class.marcado]="t.escolha === p.id">
+              <input type="radio" name="troca-planejador" [value]="p.id" [(ngModel)]="t.escolha" />
+              <span class="avatar-planejador" aria-hidden="true">{{ nomeCurto(p.nome) }}</span> {{ p.nome }}
+              @if (!p.ativo) { <span class="sub">sem acesso</span> }
+            </label></li>
+          }
+        </ul>
+        <div class="modal-acoes">
+          <button type="button" class="botao" (click)="troca = null">Cancelar</button>
+          <button type="button" class="botao primario" [disabled]="t.escolha === t.cliente.planejador_id" (click)="salvarTroca()">Salvar</button>
+        </div>
+      </div>
+    </div>
+  }
   @if (jarro; as j) {
     <app-jarro-orcamento [componentes]="j.componentes" [cliente]="j.nome" [destaque]="todasPartes" (fechar)="jarro = null" />
   }

@@ -34,17 +34,18 @@ const CORES_ANUNCIO = ['lima', 'rosa', 'floresta', 'profundo', 'lima_claro', 'of
 const PUBLICOS = ['todos', 'assinantes', 'nao_assinantes'];
 
 // Vídeo de boas-vindas: abre no primeiro acesso do cliente e só libera o app quando o vídeo termina.
-// O link de partida é o mesmo vídeo de teste dos painéis (src/app/shared/video-panel/videos-etapas.ts).
+// Começa sem link e desligado: o master cola o link e liga em Master → Anúncios e avisos.
+// (Até 2026-11-10 o padrão era um vídeo de teste do YouTube.)
 const BOAS_VINDAS_PADRAO = {
-  ativo: true,
-  link: 'https://www.youtube.com/watch?v=nLd6h5td8G4',
+  ativo: false,
+  link: '',
   titulo: 'Bem-vindo(a) ao Zevem!',
   botao: 'HORA DE CONSTRUIR MEU PLANEJAMENTO!',
 };
 const ID_YOUTUBE = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/;
 
 module.exports = function registrarAdmin(ctx) {
-  const { app, db, auth, componentesOrcamento, nivelSaude, grauComprometimento, agoraBrasilia, DATA_DIR } = ctx;
+  const { app, db, auth, somasOrcamento, somasVazias, componentesOrcamento, nivelSaude, grauComprometimento, agoraBrasilia, DATA_DIR } = ctx;
 
   // ── Tabelas e colunas ──
   try { db.prepare("ALTER TABLE usuarios ADD COLUMN papel TEXT NOT NULL DEFAULT 'cliente'").run(); } catch {}
@@ -102,7 +103,13 @@ module.exports = function registrarAdmin(ctx) {
     });
   }
 
-  app.get('/auth/papel', auth(), (req, res) => res.json({ master: ehMaster(req.user.id) }));
+  app.get('/auth/papel', auth(), (req, res) => {
+    const m = ehMaster(req.user.id);
+    const u = db.prepare('SELECT papel, planejador_id FROM usuarios WHERE id = ?').get(req.user.id);
+    // tem_planejador: cliente vinculado a um planejador (convite dele ou escolha do master na tela
+    // Clientes). Some o "Contrate um planejador" do menu; volta se o master tirar o vínculo.
+    res.json({ master: m, planejador: !m && u?.papel === 'planejador', tem_planejador: !!u?.planejador_id, suporte: req.user.suporte || null });
+  });
 
   // ── Uploads de imagem (foto do anúncio, imagem dos avisos) ──
   const PASTA_UPLOADS = path.join(DATA_DIR, 'uploads');
@@ -201,8 +208,9 @@ module.exports = function registrarAdmin(ctx) {
   // Cliente: mostra o vídeo enquanto não tiver assistido até o fim. O master pode fechar quando quiser.
   app.get('/boas-vindas', auth(), (req, res) => {
     const cfg = lerConfig('boas_vindas', BOAS_VINDAS_PADRAO);
-    const u = db.prepare('SELECT boas_vindas_em FROM usuarios WHERE id = ?').get(req.user.id);
-    const mostrar = !!cfg.ativo && ID_YOUTUBE.test(cfg.link) && !!u && !u.boas_vindas_em;
+    const u = db.prepare('SELECT boas_vindas_em, papel FROM usuarios WHERE id = ?').get(req.user.id);
+    // O vídeo é para o cliente: o planejador associado não passa por ele
+    const mostrar = !!cfg.ativo && ID_YOUTUBE.test(cfg.link) && !!u && !u.boas_vindas_em && u.papel !== 'planejador';
     res.json({ mostrar, master: ehMaster(req.user.id), link: cfg.link, titulo: cfg.titulo, botao: cfg.botao });
   });
   app.post('/boas-vindas/concluir', auth(), (req, res) => {
@@ -222,7 +230,13 @@ module.exports = function registrarAdmin(ctx) {
   });
 
   // Cliente: lê o anúncio (o botão do menu some quando está desligado)
-  app.get('/anuncio-planejador', auth(), (req, res) => res.json(lerConfig('anuncio_planejador', ANUNCIO_PADRAO)));
+  // Cliente que já tem planejador (veio pelo convite dele, ou foi vinculado pelo master) não vê
+  // o "Contrate um planejador": o anúncio chega desligado para ele.
+  app.get('/anuncio-planejador', auth(), (req, res) => {
+    const anuncio = lerConfig('anuncio_planejador', ANUNCIO_PADRAO);
+    const temPlanejador = db.prepare('SELECT planejador_id FROM usuarios WHERE id = ?').get(req.user.id)?.planejador_id;
+    res.json(temPlanejador ? { ...anuncio, ativo: false } : anuncio);
+  });
   app.get('/admin/anuncio-planejador', master(), (req, res) => res.json(lerConfig('anuncio_planejador', ANUNCIO_PADRAO)));
   app.put('/admin/anuncio-planejador', master(), (req, res) => {
     const v = validarAnuncio(req.body || {});
@@ -328,36 +342,63 @@ module.exports = function registrarAdmin(ctx) {
   //   lancamentos: gastos lançados nos últimos 30 dias ÷ 30 (máx. 1)
   //   cadastro: 1/4 por bloco preenchido — recebimentos, pessoas, 10+ itens com meta, dívidas/sonhos/cartões
   //   whatsapp: mensagens nos últimos 30 dias ÷ 20 (máx. 1)
-  const conta = (sql, ...a) => Number(db.prepare(sql).get(...a)?.n) || 0;
-  function partesUtilizacao(u) {
+  // Tudo é lido de uma vez para todos os clientes (GROUP BY) e montado em memória: a lista não cresce
+  // em número de consultas conforme entram clientes.
+  function dadosClientes() {
+    const porUsuario = (sql, ...a) => new Map(db.prepare(sql).all(...a).map((r) => [r.usuario_id, r]));
+    const pessoas = new Map();
+    db.prepare('SELECT usuario_id, id, nome, telefone, email FROM pessoas ORDER BY usuario_id, id').all().forEach((p) => {
+      if (!pessoas.has(p.usuario_id)) pessoas.set(p.usuario_id, []);
+      pessoas.get(p.usuario_id).push({ nome: p.nome, telefone: decifrar(p.telefone) || '', email: decifrar(p.email) || '' });
+    });
+    const videos = new Map();
+    db.prepare('SELECT usuario_id, chave FROM videos_assistidos').all().forEach((r) => {
+      if (!videos.has(r.usuario_id)) videos.set(r.usuario_id, []);
+      videos.get(r.usuario_id).push(r.chave);
+    });
+    return {
+      somas: somasOrcamento(),
+      pessoas, videos,
+      patrimonio: porUsuario("SELECT usuario_id, COALESCE(SUM(valor_atual), 0) AS t FROM ativos WHERE guia = 'financeiros' GROUP BY usuario_id"),
+      ultimo: porUsuario(`SELECT * FROM (SELECT l.usuario_id, l.data, l.valor, l.descricao, l.origem, l.criado_em, g.descricao AS item,
+          ROW_NUMBER() OVER (PARTITION BY l.usuario_id ORDER BY l.criado_em DESC, l.id DESC) AS ordem
+        FROM lancamentos_gastos l LEFT JOIN gastos g ON g.id = l.gasto_id) WHERE ordem = 1`),
+      lanc30: porUsuario("SELECT usuario_id, COUNT(*) AS n FROM lancamentos_gastos WHERE criado_em >= datetime('now', '-30 days') GROUP BY usuario_id"),
+      wpp30: porUsuario("SELECT usuario_id, COUNT(*) AS n FROM whatsapp_mensagens WHERE canal = 'whatsapp' AND criado_em >= datetime('now', '-30 days') GROUP BY usuario_id"),
+      receb: porUsuario('SELECT usuario_id, COUNT(*) AS n FROM recebimentos WHERE valor > 0 GROUP BY usuario_id'),
+      itens: porUsuario('SELECT usuario_id, COUNT(*) AS n FROM gastos WHERE valor > 0 GROUP BY usuario_id'),
+      outros: porUsuario(`SELECT usuario_id, COUNT(*) AS n FROM (SELECT usuario_id FROM dividas UNION ALL SELECT usuario_id FROM sonhos
+        UNION ALL SELECT usuario_id FROM cartoes) GROUP BY usuario_id`),
+    };
+  }
+  const n = (mapa, id) => Number(mapa.get(id)?.n) || 0;
+
+  function partesUtilizacao(u, d) {
     const dias = u.ultimo_acesso ? (Date.now() - Date.parse(u.ultimo_acesso.replace(' ', 'T') + 'Z')) / 864e5 : Infinity;
     const acesso = dias <= 2 ? 1 : dias <= 7 ? 0.75 : dias <= 14 ? 0.5 : dias <= 30 ? 0.25 : 0;
-    const lanc = conta("SELECT COUNT(*) AS n FROM lancamentos_gastos WHERE usuario_id = ? AND criado_em >= datetime('now', '-30 days')", u.id);
     const cadastro = [
-      conta('SELECT COUNT(*) AS n FROM recebimentos WHERE usuario_id = ? AND valor > 0', u.id) > 0,
-      conta('SELECT COUNT(*) AS n FROM pessoas WHERE usuario_id = ?', u.id) > 0,
-      conta('SELECT COUNT(*) AS n FROM gastos WHERE usuario_id = ? AND valor > 0', u.id) >= 10,
-      conta('SELECT (SELECT COUNT(*) FROM dividas WHERE usuario_id = ?) + (SELECT COUNT(*) FROM sonhos WHERE usuario_id = ?) + (SELECT COUNT(*) FROM cartoes WHERE usuario_id = ?) AS n', u.id, u.id, u.id) > 0,
+      n(d.receb, u.id) > 0,
+      (d.pessoas.get(u.id) || []).length > 0,
+      n(d.itens, u.id) >= 10,
+      n(d.outros, u.id) > 0,
     ].filter(Boolean).length / 4;
-    const wpp = conta("SELECT COUNT(*) AS n FROM whatsapp_mensagens WHERE usuario_id = ? AND canal = 'whatsapp' AND criado_em >= datetime('now', '-30 days')", u.id);
-    return { acesso, lancamentos: Math.min(lanc / 30, 1), cadastro, whatsapp: Math.min(wpp / 20, 1) };
+    return { acesso, lancamentos: Math.min(n(d.lanc30, u.id) / 30, 1), cadastro, whatsapp: Math.min(n(d.wpp30, u.id) / 20, 1) };
   }
 
-  function resumoCliente(u) {
-    const pessoas = db.prepare('SELECT id, nome, telefone, email FROM pessoas WHERE usuario_id = ? ORDER BY id').all(u.id)
-      .map((p) => ({ ...p, telefone: decifrar(p.telefone), email: decifrar(p.email) }));
-    const comp = componentesOrcamento(u.id);
+  function resumoCliente(u, d) {
+    const pessoas = d.pessoas.get(u.id) || [];
+    const somas = d.somas.get(u.id) || somasVazias();
+    const comp = componentesOrcamento(u.id, somas);
     const saude = nivelSaude(comp);
-    const grau = grauComprometimento(u.id);
-    const patrimonio = Number(db.prepare("SELECT COALESCE(SUM(valor_atual), 0) AS t FROM ativos WHERE usuario_id = ? AND guia = 'financeiros'").get(u.id).t) || 0;
-    const ultimo = db.prepare(`SELECT l.data, l.valor, l.descricao, l.origem, l.criado_em, g.descricao AS item FROM lancamentos_gastos l
-      LEFT JOIN gastos g ON g.id = l.gasto_id WHERE l.usuario_id = ? ORDER BY l.criado_em DESC, l.id DESC LIMIT 1`).get(u.id);
+    const grau = grauComprometimento(u.id, somas);
+    const patrimonio = Number(d.patrimonio.get(u.id)?.t) || 0;
+    const ultimo = d.ultimo.get(u.id);
     return {
       id: u.id,
       nome: pessoas[0]?.nome || u.nome,
       email: u.email,
       telefone: pessoas.find((p) => p.telefone)?.telefone || '',
-      pessoas: pessoas.map((p) => ({ nome: p.nome, telefone: p.telefone || '', email: p.email || '' })),
+      pessoas,
       casado: pessoas.length >= 2,
       criado_em: u.criado_em,
       ultimo_acesso: u.ultimo_acesso,
@@ -367,16 +408,23 @@ module.exports = function registrarAdmin(ctx) {
       nivel_saude_motivo: saude.motivo,
       grau_comprometimento: grau.percentual,
       componentes: comp,
-      videos_assistidos: db.prepare('SELECT chave FROM videos_assistidos WHERE usuario_id = ?').all(u.id).map((r) => r.chave),
-      ultimo_gasto: ultimo || null,
-      utilizacao_partes: partesUtilizacao(u),
+      videos_assistidos: d.videos.get(u.id) || [],
+      ultimo_gasto: ultimo ? { data: ultimo.data, valor: ultimo.valor, descricao: ultimo.descricao, origem: ultimo.origem, criado_em: ultimo.criado_em, item: ultimo.item } : null,
+      utilizacao_partes: partesUtilizacao(u, d),
     };
   }
 
   app.get('/admin/clientes', master(), (req, res) => {
     // Inclui o próprio master (marcado), que também pode usar o app como cliente
-    const usuarios = db.prepare("SELECT id, nome, email, papel, criado_em, ultimo_acesso FROM usuarios WHERE email NOT LIKE '%@zevem.invalid' ORDER BY criado_em DESC").all();
-    res.json(usuarios.map((u) => ({ ...resumoCliente(u), master: u.papel === 'master' })));
+    // Planejadores ficam no menu Planejadores; aqui vem o planejador de cada cliente e se o acesso foi removido
+    const usuarios = db.prepare(`SELECT u.id, u.nome, u.email, u.papel, u.criado_em, u.ultimo_acesso, u.bloqueado_em, u.planejador_id, p.nome AS planejador_nome
+      FROM usuarios u LEFT JOIN usuarios p ON p.id = u.planejador_id
+      WHERE u.email NOT LIKE '%@zevem.invalid' AND u.papel != 'planejador' ORDER BY u.criado_em DESC`).all();
+    const dados = dadosClientes();
+    res.json(usuarios.map((u) => ({
+      ...resumoCliente(u, dados), master: u.papel === 'master', ativo: !u.bloqueado_em, bloqueado_em: u.bloqueado_em,
+      planejador_id: u.planejador_id, planejador_nome: u.planejador_nome || null,
+    })));
   });
 
   return { ehMaster, master, definirTemAssinatura: (fn) => { temAssinatura = fn; } };

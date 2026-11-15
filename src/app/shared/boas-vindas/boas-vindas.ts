@@ -53,6 +53,7 @@ export class BoasVindas implements AfterViewInit, OnDestroy {
     // Se o player não ficar pronto em 20 s (rede, bloqueador), libera o botão
     this.limite = setTimeout(() => { if (!this.player?.getDuration?.()) this.liberarPorFalha(); }, 20000);
     carregarApiYoutube().then((YT) => {
+      if (this.destruido) return; // fechou antes de a API do YouTube chegar: não cria player nem relógio
       this.player = new YT.Player(this.alvo.nativeElement, {
         host: 'https://www.youtube-nocookie.com',
         videoId: id,
@@ -72,7 +73,9 @@ export class BoasVindas implements AfterViewInit, OnDestroy {
     }).catch(() => this.liberarPorFalha());
   }
 
+  private destruido = false;
   ngOnDestroy() {
+    this.destruido = true;
     if (this.relogio) clearInterval(this.relogio);
     if (this.limite) clearTimeout(this.limite);
     try { this.player?.destroy?.(); } catch { /* player já fechado */ }

@@ -696,7 +696,7 @@
             <li class="suspenso" [class.ocupado]="ocupadoSuspensoId === s.id">
               <div class="suspenso-topo">
                 <span class="suspenso-msg">“{{ s.texto_original }}”</span>
-                <span class="tag-whats" [class.tag-manual]="s.origem === 'manual'" [class.tag-fatura]="s.origem === 'fatura'">{{ rotuloOrigem(s) }}</span>
+                <span class="tag-whats" [class.tag-manual]="s.origem === 'manual'" [class.tag-fatura]="s.origem === 'fatura'" [class.tag-fechamento]="s.origem === 'fechamento'">{{ rotuloOrigem(s) }}</span>
               </div>
               @if (s.aviso) { <p class="suspenso-aviso" role="note">⚠ {{ s.aviso }}</p> }
               @if (parcelasRestantes(s) > 1) {
@@ -761,7 +761,7 @@
                 @if (alterados.has(s.id)) {
                   <button type="button" class="btn-secundario btn-peq" (click)="salvarSuspenso(s)">Salvar edição</button>
                 }
-                <button type="button" class="btn-primario btn-peq" (click)="confirmarSuspenso(s)">✓ {{ parcelasRestantes(s) > 1 ? 'Lançar ' + parcelasRestantes(s) + ' parcelas' : s.aviso ? 'Lançar mesmo assim' : 'Confirmar lançamento' }}</button>
+                <button type="button" class="btn-primario btn-peq" (click)="confirmarSuspenso(s)">✓ {{ parcelasRestantes(s) > 1 ? 'Lançar ' + parcelasRestantes(s) + ' parcelas' : s.aviso && s.origem !== 'fechamento' ? 'Lançar mesmo assim' : 'Confirmar lançamento' }}</button>
               </div>
             </li>
           }
@@ -817,6 +817,7 @@
           <li class="ri-suspenso"><strong>{{ r.suspensos }}</strong>
             <span>em suspenso para classificar@if (r.duplicados) { · {{ r.duplicados }} {{ r.duplicados === 1 ? 'possível repetida' : 'possíveis repetidas' }}}</span></li>
           @if (r.ja_em_suspenso) { <li><strong>{{ r.ja_em_suspenso }}</strong><span>já estavam em suspenso de uma importação anterior</span></li> }
+          @if (r.ja_lancados) { <li><strong>{{ r.ja_lancados }}</strong><span>já estavam lançados (importação anterior ou parcela já prevista)</span></li> }
           @if (r.ignorados) { <li><strong>{{ r.ignorados }}</strong><span>pagamentos, estornos e créditos ignorados</span></li> }
         </ul>
         <footer class="modal-acoes">

@@ -1,0 +1,154 @@
+<div class="page">
+  <header class="page-header">
+    <div class="ph-texto">
+      <h1>Meus clientes</h1>
+      <p>Convide seus clientes para o Zevem e acompanhe quem está com acesso.</p>
+    </div>
+    <div class="ph-botoes">
+      <button type="button" class="btn-lancar" (click)="abrirConvite()">
+        <svg viewBox="0 0 20 20" fill="none" width="15" height="15" aria-hidden="true"><path d="M3 5.5h14v9H3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m3.5 6 6.5 5 6.5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Enviar convite
+      </button>
+    </div>
+  </header>
+
+
+  @if (carregando) {
+    <p class="aviso">Carregando...</p>
+  } @else if (erro) {
+    <p class="aviso aviso-erro">{{ erro }}</p>
+  } @else {
+    <section class="kpis">
+      <div class="kpi destaque"><span>Clientes ativos</span><strong>{{ ativos }}</strong></div>
+      <div class="kpi"><span>Convites aguardando</span><strong>{{ pendentes }}</strong></div>
+      <div class="kpi"><span>Acesso removido</span><strong>{{ clientes.length - ativos }}</strong></div>
+    </section>
+
+    <section class="cartao">
+      <h2>Clientes</h2>
+      <div class="filtros">
+        <input type="search" [(ngModel)]="busca" name="busca" placeholder="Buscar por nome, e-mail ou telefone" aria-label="Buscar cliente" />
+        <label class="check"><input type="checkbox" [(ngModel)]="mostrarRemovidos" name="removidos" /> Mostrar acesso removido</label>
+        <span class="contagem">{{ filtrados.length }} de {{ clientes.length }}</span>
+      </div>
+      <div class="tabela-wrap">
+        <table class="grade">
+          <thead><tr><th>Cliente</th><th>Contato</th><th>Cadastro</th><th>Último acesso</th><th>Situação</th><th></th></tr></thead>
+          <tbody>
+            @for (c of filtrados; track c.id) {
+              <tr [class.removido]="!c.ativo">
+                <td>@if (c.ativo) { <strong><button type="button" class="nome-cliente" (click)="acessar(c)" [title]="'Abrir o Zevem de ' + c.nome">{{ c.nome }}</button></strong> } @else { <strong>{{ c.nome }}</strong> }</td>
+                <td>{{ c.email }}<span class="sub">{{ c.telefone || 'sem telefone' }}</span></td>
+                <td>{{ data(c.criado_em) }}</td>
+                <td>{{ diasDesde(c.ultimo_acesso) }}</td>
+                <td>
+                  @if (c.ativo) { <span class="selo ok">Ativo</span> }
+                  @else { <span class="selo critico">Acesso removido</span><span class="sub">em {{ data(c.bloqueado_em) }}</span> }
+                </td>
+                <td>
+                  <div class="acoes-linha">
+                    @if (c.ativo) {
+                      <button type="button" class="botao perigo" (click)="removerAcesso(c)">Remover acesso</button>
+                    } @else if (!c.bloqueado_pelo_master) {
+                      <button type="button" class="botao" (click)="devolverAcesso(c)">Devolver acesso</button>
+                    } @else {
+                      <span class="sub" title="Só o suporte do Zevem pode devolver">removido pelo Zevem</span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="vazio">{{ clientes.length ? 'Nenhum cliente com esse filtro.' : 'Você ainda não tem clientes. Envie o primeiro convite acima.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    @if (convites.length) {
+      <section class="cartao">
+        <h2>Convites em aberto</h2>
+        <div class="tabela-wrap">
+          <table class="grade">
+            <thead><tr><th>Convidado</th><th>Situação</th><th>Enviado em</th><th>Vale até</th><th></th></tr></thead>
+            <tbody>
+              @for (c of convites; track c.id) {
+                <tr>
+                  <td>{{ c.email }}@if (c.nome) { <span class="sub">{{ c.nome }}</span> }</td>
+                  <td>
+                    <span [class]="'selo ' + situacao[c.situacao].classe">{{ situacao[c.situacao].rotulo }}</span>
+                    @if (c.situacao === 'pendente' && c.erro_envio) { <span class="sub vermelho" [title]="c.erro_envio">e-mail não saiu</span> }
+                  </td>
+                  <td>{{ data(c.criado_em) }}</td>
+                  <td>{{ data(c.expira_em) }}</td>
+                  <td>
+                    <div class="acoes-linha">
+                      @if (c.situacao === 'pendente') {
+                        <button type="button" class="botao" (click)="copiar(c)">{{ copiado === c.id ? 'Copiado!' : 'Copiar link' }}</button>
+                        <button type="button" class="botao" (click)="reenviar(c)">Reenviar</button>
+                        <button type="button" class="botao perigo" (click)="cancelarConvite(c)">Cancelar</button>
+                      } @else {
+                        <button type="button" class="botao" (click)="reenviar(c)">Enviar de novo</button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+
+  <!-- Convidar cliente: formulário e resultado do convite (também abre ao reenviar um convite) -->
+  @if (conviteAberto) {
+    <div class="modal-overlay" (click)="fecharConvite()">
+      <div class="modal-convite" role="dialog" aria-modal="true" aria-labelledby="titulo-convidar-cliente" (click)="$event.stopPropagation()">
+        <div class="modal-topo">
+          <h2 id="titulo-convidar-cliente">{{ enviado ? 'Convite criado' : 'Convidar cliente' }}</h2>
+          <button type="button" class="modal-fechar" (click)="fecharConvite()" aria-label="Fechar">
+            <svg viewBox="0 0 20 20" fill="none" width="14" height="14"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        @if (enviado; as c) {
+          <div class="resultado" [class.falhou]="c.aviso_email">
+            @if (c.aviso_email) {
+              <p><strong>O e-mail não saiu.</strong> O convite para {{ c.email }} foi criado: copie o link e mande ao cliente (WhatsApp, por exemplo).</p>
+            } @else {
+              <p><strong>Convite enviado para {{ c.email }}.</strong> Se preferir, mande o link também por outro canal.</p>
+            }
+            @if (c.link) {
+              <div class="link">
+                <input type="text" [value]="c.link" readonly (focus)="$any($event.target).select()" aria-label="Link do convite" />
+                <button type="button" class="botao" (click)="copiar(c)">{{ copiado === c.id ? 'Copiado!' : 'Copiar link' }}</button>
+              </div>
+            }
+          </div>
+          <div class="modal-acoes">
+            <button type="button" class="botao" (click)="novoConvite()">Convidar outro</button>
+            <button type="button" class="botao primario" (click)="fecharConvite()">Fechar</button>
+          </div>
+        } @else {
+          <p class="ajuda">O cliente recebe um link por e-mail para criar a conta e fica vinculado a você. O convite vale por 30 dias.</p>
+          <form class="form-modal" (ngSubmit)="enviar()">
+            <label class="campo">
+              <span>E-mail do cliente</span>
+              <input type="email" [(ngModel)]="email" name="email" placeholder="cliente@email.com" required autofocus />
+            </label>
+            <label class="campo">
+              <span>Nome (opcional)</span>
+              <input type="text" [(ngModel)]="nome" name="nome" placeholder="Para personalizar o e-mail" maxlength="100" />
+            </label>
+            @if (erroEnvio) { <p class="erro">{{ erroEnvio }}</p> }
+            <div class="modal-acoes">
+              <button type="button" class="botao" (click)="fecharConvite()">Cancelar</button>
+              <button type="submit" class="botao primario" [disabled]="enviando || !email.trim()">{{ enviando ? 'Enviando…' : 'Enviar convite' }}</button>
+            </div>
+          </form>
+        }
+      </div>
+    </div>
+  }
+</div>

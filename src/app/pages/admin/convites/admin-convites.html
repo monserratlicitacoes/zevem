@@ -51,11 +51,12 @@
     } @else {
       <div class="tabela-wrap">
         <table class="grade">
-          <thead><tr><th>Convidado</th><th>Situação</th><th>Enviado em</th><th>Vale até</th><th></th></tr></thead>
+          <thead><tr><th>Convidado</th><th>Convidado por</th><th>Situação</th><th>Enviado em</th><th>Vale até</th><th></th></tr></thead>
           <tbody>
             @for (c of convites; track c.id) {
               <tr>
                 <td>{{ c.email }}@if (c.nome) { <span class="sub">{{ c.nome }}</span> }</td>
+                <td>{{ c.planejador_nome || 'Zevem' }}@if (c.planejador_nome) { <span class="sub">planejador</span> }</td>
                 <td>
                   <span class="selo" [class]="'selo ' + situacao[c.situacao].classe">{{ situacao[c.situacao].rotulo }}</span>
                   @if (c.situacao === 'pendente' && c.erro_envio) { <span class="sub vermelho" [title]="c.erro_envio">e-mail não saiu</span> }

@@ -1,10 +1,46 @@
+@use 'tokens' as *;
 .selo + .selo, strong + .selo { margin-left: 6px; }
-.botao-jarro { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; color: #0b3d2e; background: #e6f8d2; border-color: #c4f58a; }
-.utilizacao {
-  display: flex; align-items: center; gap: 8px; min-width: 110px;
-  strong { font-size: 13px; width: 26px; }
-  .barra { flex: 1; height: 7px; border-radius: 999px; background: #eef2eb; overflow: hidden;
-    span { display: block; height: 100%; border-radius: 999px; background: #0b3d2e; } }
+.botao-jarro { display: inline-flex; align-items: center; gap: 5px; padding: 5px 7px; color: $floresta; background: $lima-claro; border-color: $lima-borda; }
+.utilizacao { font-size: 13px; }
+.vazio { text-align: center; color: $suave; padding: 24px; }
+.nota { font-size: 11px; color: $suave; margin-top: 10px; }
+tr.removido td { color: $apagado; }
+.botao-icone { display: inline-flex; align-items: center; justify-content: center; padding: 5px 7px; }
+td .botao { padding: 4px 9px; font-size: 11px; }
+
+// Tabela compacta: cabeçalhos podem quebrar em duas linhas e as células têm menos recuo lateral,
+// para o nome do cliente ficar numa linha só e a tabela caber sem rolagem lateral.
+table.grade {
+  th, th.num { white-space: normal; line-height: 1.25; }
+  th, td { padding-left: 4px; padding-right: 4px; }
+  td { font-size: 11.5px; }
+  td .selo { padding: 2px 6px; }
+  td:first-child strong, .nowrap { white-space: nowrap; }
 }
-.vazio { text-align: center; color: #5c6f66; padding: 24px; }
-.nota { font-size: 11px; color: #5c6f66; margin-top: 10px; }
+
+// Formato contábil: "R$" encostado à esquerda da célula e o número à direita
+.contabil { display: flex; justify-content: space-between; gap: 6px; white-space: nowrap; }
+
+// Planejador: ícone redondo com as iniciais (clique abre a troca)
+.avatar-planejador {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 30px; height: 30px; border-radius: 50%; border: none; padding: 0;
+  background: $floresta; color: $lima; font: 800 11px/1 inherit; letter-spacing: 0.02em; cursor: pointer;
+  &:hover { background: $profundo; }
+  &:focus-visible { outline: 2px solid $lima; outline-offset: 2px; }
+  &.vazio { background: #fff; color: $apagado; border: 1.5px dashed #c9d4c4; font-size: 14px; font-weight: 600; }
+  &.vazio:hover { color: $floresta; border-color: $floresta; }
+}
+.modal-troca { width: 440px; }
+.opcoes-planejador {
+  list-style: none; margin: 4px 0 16px; padding: 0; display: grid; gap: 6px;
+  label {
+    position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid $borda; border-radius: 10px;
+    font-size: 13px; color: $profundo; cursor: pointer;
+    &:hover { background: #fafcf8; }
+    &.marcado { border-color: $floresta; background: #f2fbe6; }
+    input { position: absolute; opacity: 0; pointer-events: none; }
+    .avatar-planejador { cursor: inherit; }
+    .sub { margin-left: auto; }
+  }
+}

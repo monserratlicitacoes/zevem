@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AdminService, ClienteAdmin } from '../../../services/admin.service';
+import { AuthService } from '../../../services/auth.service';
+import { AdminService, ClienteAdmin, PlanejadorAdmin } from '../../../services/admin.service';
 import { VideosAssistidosService } from '../../../services/videos-assistidos.service';
 import { JarroOrcamento, ParteOrcamento } from '../../../shared/jarro-orcamento/jarro-orcamento';
 
@@ -23,6 +24,7 @@ export class AdminClientes implements OnInit {
   private service = inject(AdminService);
   private videos = inject(VideosAssistidosService);
   private cdr = inject(ChangeDetectorRef);
+  private auth = inject(AuthService);
 
   readonly todasPartes = TODAS;
   carregando = true;
@@ -34,12 +36,22 @@ export class AdminClientes implements OnInit {
   estadoCivil: '' | 'casado' | 'solteiro' = '';
   faixaSaude: '' | 'critico' | 'atencao' | 'saudavel' | 'sem' = '';
   utilizacaoMin = 0;
+  planejadorFiltro: '' | 'sem' | number = ''; // '' = todos, 'sem' = clientes diretos do Zevem
+  situacaoAcesso: '' | 'ativos' | 'removidos' = 'ativos';
+  planejadores: PlanejadorAdmin[] = [];
   ordem: Coluna = 'utilizacao';
   crescente = false;
 
   jarro: Linha | null = null;
+  // Modal de troca do planejador (escolha = id do planejador ou null = sem planejador)
+  troca: { cliente: Linha; escolha: number | null } | null = null;
 
   ngOnInit() {
+    this.service.planejadores().subscribe({ next: (p) => { this.planejadores = p; this.cdr.detectChanges(); } });
+    this.carregar();
+  }
+
+  carregar() {
     this.service.clientes().subscribe({
       next: (l) => { this.linhas = l.map((c) => this.montar(c)); this.carregando = false; this.cdr.detectChanges(); },
       error: () => { this.erro = 'Não foi possível carregar os clientes.'; this.carregando = false; this.cdr.detectChanges(); },
@@ -64,6 +76,9 @@ export class AdminClientes implements OnInit {
       if (this.estadoCivil && (this.estadoCivil === 'casado') !== c.casado) return false;
       if (this.faixaSaude && this.faixa(c.nivel_saude) !== this.faixaSaude) return false;
       if (c.utilizacao < this.utilizacaoMin) return false;
+      if (this.planejadorFiltro === 'sem' && c.planejador_id) return false;
+      if (typeof this.planejadorFiltro === 'number' && c.planejador_id !== this.planejadorFiltro) return false;
+      if (this.situacaoAcesso && (this.situacaoAcesso === 'ativos') !== c.ativo) return false;
       return true;
     });
     const valor = (c: Linha): number | string => {
@@ -83,6 +98,45 @@ export class AdminClientes implements OnInit {
       const x = valor(a), y = valor(b);
       const r = x < y ? -1 : x > y ? 1 : 0;
       return this.crescente ? r : -r;
+    });
+  }
+
+  // Planejador na tabela: iniciais do primeiro nome e do último sobrenome ("José das Couves" → "JC")
+  nomeCurto(nome: string): string {
+    const partes = String(nome || '').trim().split(/\s+/).filter(Boolean);
+    if (!partes.length) return '';
+    return (partes[0][0] + (partes.length > 1 ? partes[partes.length - 1][0] : '')).toUpperCase();
+  }
+  nomePlanejador(id: number | null): string { return this.planejadores.find((p) => p.id === id)?.nome || 'Sem planejador'; }
+
+  // Acesso e planejador do cliente
+  // Abre o Zevem do cliente (com edição); a faixa no topo leva de volta para cá
+  acessar(c: Linha) {
+    this.service.acessarCliente(c.id).subscribe({
+      next: (r) => this.auth.entrarNaContaDoCliente(r, '/admin/clientes'),
+      error: (e) => alert(e?.error?.erro || 'Não foi possível abrir a conta do cliente.'),
+    });
+  }
+
+  alternarAcesso(c: Linha) {
+    if (c.ativo && !confirm(`Remover o acesso de ${c.nome}? Ele(a) não consegue mais entrar no Zevem. Os dados ficam guardados e o acesso pode ser devolvido depois.`)) return;
+    (c.ativo ? this.service.removerAcesso(c.id) : this.service.devolverAcesso(c.id)).subscribe({
+      next: () => this.carregar(),
+      error: (e) => alert(e?.error?.erro || 'Não foi possível alterar o acesso.'),
+    });
+  }
+  abrirTroca(c: Linha) { this.troca = { cliente: c, escolha: c.planejador_id ?? null }; }
+  salvarTroca() {
+    const t = this.troca;
+    if (!t) return;
+    this.troca = null;
+    this.trocarPlanejador(t.cliente, t.escolha);
+  }
+
+  trocarPlanejador(c: Linha, id: number | null) {
+    this.service.trocarPlanejador(c.id, id).subscribe({
+      next: () => this.carregar(),
+      error: (e) => { alert(e?.error?.erro || 'Não foi possível trocar o planejador.'); this.carregar(); },
     });
   }
 
@@ -116,6 +170,10 @@ export class AdminClientes implements OnInit {
     const [a, m, d] = iso.slice(0, 10).split('-');
     return `${d}/${m}/${a.slice(2)}`;
   }
+  // Valor sem o "R$" (o símbolo fica numa coluna à parte, formato contábil)
+  numero(v: number): string { return (v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 }); }
+  // Dias inteiros desde a data (0 = hoje)
+  dias(iso: string): number { return Math.max(0, Math.floor((Date.now() - Date.parse(iso.replace(' ', 'T') + 'Z')) / 864e5)); }
   diasDesde(iso: string | null): string {
     if (!iso) return 'nunca';
     const dias = Math.floor((Date.now() - Date.parse(iso.replace(' ', 'T') + 'Z')) / 864e5);

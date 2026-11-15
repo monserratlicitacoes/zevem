@@ -8,6 +8,9 @@ const ROTAS_AUTH = ['/auth/login', '/auth/cadastro', '/auth/confirmar-email', '/
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
+  // O token só vai para o nosso backend (nunca para APIs de terceiros, como a cotação do dólar em Sonhos)
+  const paraApi = environment.apiUrl ? req.url.startsWith(environment.apiUrl + '/') : !/^[a-z][a-z0-9+.-]*:\/\//i.test(req.url);
+  if (!paraApi) return next(req);
   const rotaAuth = ROTAS_AUTH.some((r) => req.url.includes(r));
   const token = localStorage.getItem('token');
   const comToken = token && !rotaAuth ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
@@ -15,6 +18,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(comToken).pipe(
     catchError((err: HttpErrorResponse) => {
       if (err.status !== 401 || rotaAuth) return throwError(() => err);
+      // Acesso ao Zevem do cliente venceu ou foi recusado: volta para a própria conta
+      if (auth.suporte()) {
+        auth.voltarDaContaDoCliente();
+        return throwError(() => err);
+      }
       // Sessão salva foi recusada pelo backend: no modo local sem login, entra de novo e repete o pedido.
       if (environment.semLogin) {
         localStorage.removeItem('token');

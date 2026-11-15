@@ -1,3 +1,4 @@
+@use 'tokens' as *;
 :host {
   display: flex;
   flex-direction: column;
@@ -26,8 +27,8 @@
 .ph-icone {
   width: 46px;
   height: 46px;
-  background: #e6f8d2;
-  color: #0b3d2e;
+  background: $lima-claro;
+  color: $floresta;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -36,14 +37,14 @@
 }
 
 .ph-texto {
-  h1 { font-size: 22px; font-weight: 700; color: #05261a; }
-  p  { font-size: 13px; color: #5c6f66; margin-top: 2px; }
+  h1 { font-size: 22px; font-weight: 700; color: $profundo; }
+  p  { font-size: 13px; color: $suave; margin-top: 2px; }
 }
 
 .rec-loading {
   padding: 40px;
   text-align: center;
-  color: #8a9d92;
+  color: $apagado;
   font-size: 14px;
 }
 
@@ -61,7 +62,7 @@
 
 .rec-toolbar {
   padding: 12px 16px;
-  border-bottom: 1px solid #edf1e9;
+  border-bottom: 1px solid $superficie;
 }
 
 .btn-adicionar {
@@ -70,7 +71,7 @@
   gap: 6px;
   background: none;
   border: none;
-  color: #0b3d2e;
+  color: $floresta;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -107,9 +108,9 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    background: #f7f8f5;
-    color: #5c6f66;
-    border-bottom: 1px solid #dde5d9;
+    background: $off-white;
+    color: $suave;
+    border-bottom: 1px solid $borda;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -126,19 +127,19 @@
   // Células
   td {
     padding: 3px 6px;
-    border-bottom: 1px solid #edf1e9;
+    border-bottom: 1px solid $superficie;
     vertical-align: middle;
     overflow: hidden;
   }
 
-  tr.tr-data:hover td { background: #f7f8f5; }
+  tr.tr-data:hover td { background: $off-white; }
   tr.tr-vazia td { height: 38px; }
 }
 
 // Coluna nº
 .td-num {
   text-align: right;
-  color: #8a9d92;
+  color: $apagado;
   font-size: 12px;
   font-weight: 600;
   padding-right: 4px !important;
@@ -154,12 +155,12 @@
   border: none;
   background: transparent;
   font-size: 13px;
-  color: #05261a;
+  color: $profundo;
   outline: none;
   font-family: inherit;
   padding: 0 4px;
-  &:focus { background: #f7f8f5; border-radius: 6px; }
-  &::placeholder { color: #c3cfbf; }
+  &:focus { background: $off-white; border-radius: 6px; }
+  &::placeholder { color: $borda-forte; }
 }
 
 // Origem e Classificação (centradas)
@@ -167,20 +168,20 @@
 
 .sel {
   height: 32px;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
   border-radius: 20px;
   padding: 0 10px;
   font-size: 10px;
   font-weight: 600;
-  color: #05261a;
-  background: #f7f8f5;
+  color: $profundo;
+  background: $off-white;
   outline: none;
   cursor: pointer;
   font-family: inherit;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   width: 90%;
-  &:focus { border-color: #b8f15a; }
+  &:focus { border-color: $lima; }
 }
 
 // Valor e Valor Mensal
@@ -199,12 +200,12 @@
 .rs {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   flex-shrink: 0;
 }
 
 .td-mensal .rs {
-  color: #0b3d2e;
+  color: $floresta;
 }
 
 .input-num {
@@ -214,20 +215,20 @@
   background: transparent;
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   outline: none;
   font-family: inherit;
   text-align: right;
   padding: 0;
   flex-shrink: 0;
-  &:focus { background: #f7f8f5; border-radius: 6px; padding: 0 3px; }
-  &::placeholder { color: #c3cfbf; font-weight: 400; }
+  &:focus { background: $off-white; border-radius: 6px; padding: 0 3px; }
+  &::placeholder { color: $borda-forte; font-weight: 400; }
 }
 
 .num-readonly {
   font-size: 13px;
   font-weight: 600;
-  color: #0b3d2e;
+  color: $floresta;
   text-align: right;
   white-space: nowrap;
 }
@@ -244,10 +245,10 @@
   border-radius: 7px;
   border: none;
   background: transparent;
-  color: #c3cfbf;
+  color: $borda-forte;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { background: #fff0f3; color: #ff2e63; } // exclusão em rosa elétrico (vermelho só para erro)
+  &:hover { background: $rosa-claro; color: $rosa; } // exclusão em rosa elétrico (vermelho só para erro)
 }
 
 // ── Total ────────────────────────────────────────────────────
@@ -256,7 +257,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  background: #05261a; // total em destaque: verde profundo com o número em lima
+  background: $profundo; // total em destaque: verde profundo com o número em lima
   border-top: none;
   font-size: 14px;
   font-weight: 600;
@@ -267,7 +268,7 @@
 .total-valor {
   font-size: 18px;
   font-weight: 700;
-  color: #b8f15a;
+  color: $lima;
 }
 
 // ── Botão Resumo ─────────────────────────────────────────────
@@ -280,40 +281,40 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #e6f8d2;
-  border: 1.5px solid #c4f58a;
+  background: $lima-claro;
+  border: 1.5px solid $lima-borda;
   border-radius: 8px;
-  color: #0b3d2e;
+  color: $floresta;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   padding: 6px 12px;
   font-family: inherit;
   transition: background 0.15s, box-shadow 0.15s;
-  &:hover { background: #c4f58a; box-shadow: 0 0 0 2px #e6f8d2; }
+  &:hover { background: $lima-borda; box-shadow: 0 0 0 2px $lima-claro; }
 }
 .btn-dashboard {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: #fff;
-  border: 1.5px solid #dde5d9;
+  border: 1.5px solid $borda;
   border-radius: 8px;
-  color: #05261a;
+  color: $profundo;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   padding: 6px 12px;
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
-  &:hover { border-color: #b8f15a; box-shadow: 0 0 0 2px #e6f8d2; }
+  &:hover { border-color: $lima; box-shadow: 0 0 0 2px $lima-claro; }
 }
 
 // ── Modal Dashboard ──────────────────────────────────────────
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(5, 38, 26, 0.45);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -335,8 +336,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px 16px;
-  border-bottom: 1px solid #edf1e9;
-  h2 { font-size: 16px; font-weight: 700; color: #05261a; margin: 0; }
+  border-bottom: 1px solid $superficie;
+  h2 { font-size: 18px; font-weight: 700; color: $profundo; margin: 0; }
 }
 
 .modal-fechar {
@@ -346,11 +347,11 @@
   width: 30px;
   height: 30px;
   border: none;
-  background: #edf1e9;
+  background: $superficie;
   border-radius: 8px;
-  color: #5c6f66;
+  color: $suave;
   cursor: pointer;
-  &:hover { background: #dde5d9; color: #05261a; }
+  &:hover { background: $borda; color: $profundo; }
 }
 
 // ── Tabela do Dashboard ──────────────────────────────────────
@@ -367,8 +368,8 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #5c6f66;
-    background: #edf1e9;
+    color: $suave;
+    background: $superficie;
     padding: 9px 12px;
     white-space: nowrap;
   }
@@ -380,14 +381,14 @@
 
 .dash-tr td {
   padding: 13px 12px;
-  border-bottom: 1px solid #edf1e9;
+  border-bottom: 1px solid $superficie;
   vertical-align: middle;
 }
 
 .dash-row-label {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
   white-space: nowrap;
 }
 
@@ -404,7 +405,7 @@
 .dash-pct {
   font-size: 12px;
   font-weight: 600;
-  color: #5c6f66;
+  color: $suave;
   min-width: 32px;
   text-align: right;
   flex-shrink: 0;
@@ -413,14 +414,14 @@
 .dash-bar-bg {
   flex: 1;
   height: 10px;
-  background: #dde5d9;
+  background: $borda;
   border-radius: 99px;
   overflow: hidden;
 }
 
 .dash-bar-fill {
   height: 100%;
-  background: #0b3d2e; // verde floresta: mais escuro que o lima, como a aba selecionada
+  background: $floresta; // verde floresta: mais escuro que o lima, como a aba selecionada
   border-radius: 99px;
   transition: width 0.5s ease;
 }
@@ -433,30 +434,30 @@
 .dash-rs {
   font-size: 12px;
   font-weight: 600;
-  color: #8a9d92;
+  color: $apagado;
   margin-right: 4px;
 }
 
 .dash-val {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
 }
 
 .dash-tr-total td {
   padding: 13px 12px;
   font-size: 13px;
   font-weight: 700;
-  color: #05261a;
-  background: #f7f8f5;
+  color: $profundo;
+  background: $off-white;
   vertical-align: middle;
 
-  .dash-rs { color: #5c6f66; }
-  .dash-val { color: #05261a; }
+  .dash-rs { color: $suave; }
+  .dash-val { color: $profundo; }
 }
 
 .dtd-classe {
   font-size: 13px;
   font-weight: 600;
-  color: #05261a;
+  color: $profundo;
 }

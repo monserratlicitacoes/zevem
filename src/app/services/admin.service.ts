@@ -1,3 +1,4 @@
+import { AuthPayload } from './auth.service';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -26,6 +27,20 @@ export interface ClienteAdmin {
   ultimo_gasto: UltimoGasto | null;
   utilizacao_partes: PartesUtilizacao;
   master: boolean;
+  ativo: boolean;              // false = acesso removido
+  bloqueado_em: string | null;
+  planejador_id: number | null;
+  planejador_nome: string | null;
+}
+
+// Planejadores financeiros associados (ver backend/planejadores.js)
+export interface PlanejadorAdmin {
+  id: number; nome: string; email: string; cpf: string; telefone: string; criado_em: string; ultimo_acesso: string | null;
+  ativo: boolean; bloqueado_em: string | null; clientes_ativos: number; clientes_total: number; convites_pendentes: number;
+}
+export interface ClientePlanejador {
+  id: number; nome: string; email: string; telefone: string; criado_em: string; ultimo_acesso: string | null;
+  ativo: boolean; bloqueado_em: string | null; bloqueado_pelo_master: boolean;
 }
 
 export interface Plano { id?: number; nome: string; valor_anual: number; parcelas: number; ativo: boolean | number; assinantes?: number; }
@@ -80,6 +95,7 @@ export interface Convite {
   id: number; email: string; nome: string; criado_em: string; expira_em: string;
   enviado_em: string | null; erro_envio: string | null; usado_em: string | null; usuario_id: number | null;
   situacao: 'pendente' | 'aceito' | 'expirado' | 'cancelado'; link: string | null; aviso_email?: string | null;
+  tipo?: 'cliente' | 'planejador'; planejador_id?: number | null; planejador_nome?: string; cpf?: string; telefone?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -115,5 +131,19 @@ export class AdminService {
   convidar(email: string, nome: string): Observable<Convite> { return this.http.post<Convite>(`${this.api}/convites`, { email, nome }); }
   reenviarConvite(id: number): Observable<Convite> { return this.http.post<Convite>(`${this.api}/convites/${id}/reenviar`, {}); }
   cancelarConvite(id: number): Observable<Convite> { return this.http.post<Convite>(`${this.api}/convites/${id}/cancelar`, {}); }
+  // Planejadores e acesso de usuários
+  planejadores(): Observable<PlanejadorAdmin[]> { return this.http.get<PlanejadorAdmin[]>(`${this.api}/planejadores`); }
+  convitesPlanejador(): Observable<Convite[]> { return this.http.get<Convite[]>(`${this.api}/convites`, { params: { tipo: 'planejador' } }); }
+  convidarPlanejador(d: { nome: string; email: string; cpf: string; telefone: string }): Observable<Convite> {
+    return this.http.post<Convite>(`${this.api}/planejadores/convites`, d);
+  }
+  clientesDoPlanejador(id: number): Observable<ClientePlanejador[]> { return this.http.get<ClientePlanejador[]>(`${this.api}/planejadores/${id}/clientes`); }
+  removerAcesso(usuarioId: number): Observable<unknown> { return this.http.post(`${this.api}/usuarios/${usuarioId}/remover-acesso`, {}); }
+  devolverAcesso(usuarioId: number): Observable<unknown> { return this.http.post(`${this.api}/usuarios/${usuarioId}/devolver-acesso`, {}); }
+  // Sessão do cliente para o master usar o Zevem dele (ver AuthService.entrarNaContaDoCliente)
+  acessarCliente(usuarioId: number): Observable<AuthPayload> { return this.http.post<AuthPayload>(`${this.api}/usuarios/${usuarioId}/acessar`, {}); }
+  trocarPlanejador(usuarioId: number, planejadorId: number | null): Observable<unknown> {
+    return this.http.put(`${this.api}/usuarios/${usuarioId}/planejador`, { planejador_id: planejadorId });
+  }
   desfazerBaixa(cobrancaId: number): Observable<unknown> { return this.http.post(`${this.api}/cobrancas/${cobrancaId}/desfazer-baixa`, {}); }
 }

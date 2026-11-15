@@ -33,7 +33,12 @@
             "styles": [
               "src/styles.scss",
               "src/tema-noturno.scss"
-            ]
+            ],
+            "stylePreprocessorOptions": {
+              "includePaths": [
+                "src/styles"
+              ]
+            }
           },
           "configurations": {
             "production": {

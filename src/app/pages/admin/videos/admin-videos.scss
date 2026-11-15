@@ -1,3 +1,4 @@
+@use 'tokens' as *;
 .titulo-painel { max-width: 420px; }
 
 .pagina-topo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -9,7 +10,7 @@
   &.sub { margin-left: 24px; background: #fafcf8; }
   .campo > span { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
   input { padding: 7px 10px; font-size: 12px; }
-  input.invalido { border-color: #d61e4c; }
+  input.invalido { border-color: $rosa-texto; }
 }
 .miniatura {
   width: 96px; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: #10301f;
@@ -19,19 +20,19 @@
 }
 .acoes { display: flex; justify-content: flex-end; }
 .mini { padding: 4px 8px; font-size: 11px; }
-.vermelho { color: #d61e4c !important; }
+.vermelho { color: $rosa-texto !important; }
 
 .chamada {
   display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; align-items: end;
-  margin-top: 12px; padding: 10px 12px; border: 1px dashed #c4f58a; border-radius: 12px; background: #f7fdef;
+  margin-top: 12px; padding: 10px 12px; border: 1px dashed $lima-borda; border-radius: 12px; background: #f7fdef;
   input { padding: 7px 10px; font-size: 12px; }
 }
-.chamada-rotulo { font-size: 12px; font-weight: 700; color: #0b3d2e; align-self: center; }
+.chamada-rotulo { font-size: 12px; font-weight: 700; color: $floresta; align-self: center; }
 
 // Botão de salvar sempre à mão no pé da tela
 .barra-salvar {
   position: sticky; bottom: -48px; display: flex; justify-content: flex-end; align-items: center; gap: 12px;
-  padding: 12px 0 0; margin-top: 4px; background: linear-gradient(to top, #f7f8f5 70%, rgba(247, 248, 245, 0));
+  padding: 12px 0 0; margin-top: 4px; background: linear-gradient(to top, $off-white 70%, rgba(247, 248, 245, 0));
   .botao { padding: 9px 18px; font-size: 13px; }
 }
 

@@ -1,7 +1,4 @@
-$profundo: #05261a;
-$lima: #b8f15a;
-$rosa: #ff2e63;
-$off-white: #f7f8f5;
+@use 'tokens' as *;
 
 // Por cima de tudo, inclusive do anúncio do planejador e dos avisos de acesso
 .fundo {

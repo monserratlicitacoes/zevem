@@ -35,22 +35,42 @@
         <div class="card-head">
           <span class="card-kicker">Comece agora</span>
           <h2>Crie sua conta</h2>
-          <p>{{ convite ? 'Você recebeu um convite. Crie sua senha e comece o seu planejamento financeiro guiado.' : 'Comece o seu planejamento financeiro guiado.' }}</p>
+          @if (tipoConvite === 'planejador') {
+            <p>Você foi convidado(a) como planejador(a) financeiro(a) parceiro(a). Confira seus dados e crie sua senha.</p>
+          } @else if (planejadorConvite) {
+            <p>{{ planejadorConvite }}, seu planejador financeiro, convidou você. Crie sua senha e comece o seu planejamento financeiro guiado.</p>
+          } @else {
+            <p>{{ convite ? 'Você recebeu um convite. Crie sua senha e comece o seu planejamento financeiro guiado.' : 'Comece o seu planejamento financeiro guiado.' }}</p>
+          }
         </div>
 
         @if (erroConvite) {
+          <!-- Link de convite que não vale mais: não vira cadastro avulso com outro e-mail -->
           <p class="erro" role="alert">{{ erroConvite }}</p>
-        }
-
+          <p class="cadastro"><a routerLink="/login">Voltar para o login</a></p>
+        } @else if (convite && !email) {
+          <p class="aviso-local">Carregando o seu convite…</p>
+        } @else {
         <form (ngSubmit)="cadastrar()" class="login-form">
           <label>
-            <span>Nome</span>
+            <span>{{ tipoConvite === 'planejador' ? 'Nome completo' : 'Nome' }}</span>
             <input type="text" [(ngModel)]="nome" name="nome" placeholder="Seu nome" autocomplete="name" required />
           </label>
           <label>
             <span>E-mail</span>
             <input type="email" [(ngModel)]="email" name="email" placeholder="seu@email.com" autocomplete="email" required [readonly]="!!convite" />
+            @if (convite) { <small class="dica-campo">O convite vale só para este e-mail.</small> }
           </label>
+          @if (tipoConvite === 'planejador') {
+            <label>
+              <span>CPF</span>
+              <input type="text" inputmode="numeric" [ngModel]="cpf" (ngModelChange)="cpf = mascaraCpf($event)" name="cpf" placeholder="000.000.000-00" required />
+            </label>
+            <label>
+              <span>Telefone</span>
+              <input type="tel" [ngModel]="telefone" (ngModelChange)="telefone = mascaraTelefone($event)" name="telefone" placeholder="(62) 99999-9999" autocomplete="tel" required />
+            </label>
+          }
           <label>
             <span>Senha</span>
             <input type="password" [(ngModel)]="senha" name="senha" placeholder="Mínimo 8 caracteres" minlength="8" maxlength="128" autocomplete="new-password" required />
@@ -63,7 +83,11 @@
           <button type="submit" [disabled]="carregando">{{ carregando ? 'Criando…' : 'Criar conta' }}</button>
         </form>
 
-        <p class="cadastro">Já tem conta? <a routerLink="/login">Entrar</a></p>
+        <!-- Pelo convite a conta é sempre nova: sem atalho para entrar com outra conta -->
+        @if (!convite) {
+          <p class="cadastro">Já tem conta? <a routerLink="/login">Entrar</a></p>
+        }
+        }
       } @else {
         <div class="status-icone" aria-hidden="true">
           <svg viewBox="0 0 20 20" fill="none" width="26" height="26"><path d="M4 10l4 4 8-8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>

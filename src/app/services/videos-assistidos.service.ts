@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from './auth.service';
@@ -16,8 +16,16 @@ export class VideosAssistidosService {
   private api = `${environment.apiUrl}/videos-assistidos`;
   private assistidos = signal<Set<string>>(this.carregar());
 
+  // Troca de usuário (login, logout, entrar na conta de um cliente): recarrega os vídeos de quem está
+  // agora, para não mostrar nem enviar ao servidor os vídeos de quem estava antes.
   constructor() {
-    if (this.auth.isLoggedIn) this.sincronizar();
+    effect(() => {
+      const email = this.auth.usuarioAtual();
+      untracked(() => {
+        this.assistidos.set(this.carregar());
+        if (email && this.auth.isLoggedIn) this.sincronizar();
+      });
+    });
   }
 
   // Junta o que está no servidor com o que este navegador já tinha (de antes de existir o registro

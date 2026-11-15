@@ -1,0 +1,7 @@
+@use 'tokens' as *;
+.cartao .filtros { margin-top: 10px; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: $suave; cursor: pointer; }
+tr.removido td { color: $apagado; }
+.vazio { text-align: center; color: $suave; padding: 24px; }
+.kpis { max-width: 640px; }
+.form-modal { display: grid; gap: 14px; .erro { margin: 0; } }

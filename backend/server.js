@@ -1,4 +1,6 @@
 require('dotenv').config({ quiet: true });
+// Datas do app ("hoje", mês atual, vencimentos) no horário de Brasília, mesmo com o servidor em UTC
+process.env.TZ = process.env.TZ || 'America/Sao_Paulo';
 const Anthropic = require('@anthropic-ai/sdk');
 const express = require('express');
 const cors = require('cors');
@@ -23,11 +25,15 @@ const db = new Database(path.join(DATA_DIR, 'apple-green.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('synchronous = NORMAL');
 const SEGREDO_DEV = 'apple_green_secret_dev';
+// Produção = NODE_ENV=production OU um FRONTEND_URL que não seja localhost (um deploy que esqueceu o
+// NODE_ENV continua protegido: sem segredo próprio o servidor não sobe e o login sem senha não liga).
+const EM_PRODUCAO = process.env.NODE_ENV === 'production'
+  || !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(process.env.FRONTEND_URL || 'http://localhost:4300');
 const JWT_SECRET = process.env.JWT_SECRET || SEGREDO_DEV;
 // Em produção o servidor não sobe sem um segredo próprio e forte: com o segredo de desenvolvimento (que
 // está no código) qualquer pessoa conseguiria gerar uma sessão de outro usuário, inclusive do master.
 // O login sem senha (DEV_SEM_LOGIN) também é proibido em produção.
-if (process.env.NODE_ENV === 'production') {
+if (EM_PRODUCAO) {
   const erros = [];
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET === SEGREDO_DEV) erros.push('JWT_SECRET não definido');
   else if (process.env.JWT_SECRET.length < 32) erros.push('JWT_SECRET curto demais (use 32 caracteres ou mais, ex.: openssl rand -hex 32)');
@@ -46,7 +52,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:4300';
 // maxAge: o navegador guarda a resposta do preflight (OPTIONS) e não repete essa ida extra a cada gravação.
 // Atrás do proxy do Render, o IP real vem no X-Forwarded-For (1 salto). Sem isso o limite de tentativas
 // enxerga um IP só para todo mundo. TRUST_PROXY ajusta o número de saltos (0 = sem proxy).
-app.set('trust proxy', Number(process.env.TRUST_PROXY ?? (process.env.NODE_ENV === 'production' ? 1 : 0)));
+app.set('trust proxy', Number(process.env.TRUST_PROXY ?? (EM_PRODUCAO ? 1 : 0)));
 app.disable('x-powered-by');
 // Cabeçalhos de segurança: a API só devolve JSON (e a página de retorno do Google), nada pode ser embutido
 app.use((req, res, next) => {
@@ -57,7 +63,7 @@ app.use((req, res, next) => {
     'Content-Security-Policy': "default-src 'none'; img-src 'self'; frame-ancestors 'none'",
     'Cross-Origin-Resource-Policy': 'cross-origin', // as imagens de /uploads aparecem no app (outra origem)
   });
-  if (process.env.NODE_ENV === 'production') res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  if (EM_PRODUCAO) res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   next();
 });
 app.use(cors({ origin: FRONTEND_URL, credentials: true, maxAge: 86400 }));
@@ -67,7 +73,7 @@ app.use((req, res, next) => {
   const inicio = process.hrtime.bigint();
   res.on('finish', () => {
     const ms = Number(process.hrtime.bigint() - inicio) / 1e6;
-    if (ms > 300) console.warn(`[lento] ${req.method} ${req.originalUrl} → ${res.statusCode} em ${Math.round(ms)} ms`);
+    if (ms > 300) console.warn(`[lento] ${req.method} ${req.path.replace(/^\/convites\/[^/]+/, '/convites/…')} → ${res.statusCode} em ${Math.round(ms)} ms`);
   });
   next();
 });
@@ -95,8 +101,9 @@ app.use((req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (token) {
     try {
-      const { id } = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
-      if (id && Date.now() - (ultimoAcessoGravado.get(id) || 0) > 10 * 60 * 1000) {
+      const { id, por } = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+      // Master ou planejador dentro da conta do cliente não conta como acesso do cliente
+      if (id && !por && Date.now() - (ultimoAcessoGravado.get(id) || 0) > 10 * 60 * 1000) {
         ultimoAcessoGravado.set(id, Date.now());
         db.prepare('UPDATE usuarios SET ultimo_acesso = CURRENT_TIMESTAMP WHERE id = ?').run(id);
       }
@@ -227,13 +234,28 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_usuarios_token_confirmacao ON usuarios(t
 try { db.prepare('ALTER TABLE usuarios ADD COLUMN sessao_versao INTEGER NOT NULL DEFAULT 0').run(); } catch {}
 try { db.prepare('ALTER TABLE usuarios ADD COLUMN reset_hash TEXT').run(); } catch {}
 try { db.prepare('ALTER TABLE usuarios ADD COLUMN reset_expira INTEGER').run(); } catch {}
+// Acesso removido (pelo master ou pelo planejador do cliente) e vínculo do cliente com o planejador — ver planejadores.js
+try { db.prepare('ALTER TABLE usuarios ADD COLUMN bloqueado_em DATETIME').run(); } catch {}
+try { db.prepare('ALTER TABLE usuarios ADD COLUMN bloqueado_por INTEGER').run(); } catch {}
+try { db.prepare('ALTER TABLE usuarios ADD COLUMN planejador_id INTEGER').run(); } catch {}
+const ACESSO_REMOVIDO = { erro: 'ACESSO_REMOVIDO', mensagem: 'Seu acesso ao Zevem foi removido. Fale com o seu planejador ou com o suporte.' };
 
-// Sessão válida → { id, nome, email } lidos do banco (nome e e-mail sempre atuais); senão null
+// Acesso à conta do cliente (planejadores.js): o token leva quem entrou (por) e só vale enquanto
+// essa pessoa continuar com acesso e com direito sobre o cliente. Preenchido depois do admin.js.
+let podeAcessarCliente = () => false;
+
+// Sessão válida → { id, nome, email } lidos do banco (nome e e-mail sempre atuais); senão null.
+// Dentro da conta de um cliente vem também suporte: { id, nome } de quem entrou.
 function lerSessao(token) {
   try {
     const p = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
-    const u = db.prepare('SELECT id, nome, email, sessao_versao FROM usuarios WHERE id = ?').get(p.id);
-    if (!u || u.sessao_versao !== (p.v ?? 0)) return null;
+    const u = db.prepare('SELECT id, nome, email, sessao_versao, bloqueado_em FROM usuarios WHERE id = ?').get(p.id);
+    if (!u || u.sessao_versao !== (p.v ?? 0) || u.bloqueado_em) return null;
+    if (p.por) {
+      const ator = db.prepare('SELECT id, nome, sessao_versao, bloqueado_em FROM usuarios WHERE id = ?').get(p.por);
+      if (!ator || ator.sessao_versao !== (p.pv ?? 0) || ator.bloqueado_em || !podeAcessarCliente(ator.id, u.id)) return null;
+      return { id: u.id, nome: u.nome, email: u.email, suporte: { id: ator.id, nome: ator.nome } };
+    }
     return { id: u.id, nome: u.nome, email: u.email };
   } catch {
     return null;
@@ -255,6 +277,29 @@ function gerarToken(usuario) {
   return jwt.sign({ id: usuario.id, v: usuario.sessao_versao ?? 0 }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '7d' });
 }
 
+// Sessão de quem entra na conta do cliente: curta e presa às duas contas (cai se qualquer uma trocar a senha)
+function gerarTokenSuporte(alvo, ator) {
+  return jwt.sign({ id: alvo.id, v: alvo.sessao_versao ?? 0, por: ator.id, pv: ator.sessao_versao ?? 0 },
+    JWT_SECRET, { algorithm: 'HS256', expiresIn: '4h' });
+}
+
+// Dentro da conta do cliente não se mexe em senha, exclusão, sessões nem no WhatsApp verificado dele
+// (exportar = dump LGPD com CPF e telefone; cancelamento = decisão de assinatura do próprio cliente)
+const SO_O_PROPRIO_CLIENTE = ['/auth/trocar-senha', '/conta/excluir', '/auth/sair-todos', '/conta/exportar', '/minha-assinatura/cancelamento'];
+function bloqueiaSuporte(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return next();
+  let por = null;
+  try { por = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }).por; } catch {}
+  // O Express não diferencia maiúsculas nem barra final: a comparação também não pode diferenciar
+  const caminho = req.path.toLowerCase().replace(/\/+$/, '');
+  if (por && (SO_O_PROPRIO_CLIENTE.includes(caminho) || /^\/pessoas\/\d+\/telefone(\/|$)/.test(caminho))) {
+    return res.status(403).json({ erro: 'Só o próprio cliente pode fazer isso.' });
+  }
+  next();
+}
+app.use(bloqueiaSuporte);
+
 // Mesma regra do master() de admin.js (papel 'master' ou e-mail em MASTER_EMAILS)
 function usuarioEhMaster(id) {
   const u = db.prepare('SELECT * FROM usuarios WHERE id = ?').get(id);
@@ -265,6 +310,14 @@ function usuarioEhMaster(id) {
 // Comparação em tempo constante (não revela, pelo tempo de resposta, quantos caracteres bateram)
 const sha256 = (t) => crypto.createHash('sha256').update(String(t)).digest();
 const iguaisSeguro = (a, b) => crypto.timingSafeEqual(sha256(a), sha256(b));
+// Token de confirmação de e-mail: no banco fica só o hash (como o de troca de senha). Tokens antigos,
+// gravados em texto (48 caracteres), viram hash aqui uma vez; o link já enviado continua valendo.
+const hashTokenConfirmacao = (t) => sha256(t).toString('hex');
+{
+  const antigos = db.prepare('SELECT id, token_confirmacao FROM usuarios WHERE length(token_confirmacao) = 48').all();
+  const upd = db.prepare('UPDATE usuarios SET token_confirmacao = ? WHERE id = ?');
+  db.transaction(() => antigos.forEach((u) => upd.run(hashTokenConfirmacao(u.token_confirmacao), u.id)))();
+}
 
 // Senha: 8 a 128 caracteres (o bcrypt ignora o que passa de 72 bytes)
 const SENHA_MIN = 8;
@@ -314,6 +367,7 @@ app.post('/auth/cadastro', cadastroLimiter, async (req, res) => {
   // o dono do e-mail recebe um aviso com o caminho para entrar ou criar nova senha.
   const existente = db.prepare('SELECT id, nome FROM usuarios WHERE lower(trim(email)) = ?').get(email);
   if (existente) {
+    await bcrypt.hash(senha, 10); // mesmo tempo de resposta de um cadastro novo
     if (req.body.convite) return res.status(400).json({ erro: 'Este convite não vale mais. Peça um novo a quem te convidou.' });
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 0;">
@@ -339,8 +393,15 @@ app.post('/auth/cadastro', cadastroLimiter, async (req, res) => {
     const convite = convites?.buscarValido(String(req.body.convite));
     if (!convite) return res.status(400).json({ erro: 'Este convite não vale mais. Peça um novo a quem te convidou.' });
     if (convite.email !== email) return res.status(400).json({ erro: 'Use o e-mail para o qual o convite foi enviado.' });
-    const r = db.prepare('INSERT INTO usuarios (nome, email, senha_hash, confirmado) VALUES (?, ?, ?, 1)').run(nome, email, senha_hash);
-    convites.marcarUsado(convite.id, r.lastInsertRowid);
+    // Convite de planejador: confere CPF e telefone; convite de planejador para cliente: vincula os dois
+    const dados = convites.dadosCadastro(convite, req.body);
+    if (dados.erro) return res.status(400).json({ erro: dados.erro });
+    // Conta e convite juntos: se aplicar o convite falhar, a conta não fica criada pela metade
+    const r = db.transaction(() => {
+      const novo = db.prepare('INSERT INTO usuarios (nome, email, senha_hash, confirmado) VALUES (?, ?, ?, 1)').run(nome, email, senha_hash);
+      convites.aplicar(convite, novo.lastInsertRowid, dados);
+      return novo;
+    })();
     const usuario = { id: r.lastInsertRowid, nome, email };
     return res.status(201).json({ ok: true, id: usuario.id, aviso_email: null, token: gerarToken(usuario), nome, email });
   }
@@ -348,7 +409,7 @@ app.post('/auth/cadastro', cadastroLimiter, async (req, res) => {
   const token_confirmacao = crypto.randomBytes(24).toString('hex');
   const r = db.prepare(
     'INSERT INTO usuarios (nome, email, senha_hash, token_confirmacao) VALUES (?, ?, ?, ?)'
-  ).run(nome, email, senha_hash, token_confirmacao);
+  ).run(nome, email, senha_hash, hashTokenConfirmacao(token_confirmacao));
 
   let avisoEmail = null;
   try {
@@ -357,7 +418,7 @@ app.post('/auth/cadastro', cadastroLimiter, async (req, res) => {
     console.error('[cadastro] falha ao enviar a confirmação:', e.message);
     avisoEmail = 'Cadastro criado, mas não foi possível enviar o e-mail de confirmação. Tente novamente mais tarde.';
   }
-  res.status(201).json({ ok: true, id: r.lastInsertRowid, aviso_email: avisoEmail });
+  res.status(201).json({ ok: true, aviso_email: avisoEmail });
 });
 
 // A sessão só sai junto com a confirmação: um link já usado não entra mais na conta (a pessoa faz login)
@@ -367,12 +428,14 @@ app.post('/auth/confirmar-email', confirmarLimiter, (req, res) => {
   if (!email || !token) return res.status(400).json({ erro: 'E-mail e token são obrigatórios' });
 
   const usuario = db.prepare('SELECT * FROM usuarios WHERE lower(trim(email)) = ?').get(email);
-  if (usuario?.confirmado) return res.json({ ok: true, jaConfirmado: true });
-  if (!usuario || !usuario.token_confirmacao || !iguaisSeguro(usuario.token_confirmacao, token)) {
+  // "Já confirmado" só para quem tem o link certo (senão qualquer um descobriria quais e-mails têm conta).
+  // O hash do token fica guardado depois de confirmar só para reconhecer o mesmo link clicado de novo.
+  if (!usuario || !usuario.token_confirmacao || !iguaisSeguro(usuario.token_confirmacao, hashTokenConfirmacao(token))) {
     return res.status(401).json({ erro: 'Link de confirmação inválido' });
   }
+  if (usuario.confirmado) return res.json({ ok: true, jaConfirmado: true });
 
-  db.prepare('UPDATE usuarios SET confirmado = 1, token_confirmacao = NULL WHERE id = ?').run(usuario.id);
+  db.prepare('UPDATE usuarios SET confirmado = 1 WHERE id = ?').run(usuario.id);
   res.json({ ok: true, token: gerarToken(usuario), nome: usuario.nome, email: usuario.email });
 });
 
@@ -383,6 +446,7 @@ app.post('/auth/login', loginLimiter, loginEmailLimiter, async (req, res) => {
   if (!usuario || !confere) {
     return res.status(401).json({ erro: 'E-mail ou senha incorretos' });
   }
+  if (usuario.bloqueado_em) return res.status(403).json(ACESSO_REMOVIDO);
   if (!usuario.confirmado) {
     return res.status(403).json({ erro: 'EMAIL_NAO_CONFIRMADO', mensagem: 'Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.' });
   }
@@ -433,6 +497,7 @@ app.post('/auth/redefinir-senha', confirmarLimiter, async (req, res) => {
   const valido = usuario?.reset_hash && usuario.reset_expira > Date.now()
     && iguaisSeguro(usuario.reset_hash, sha256(token).toString('hex'));
   if (!valido) return res.status(401).json({ erro: 'Link inválido ou expirado. Peça um novo em "Esqueci minha senha".' });
+  if (usuario.bloqueado_em) return res.status(403).json({ erro: ACESSO_REMOVIDO.mensagem });
   const hash = await bcrypt.hash(req.body.senha, 10);
   db.prepare(`UPDATE usuarios SET senha_hash = ?, confirmado = 1, token_confirmacao = NULL, reset_hash = NULL, reset_expira = NULL,
     sessao_versao = sessao_versao + 1 WHERE id = ?`).run(hash, usuario.id);
@@ -487,6 +552,9 @@ app.post('/conta/excluir', auth(), confirmarLimiter, async (req, res) => {
     db.prepare(`UPDATE usuarios SET nome = 'Conta excluída', email = ?, senha_hash = ?, confirmado = 0, token_confirmacao = NULL,
       reset_hash = NULL, reset_expira = NULL, sessao_versao = sessao_versao + 1 WHERE id = ?`)
       .run(`excluida-${usuario.id}@zevem.invalid`, crypto.randomBytes(32).toString('hex'), usuario.id);
+    // Planejador que sai: os clientes dele continuam no Zevem, sem planejador; convites em aberto deixam de valer
+    db.prepare('UPDATE usuarios SET planejador_id = NULL WHERE planejador_id = ?').run(usuario.id);
+    db.prepare('UPDATE convites SET cancelado_em = CURRENT_TIMESTAMP WHERE planejador_id = ? AND usado_em IS NULL AND cancelado_em IS NULL').run(usuario.id);
   })();
   res.json({ ok: true });
 });
@@ -498,7 +566,7 @@ app.post('/auth/sair-todos', auth(), (req, res) => {
 });
 
 // Entrada sem senha só para desenvolvimento local: exige DEV_SEM_LOGIN=1 e requisição vinda do próprio Mac.
-if (process.env.DEV_SEM_LOGIN === '1') {
+if (process.env.DEV_SEM_LOGIN === '1' && !EM_PRODUCAO) {
   console.warn('[atenção] DEV_SEM_LOGIN ativo — /auth/dev-login entra sem senha. Nunca use em produção.');
   app.post('/auth/dev-login', (req, res) => {
     const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
@@ -656,6 +724,9 @@ app.put('/pessoas/:id', auth(), (req, res) => {
   if (telefoneEmOutraConta(req.body.telefone, req.user.id)) return res.status(409).json({ erro: ERRO_TELEFONE });
   const { data_nascimento, risco_renda, facilidade_renda } = req.body;
   const atual = db.prepare('SELECT telefone_indice FROM pessoas WHERE id = ? AND usuario_id = ?').get(req.params.id, req.user.id);
+  if (req.user.suporte && atual && indice(chaveTelefone(textoCampo(req.body.telefone, 30))) !== atual.telefone_indice) {
+    return res.status(403).json({ erro: 'Só o próprio cliente pode trocar o celular (ele é usado no WhatsApp).' });
+  }
   if (!atual) return res.status(404).json({ erro: 'Pessoa não encontrada' });
   const telefone = textoCampo(req.body.telefone, 30);
   const novoIndice = indice(chaveTelefone(telefone));
@@ -1030,10 +1101,12 @@ app.put('/gastos/:id', auth(), (req, res) => {
 
 app.delete('/gastos/:id', auth(), (req, res) => {
   if (ehNaoIdentificado(req.user.id, req.params.id)) return res.status(403).json({ erro: `O item "${NOME_NI}" é fixo e não pode ser apagado.` });
-  db.prepare('DELETE FROM lancamentos_gastos WHERE gasto_id = ? AND usuario_id = ?').run(req.params.id, req.user.id);
-  db.prepare('DELETE FROM gastos_aprendizado WHERE gasto_id = ? AND usuario_id = ?').run(req.params.id, req.user.id);
-  db.prepare('UPDATE gastos_suspensos SET gasto_sugerido_id = NULL WHERE gasto_sugerido_id = ? AND usuario_id = ?').run(req.params.id, req.user.id);
-  db.prepare('DELETE FROM gastos WHERE id = ? AND usuario_id = ?').run(req.params.id, req.user.id);
+  db.transaction(() => {
+    db.prepare('DELETE FROM lancamentos_gastos WHERE gasto_id = ? AND usuario_id = ?').run(req.params.id, req.user.id);
+    db.prepare('DELETE FROM gastos_aprendizado WHERE gasto_id = ? AND usuario_id = ?').run(req.params.id, req.user.id);
+    db.prepare('UPDATE gastos_suspensos SET gasto_sugerido_id = NULL WHERE gasto_sugerido_id = ? AND usuario_id = ?').run(req.params.id, req.user.id);
+    db.prepare('DELETE FROM gastos WHERE id = ? AND usuario_id = ?').run(req.params.id, req.user.id);
+  })();
   res.json({ ok: true });
 });
 
@@ -1079,11 +1152,12 @@ db.exec(`
 `);
 
 // Soma `n` meses a uma data AAAA-MM-DD, mantendo o dia (ou o último dia do mês, se não existir).
-function somarMeses(data, n) {
+// `dia`: usa este dia em vez do da data (ex.: compra no dia 31 cuja parcela atual caiu em 28/02).
+function somarMeses(data, n, dia) {
   const [a, m, d] = data.split('-').map(Number);
   const alvo = new Date(Date.UTC(a, m - 1 + n, 1));
   const ultimoDia = new Date(Date.UTC(alvo.getUTCFullYear(), alvo.getUTCMonth() + 1, 0)).getUTCDate();
-  alvo.setUTCDate(Math.min(d, ultimoDia));
+  alvo.setUTCDate(Math.min(dia || d, ultimoDia));
   return alvo.toISOString().slice(0, 10);
 }
 
@@ -1281,9 +1355,13 @@ db.exec(`
 try { db.prepare('ALTER TABLE gastos_suspensos ADD COLUMN parcela INTEGER').run(); } catch {}
 try { db.prepare('ALTER TABLE gastos_suspensos ADD COLUMN total_parcelas INTEGER').run(); } catch {}
 try { db.prepare("ALTER TABLE gastos_suspensos ADD COLUMN aviso TEXT DEFAULT ''").run(); } catch {}
+// Data da compra original de uma parcela (a `data` já é a da parcela atual)
+try { db.prepare('ALTER TABLE gastos_suspensos ADD COLUMN data_compra TEXT').run(); } catch {}
 
 // Lança um gasto; se for a parcela x de y, lança da x até a y, uma por mês a partir de `data`.
-function lancarComParcelas(usuarioId, { gasto_id, data, valor, descricao, origem, parcela, total_parcelas }) {
+// `data_compra`: data da compra original. As parcelas seguem o dia dela — compra em 31/01 com a parcela
+// atual em 28/02 continua em 31/03, 30/04… em vez de ficar presa no dia 28. Se o usuário trocou o dia, vale o dele.
+function lancarComParcelas(usuarioId, { gasto_id, data, valor, descricao, origem, parcela, total_parcelas, data_compra }) {
   // Até 120 parcelas (10 anos): um total maior vindo da fatura é tratado como compra à vista
   const parcelado = parcela && total_parcelas && total_parcelas > 1 && total_parcelas <= 120 && parcela <= total_parcelas;
   const n = parcelado ? total_parcelas - parcela + 1 : 1;
@@ -1291,8 +1369,10 @@ function lancarComParcelas(usuarioId, { gasto_id, data, valor, descricao, origem
   const insert = db.prepare(
     'INSERT INTO lancamentos_gastos (usuario_id, gasto_id, data, valor, descricao, origem, recorrencia_grupo, parcela, total_parcelas, repeticao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   );
+  const diaCompra = /^\d{4}-\d{2}-\d{2}$/.test(String(data_compra || '')) ? Number(data_compra.slice(8, 10)) : 0;
+  const dia = parcelado && diaCompra && somarMeses(data, 0, diaCompra) === data ? diaCompra : undefined;
   return Array.from({ length: n }, (_, i) =>
-    insert.run(usuarioId, gasto_id, somarMeses(data, i), valor, descricao, origem, grupo,
+    insert.run(usuarioId, gasto_id, somarMeses(data, i, dia), valor, descricao, origem, grupo,
       parcelado ? parcela + i : null, parcelado ? total_parcelas : null, parcelado ? 'parcelado' : null).lastInsertRowid
   );
 }
@@ -1352,9 +1432,9 @@ function identificarItem(usuarioId, descricao) {
   ).all(usuarioId, CATEGORIA_NI);
   const chave = palavras.join(' ');
   const exato = aprendidos.find((a) => a.termo === chave);
-  if (exato) return { gasto_id: exato.gasto_id, seguro: true };
+  if (exato) return { gasto_id: exato.gasto_id, seguro: true, via: 'exato' };
   const porPalavra = aprendidos.filter((a) => palavras.includes(a.termo));
-  if (porPalavra.length && new Set(porPalavra.map((a) => a.gasto_id)).size === 1) return { gasto_id: porPalavra[0].gasto_id, seguro: true };
+  if (porPalavra.length && new Set(porPalavra.map((a) => a.gasto_id)).size === 1) return { gasto_id: porPalavra[0].gasto_id, seguro: true, via: 'palavra' };
 
   const itens = db.prepare("SELECT id, descricao FROM gastos WHERE usuario_id = ? AND TRIM(descricao) <> '' AND categoria <> ?").all(usuarioId, CATEGORIA_NI);
   const pontuados = itens.map((g) => {
@@ -1365,7 +1445,7 @@ function identificarItem(usuarioId, descricao) {
   if (!pontuados.length) return { gasto_id: null, seguro: false };
   const [melhor, segundo] = pontuados;
   const empate = segundo && segundo.pontos === melhor.pontos && segundo.cobertura === melhor.cobertura;
-  return { gasto_id: melhor.id, seguro: !empate && melhor.cobertura === 1 };
+  return { gasto_id: melhor.id, seguro: !empate && melhor.cobertura === 1, via: 'nome' };
 }
 
 function aprender(usuarioId, texto, gastoId) {
@@ -1429,9 +1509,11 @@ function confirmarSuspenso(usuarioId, atual, corpo) {
   if (!Number.isFinite(valor) || valor <= 0) return { erro: 'Informe um valor maior que zero' };
   const ids = lancarComParcelas(usuarioId, {
     gasto_id: gastoId, data, valor, descricao, origem: atual.origem, parcela: atual.parcela, total_parcelas: atual.total_parcelas,
+    data_compra: atual.data_compra,
   });
   db.prepare('DELETE FROM gastos_suspensos WHERE id = ?').run(atual.id);
-  aprender(usuarioId, atual.descricao || atual.texto_original, gastoId);
+  // O fechamento do mês só repete o valor estimado do item: não há termo novo para ensinar
+  if (atual.origem !== 'fechamento') aprender(usuarioId, atual.descricao || atual.texto_original, gastoId);
   return { criados: db.prepare(`SELECT * FROM lancamentos_gastos WHERE id IN (${ids.map(() => '?').join(',')}) ORDER BY data`).all(...ids) };
 }
 
@@ -1494,8 +1576,11 @@ app.delete('/lancamentos-gastos/:id', auth(), (req, res) => {
 function lerValor(bruto) {
   let s = String(bruto ?? '').trim();
   if (!s) return NaN;
-  const negativo = /^\(.*\)$/.test(s) || /^-|-$/.test(s.replace(/r\$\s*/i, '').trim());
+  const semMoeda = s.replace(/r\$\s*/i, '').trim();
+  // "(12,30)", "-12,30", "12,30-", "−12,30" (menos unicode) ou "12,30 D" (débito em extrato) = negativo
+  const negativo = /^\(.*\)$/.test(s) || /^[-−]|[-−]$/.test(semMoeda) || /\d\s*D$/i.test(semMoeda);
   s = s.replace(/[^\d.,]/g, '');
+  if (!/\d/.test(s)) return NaN;
   const ultVirgula = s.lastIndexOf(','), ultPonto = s.lastIndexOf('.');
   if (ultVirgula > ultPonto) s = s.replace(/\./g, '').replace(',', '.');
   else if (ultPonto > ultVirgula && ultVirgula >= 0) s = s.replace(/,/g, '');
@@ -1505,9 +1590,15 @@ function lerValor(bruto) {
 }
 
 const iso = (a, m, d) => `${a}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+// "2026-02-31" ou "2026-25-13" não existem: a linha é descartada em vez de gravar data inválida
+const dataValida = (d) => { const t = new Date(`${d}T12:00:00Z`); return !Number.isNaN(t.getTime()) && t.toISOString().slice(0, 10) === d; };
 
 // "2026-10-05", "05/10/2026", "05/10/26", "20261005" ou "05/10" (ano deduzido: a compra não fica no futuro).
 function lerData(bruto) {
+  const d = lerDataBruta(bruto);
+  return d && dataValida(d) ? d : null;
+}
+function lerDataBruta(bruto) {
   const s = String(bruto ?? '').trim();
   let m;
   if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return iso(m[1], m[2], m[3]);
@@ -1522,9 +1613,13 @@ function lerData(bruto) {
 }
 
 // Separa "LOJA X 03/10", "LOJA X PARC 03/10" ou "Loja X - Parcela 3/10" em descrição + parcela.
-function separarParcela(descricao) {
+// `dataLinha` (AAAA-MM-DD) evita ler como parcela a data da própria linha ("PIX MARIA 05/10" em 05/10);
+// em extrato de conta (`soComPalavra`) só vale com "parc"/"parcela" escrito.
+function separarParcela(descricao, { dataLinha = null, soComPalavra = false } = {}) {
   const m = String(descricao || '').match(/\s*[-–]?\s*(?:parc(?:ela)?\.?\s*)?(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})\s*$/i);
-  if (m) {
+  const comPalavra = m && /parc/i.test(m[0]);
+  const ehDataDaLinha = m && dataLinha && Number(m[1]) === Number(dataLinha.slice(8, 10)) && Number(m[2]) === Number(dataLinha.slice(5, 7));
+  if (m && (comPalavra || (!soComPalavra && !ehDataDaLinha))) {
     const parcela = Number(m[1]), total = Number(m[2]);
     if (parcela >= 1 && total >= 2 && parcela <= total) {
       return { descricao: descricao.slice(0, m.index).trim(), parcela, total_parcelas: total };
@@ -1553,21 +1648,36 @@ function lerCsv(texto) {
     const sep = [';', '\t', ','].sort((a, b) => linhas[i].split(b).length - linhas[i].split(a).length)[0];
     const cab = dividirLinhaCsv(linhas[i], sep).map(normalizarTexto);
     const cData = acharColuna(cab, /^(data|date|dt)\b/);
-    const cDesc = acharColuna(cab, /descri|lancamento|historico|estabelecimento|title|titulo|memo|loja/);
+    // "Data Lançamento" (Inter) não é a descrição: procura primeiro "descrição" fora da coluna de data
+    let cDesc = acharColuna(cab, /descri|estabelecimento|title|titulo|memo|loja/, /^(data|date|dt)\b/);
+    if (cDesc < 0) cDesc = acharColuna(cab, /lancamento|historico/, /^(data|date|dt)\b/);
     const cValor = acharColuna(cab, /valor|amount|vlr|quantia/, /us\$|usd|dolar|cotacao/);
     if (cData < 0 || cDesc < 0 || cValor < 0) continue;
+    const cParcela = acharColuna(cab, /^parcela/); // C6/Inter: "3/5" numa coluna própria
     return linhas.slice(i + 1).map((l) => dividirLinhaCsv(l, sep))
-      .map((c) => ({ data: lerData(c[cData]), descricao: c[cDesc] || '', valor: lerValor(c[cValor]) }))
-      .filter((l) => l.data && Number.isFinite(l.valor));
+      .map((c) => {
+        const p = cParcela >= 0 ? separarParcela(`x ${c[cParcela] || ''}`) : null;
+        return { data: lerData(c[cData]), descricao: c[cDesc] || '', valor: lerValor(c[cValor]), parcela: p?.parcela || null, total_parcelas: p?.total_parcelas || null };
+      })
+      .filter((l) => l.data && Number.isFinite(l.valor) && !ehLinhaDeSaldo(l.descricao));
   }
   throw new Error('Não encontrei as colunas de data, descrição e valor neste CSV.');
 }
 
+// Extrato de banco: "Saldo anterior", "S A L D O", "Saldo do dia" não são lançamentos
+const ehLinhaDeSaldo = (d) => /^s\s*a\s*l\s*d\s*o\b|\bsaldo (anterior|do dia|final|disponivel|em conta)\b/.test(normalizarTexto(d));
+
+// No OFX o sinal é padronizado (TRNAMT negativo = saída), tanto em conta quanto em cartão.
+// `extrato` = conta corrente (<BANKACCTFROM>), onde "05/10" no fim da descrição costuma ser data.
 function lerOfx(texto) {
-  const campo = (bloco, tag) => (bloco.match(new RegExp(`<${tag}>([^<\\r\\n]*)`, 'i')) || [])[1]?.trim() || '';
-  return texto.split(/<STMTTRN>/i).slice(1)
-    .map((b) => ({ data: lerData(campo(b, 'DTPOSTED')), descricao: campo(b, 'MEMO') || campo(b, 'NAME'), valor: lerValor(campo(b, 'TRNAMT')) }))
-    .filter((l) => l.data && Number.isFinite(l.valor));
+  const entidades = (t) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, '&');
+  const campo = (bloco, tag) => entidades((bloco.match(new RegExp(`<${tag}>([^<\\r\\n]*)`, 'i')) || [])[1]?.trim() || '');
+  const linhas = texto.split(/<STMTTRN>/i).slice(1)
+    .map((b) => ({ data: lerData(campo(b, 'DTPOSTED')), descricao: campo(b, 'MEMO') || campo(b, 'NAME'), valor: -lerValor(campo(b, 'TRNAMT')) }))
+    .filter((l) => l.data && Number.isFinite(l.valor) && !ehLinhaDeSaldo(l.descricao));
+  linhas.sinalDefinido = true;
+  linhas.extrato = /<BANKACCTFROM>/i.test(texto) && !/<CCACCTFROM>/i.test(texto);
+  return linhas;
 }
 
 // PDF protegido por senha (comum em faturas: dígitos do CPF). A IA não lê PDF criptografado, então
@@ -1621,7 +1731,7 @@ const MODELO_IA = 'claude-opus-5-5';
 
 // Chamada com saída em JSON garantida pelo schema. Fallback do servidor caso o modelo recuse.
 async function perguntarIA(content, schema, maxTokens) {
-  const client = new Anthropic();
+  const client = new Anthropic({ timeout: 120_000, maxRetries: 1 }); // a tela promete resposta em até ~1 min
   const msg = await client.beta.messages.stream({
     model: MODELO_IA,
     max_tokens: maxTokens,
@@ -1641,8 +1751,9 @@ async function lerFaturaPdf(buffer, textoExtraido) {
   const schema = {
     type: 'object',
     additionalProperties: false,
-    required: ['transacoes'],
+    required: ['fechamento', 'transacoes'],
     properties: {
+      fechamento: { type: 'string', description: 'data de fechamento da fatura, AAAA-MM-DD' },
       transacoes: {
         type: 'array',
         items: {
@@ -1667,8 +1778,10 @@ async function lerFaturaPdf(buffer, textoExtraido) {
       : { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: buffer.toString('base64') } },
     { type: 'text', text: `Esta é a fatura de um cartão de crédito brasileiro. Liste todos os lançamentos dela, de todos os cartões (titular e adicionais), na ordem em que aparecem.
 
+fechamento: a data de fechamento (ou, se não houver, a de vencimento) da fatura, em AAAA-MM-DD.
+
 Para cada lançamento:
-- data: a data impressa na linha, em AAAA-MM-DD. Deduza o ano pelo período da fatura: uma data com mês posterior ao do fechamento é do ano anterior.
+- data: a data impressa na linha, em AAAA-MM-DD. Deduza o ano pelo período da fatura: uma data com mês posterior ao do fechamento é do ano anterior. Em compras parceladas a data impressa é a da compra original, que pode ser de mais de um ano antes: escolha o ano em que a parcela atual cai no mês desta fatura (ex.: parcela 14/24 com data 10/02 numa fatura que fecha em março de 2026 → 2025-02-10).
 - descricao: o nome do estabelecimento como está impresso, sem o indicador de parcela.
 - valor: valor em reais, sempre positivo. Em compras internacionais, use o valor já convertido em R$.
 - parcela e total_parcelas: para compras parceladas ("03/10", "PARC 03/10", "Parcela 3 de 10"), a parcela atual e o total; para compras à vista, 0 e 0.
@@ -1679,18 +1792,37 @@ Ignore também as listas de parcelas de faturas futuras (ex.: "Compras parcelada
 Lançamentos sem data própria (ex.: "Repasse de IOF") usam a data de fechamento da fatura.
 Confira: a soma das compras menos os créditos deve bater com os lançamentos atuais da fatura.` },
   ], schema, 64000);
-  return transacoesParaLinhas(r.transacoes);
+  return transacoesParaLinhas(r.transacoes, r.fechamento);
 }
 
 // Converte as transações no formato do schema (resposta da IA) nas linhas da importação.
-function transacoesParaLinhas(transacoes) {
-  return (Array.isArray(transacoes) ? transacoes : []).map((t) => ({
+function transacoesParaLinhas(transacoes, fechamento) {
+  const linhas = (Array.isArray(transacoes) ? transacoes : []).map((t) => ({
     data: lerData(t.data),
     descricao: String(t.descricao || '').trim(),
     valor: t.tipo === 'credito' ? -Math.abs(Number(t.valor)) : Math.abs(Number(t.valor)),
     parcela: t.total_parcelas > 1 && t.parcela >= 1 && t.parcela <= t.total_parcelas ? t.parcela : null,
     total_parcelas: t.total_parcelas > 1 && t.parcela >= 1 && t.parcela <= t.total_parcelas ? t.total_parcelas : null,
   })).filter((l) => l.data && Number.isFinite(l.valor));
+  return corrigirAnoDasParcelas(linhas, lerData(fechamento));
+}
+
+// A data de uma parcela impressa na fatura é a da compra, sem ano. Com mais de 12 parcelas a compra é de
+// mais de um ano antes e o ano deduzido pode sair errado. A parcela atual tem de cair no mês da fatura:
+// se cair longe, troca só o ano da compra (quando a troca deixa a parcela a até 2 meses do fechamento).
+// Mês de referência: o fechamento lido; sem ele, a compra à vista mais recente da fatura.
+function corrigirAnoDasParcelas(linhas, fechamento) {
+  const ref = fechamento || linhas.filter((l) => !l.parcela && l.valor > 0).map((l) => l.data).sort().pop();
+  if (!ref) return linhas;
+  const mesIdx = (d) => Number(d.slice(0, 4)) * 12 + Number(d.slice(5, 7)) - 1;
+  for (const l of linhas) {
+    if (!l.parcela) continue;
+    const diferenca = mesIdx(ref) - (mesIdx(l.data) + l.parcela - 1);
+    const anos = Math.round(diferenca / 12);
+    if (!anos || Math.abs(diferenca - anos * 12) > 2) continue;
+    l.data = somarMeses(l.data, anos * 12);
+  }
+  return linhas;
 }
 
 // Sugere o item para os estabelecimentos que as regras não reconheceram. Só sugestão: o usuário confirma.
@@ -1721,7 +1853,7 @@ ${descricoes.map((d, i) => `${i} | ${d}`).join('\n')}` }], schema, 16000);
   return new Map((r.sugestoes || []).filter((s) => validos.has(s.item_id)).map((s) => [descricoes[s.indice], s.item_id]));
 }
 
-const ehPagamentoDaFatura = (d) => /\bpagamento\b.*\b(recebido|efetuado|fatura)\b|\bpgto\b|\bpagto\b/i.test(normalizarTexto(d));
+const ehPagamentoDaFatura = (d) => /\bpagamento\b.*\b(recebido|efetuado|fatura)\b|\b(pag|pgto|pagto)\b.*\bfatura\b|\bpgto\b|\bpagto\b|\bdeb(ito)? automatico\b.*\b(fatura|cartao)\b/i.test(normalizarTexto(d));
 const chaveCompra = (data, valor, descricao) => `${data}|${Math.round(valor * 100)}|${palavrasSignificativas(descricao).join(' ')}`;
 
 // Da lista de lançamentos lidos (de qualquer formato) ao resultado: lança, deixa em suspenso ou ignora.
@@ -1730,20 +1862,23 @@ async function processarLinhas(usuarioId, linhas, {
   ehPdf,
   sugerir = process.env.ANTHROPIC_API_KEY ? (d) => sugerirItensIA(usuarioId, d) : null,
 }) {
-  // CSV/OFX: cada banco usa um sinal. Se a maioria vier negativa, as compras são as negativas.
-  if (!ehPdf && linhas.filter((l) => l.valor < 0).length > linhas.filter((l) => l.valor > 0).length) {
+  // CSV: cada banco usa um sinal. Se a maioria vier negativa, as compras são as negativas.
+  // (OFX já chega com o sinal certo: saída positiva.)
+  if (!ehPdf && !linhas.sinalDefinido && linhas.filter((l) => l.valor < 0).length > linhas.filter((l) => l.valor > 0).length) {
     linhas.forEach((l) => { l.valor = -l.valor; });
   }
+  const opcoesParcela = (l) => ({ dataLinha: l.data, soComPalavra: !!linhas.extrato });
 
   const compras = [];
   let ignorados = 0;
   for (const l of linhas) {
     if (l.valor <= 0 || ehPagamentoDaFatura(l.descricao)) { ignorados++; continue; }
-    const p = l.parcela ? { descricao: separarParcela(l.descricao).descricao, parcela: l.parcela, total_parcelas: l.total_parcelas } : separarParcela(l.descricao);
-    const descricao = p.descricao || l.descricao.trim();
+    const p = l.parcela ? { descricao: separarParcela(l.descricao, opcoesParcela(l)).descricao, parcela: l.parcela, total_parcelas: l.total_parcelas } : separarParcela(l.descricao, opcoesParcela(l));
+    const descricao = (p.descricao || l.descricao.trim()).slice(0, 200);
     // A data impressa é a da compra; a parcela x cai x-1 meses depois.
     const data = p.parcela ? somarMeses(l.data, p.parcela - 1) : l.data;
-    compras.push({ original: l.descricao.trim(), descricao, data, valor: Math.round(l.valor * 100) / 100, parcela: p.parcela, total_parcelas: p.total_parcelas });
+    compras.push({ original: l.descricao.trim().slice(0, 300), descricao, data, data_compra: p.parcela ? l.data : null,
+      valor: Math.round(l.valor * 100) / 100, parcela: p.parcela, total_parcelas: p.total_parcelas });
   }
 
   // O que já existe com mesma data, valor e estabelecimento (contado antes de gravar, para que
@@ -1752,18 +1887,25 @@ async function processarLinhas(usuarioId, linhas, {
   const contar = (rows) => rows.reduce((m, r) => {
     const k = chaveCompra(r.data, r.valor, r.descricao);
     if (!m.has(k)) m.set(k, []);
-    m.get(k).push(r.gasto_id);
+    m.get(k).push(r);
     return m;
   }, new Map());
-  const jaLancados = compras.length ? contar(db.prepare(
-    'SELECT data, valor, descricao, gasto_id FROM lancamentos_gastos WHERE usuario_id = ? AND data BETWEEN ? AND ?'
-  ).all(usuarioId, datas[0], datas[datas.length - 1])) : new Map();
+  const lancadosNoPeriodo = compras.length ? db.prepare(
+    'SELECT data, valor, descricao, gasto_id, origem, parcela, total_parcelas FROM lancamentos_gastos WHERE usuario_id = ? AND data BETWEEN ? AND ?'
+  ).all(usuarioId, somarMeses(datas[0], -1), datas[datas.length - 1]) : [];
+  const jaLancados = contar(lancadosNoPeriodo.filter((r) => r.data >= datas[0]));
+  // Parcela que uma fatura anterior já lançou (lancarComParcelas gera as seguintes): mesma loja, mesmo
+  // x/y, mesmo mês e valor com até R$ 0,05 de diferença (o banco arredonda centavos entre parcelas).
+  const parcelaJaPrevista = (c) => c.parcela && lancadosNoPeriodo.some((r) => r.origem === 'fatura'
+    && r.parcela === c.parcela && r.total_parcelas === c.total_parcelas && r.data.slice(0, 7) === c.data.slice(0, 7)
+    && Math.abs(r.valor - c.valor) <= 0.05 && palavrasSignificativas(r.descricao).join(' ') === palavrasSignificativas(c.descricao).join(' '));
   const jaSuspensos = contar(db.prepare(
     'SELECT data, valor, descricao, gasto_sugerido_id AS gasto_id FROM gastos_suspensos WHERE usuario_id = ?'
   ).all(usuarioId));
 
   const vistos = new Map();
   const planos = compras.map((c) => {
+    if (parcelaJaPrevista(c)) return { ...c, acao: 'ja_lancado' };
     const k = chaveCompra(c.data, c.valor, c.descricao);
     const n = (vistos.get(k) || 0) + 1;
     vistos.set(k, n);
@@ -1771,14 +1913,20 @@ async function processarLinhas(usuarioId, linhas, {
     if (n <= emSuspenso) return { ...c, acao: 'ja_em_suspenso' };
     const lancados = jaLancados.get(k) || [];
     if (n - emSuspenso <= lancados.length) {
+      const anterior = lancados[n - emSuspenso - 1];
+      // Mesma compra de uma importação anterior (reimportou o arquivo): já está lançada, não pergunta de novo
+      if (anterior.origem === 'fatura') return { ...c, acao: 'ja_lancado' };
       const aviso = c.parcela
         ? `A parcela ${c.parcela}/${c.total_parcelas} desta compra já foi lançada (mesma data, valor e estabelecimento). Confirme só se for outra compra — as parcelas seguintes também serão lançadas.`
         : 'Já existe um lançamento com a mesma data, valor e estabelecimento. Confirme só se for outra compra.';
-      const anterior = lancados[n - emSuspenso - 1];
-      return { ...c, acao: 'suspender', gasto_id: ehNaoIdentificado(usuarioId, anterior) ? null : anterior, aviso, duplicado: true };
+      return { ...c, acao: 'suspender', gasto_id: ehNaoIdentificado(usuarioId, anterior.gasto_id) ? null : anterior.gasto_id, aviso, duplicado: true };
     }
-    const { gasto_id, seguro } = identificarItem(usuarioId, c.descricao);
-    return { ...c, acao: seguro ? 'lancar' : 'suspender', gasto_id, aviso: '' };
+    // Valor fora do comum (provável erro de leitura): o usuário confere antes de lançar
+    if (c.valor > 1e6) return { ...c, acao: 'suspender', gasto_id: null, aviso: 'Valor muito alto para uma compra. Confira se foi lido certo antes de confirmar.' };
+    // No import só lança sozinho o que o usuário já ensinou com a mesma descrição; semelhança com o
+    // nome do item ("ÁGUA DE COCO" → Água) ou uma palavra solta vira só sugestão
+    const { gasto_id, via } = identificarItem(usuarioId, c.descricao);
+    return { ...c, acao: via === 'exato' ? 'lancar' : 'suspender', gasto_id, aviso: '' };
   });
 
   const semSugestao = [...new Set(planos.filter((p) => p.acao === 'suspender' && !p.gasto_id).map((p) => p.descricao))];
@@ -1790,19 +1938,20 @@ async function processarLinhas(usuarioId, linhas, {
   }
 
   const insertSuspenso = db.prepare(
-    `INSERT INTO gastos_suspensos (usuario_id, texto_original, valor, data, descricao, gasto_sugerido_id, origem, parcela, total_parcelas, aviso)
-     VALUES (?, ?, ?, ?, ?, ?, 'fatura', ?, ?, ?)`
+    `INSERT INTO gastos_suspensos (usuario_id, texto_original, valor, data, descricao, gasto_sugerido_id, origem, parcela, total_parcelas, aviso, data_compra)
+     VALUES (?, ?, ?, ?, ?, ?, 'fatura', ?, ?, ?, ?)`
   );
   const resumo = db.transaction(() => {
-    const r = { lidos: linhas.length, lancados: 0, parcelas_lancadas: 0, suspensos: 0, duplicados: 0, ja_em_suspenso: 0, ignorados };
+    const r = { lidos: linhas.length, lancados: 0, parcelas_lancadas: 0, suspensos: 0, duplicados: 0, ja_em_suspenso: 0, ja_lancados: 0, ignorados };
     for (const p of planos) {
       if (p.acao === 'ja_em_suspenso') { r.ja_em_suspenso++; continue; }
+      if (p.acao === 'ja_lancado') { r.ja_lancados++; continue; }
       if (p.acao === 'lancar') {
         r.parcelas_lancadas += lancarComParcelas(usuarioId, { ...p, origem: 'fatura' }).length;
         r.lancados++;
         continue;
       }
-      insertSuspenso.run(usuarioId, p.original, p.valor, p.data, p.descricao, p.gasto_id || null, p.parcela, p.total_parcelas, p.aviso);
+      insertSuspenso.run(usuarioId, p.original, p.valor, p.data, p.descricao, p.gasto_id || null, p.parcela, p.total_parcelas, p.aviso, p.data_compra);
       r.suspensos++;
       if (p.duplicado) r.duplicados++;
     }
@@ -1828,6 +1977,10 @@ app.post('/faturas/importar', auth(), iaLimiter, async (req, res) => {
   }
   const ehOfx = !ehPdf && (/\.ofx$/i.test(nome) || /<OFX>/i.test(texto));
 
+  if (ehPdf && !process.env.ANTHROPIC_API_KEY) {
+    return falhar(503, { erro: 'A leitura de PDF ainda não está configurada no servidor. Por enquanto, importe a fatura em CSV ou OFX.' });
+  }
+
   // PDF com senha: abre antes de tudo para pedir (ou conferir) a senha ao usuário.
   let textoPdf = null;
   if (ehPdf && pdfCriptografado(buffer)) {
@@ -1841,10 +1994,6 @@ app.post('/faturas/importar', auth(), iaLimiter, async (req, res) => {
     if (!textoPdf.replace(/--- Página \d+ ---/g, '').trim()) {
       return falhar(422, { erro: 'Este PDF não tem texto legível (parece uma imagem digitalizada).' });
     }
-  }
-
-  if (ehPdf && !process.env.ANTHROPIC_API_KEY) {
-    return falhar(503, { erro: 'A leitura de PDF ainda não está configurada no servidor. Por enquanto, importe a fatura em CSV ou OFX.' });
   }
 
   let linhas;
@@ -1868,7 +2017,7 @@ if (process.env.DEV_SEM_LOGIN === '1') {
   app.post('/faturas/importar-transacoes', auth(), async (req, res) => {
     const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
     if (!local) return res.status(403).json({ erro: 'Disponível só localmente' });
-    const linhas = transacoesParaLinhas(req.body.transacoes);
+    const linhas = transacoesParaLinhas(req.body.transacoes, req.body.fechamento);
     if (!linhas.length) return res.status(422).json({ erro: 'Nenhum lançamento válido em "transacoes".' });
     const mapa = new Map(Object.entries(req.body.sugestoes || {}).map(([d, id]) => [d, Number(id)]));
     const validos = new Set(db.prepare('SELECT id FROM gastos WHERE usuario_id = ? AND categoria <> ?').all(req.user.id, CATEGORIA_NI).map((g) => g.id));
@@ -2097,76 +2246,6 @@ app.get('/fipe/marcas/:marca/modelos/:modelo/anos/:ano', auth(), async (req, res
   } catch { res.status(502).json({ erro: 'FIPE indisponível' }); }
 });
 
-// Rota unificada: busca preço pelo nome da marca, modelo e ano
-app.get('/fipe/buscar', auth(), async (req, res) => {
-  const { marca, modelo, ano } = req.query;
-  if (!marca || !modelo || !ano) return res.status(400).json({ erro: 'marca, modelo e ano obrigatórios' });
-  try {
-    const marcas = await (await fetch(`${FIPE_BASE}/marcas`)).json();
-    const marcaObj = marcas.find(m => m.nome.toLowerCase().includes(String(marca).toLowerCase()));
-    if (!marcaObj) return res.status(404).json({ erro: `Marca "${marca}" não encontrada` });
-
-    const modelosResp = await (await fetch(`${FIPE_BASE}/marcas/${marcaObj.codigo}/modelos`)).json();
-    const busca = String(modelo).toLowerCase();
-    // Filtra modelos que contenham o texto; prefere o nome mais curto (versão mais simples)
-    const candidatos = modelosResp.modelos
-      .filter(m => m.nome.toLowerCase().includes(busca))
-      .sort((a, b) => a.nome.length - b.nome.length);
-    if (!candidatos.length) return res.status(404).json({ erro: `Modelo "${modelo}" não encontrado` });
-
-    // Busca o preço de cada candidato e retorna a média dos que têm o ano certo (excluindo 0km)
-    const anoStr = String(ano);
-    const resultados = [];
-    for (const modeloObj of candidatos.slice(0, 5)) {
-      const anos = await (await fetch(`${FIPE_BASE}/marcas/${marcaObj.codigo}/modelos/${modeloObj.codigo}/anos`)).json();
-      // Tenta primeiro sem 0km com o ano exato
-      let anosValidos = anos.filter(a => !a.codigo.startsWith('32000') && a.nome.includes(anoStr));
-      // Fallback 1: inclui 0km se não encontrou o ano
-      if (!anosValidos.length) anosValidos = anos.filter(a => a.nome.includes(anoStr));
-      // Fallback 2: usa qualquer ano disponível (sem 0km preferível)
-      if (!anosValidos.length) anosValidos = anos.filter(a => !a.codigo.startsWith('32000')).slice(0, 1);
-      if (!anosValidos.length) anosValidos = anos.slice(0, 1);
-      for (const anoObj of anosValidos.slice(0, 2)) {
-        const preco = await (await fetch(`${FIPE_BASE}/marcas/${marcaObj.codigo}/modelos/${modeloObj.codigo}/anos/${anoObj.codigo}`)).json();
-        const valor = parseFloat(preco.Valor.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
-        if (!isNaN(valor)) resultados.push({ valor, modelo: modeloObj.nome, ano: anoObj.nome });
-      }
-      if (resultados.length >= 3) break;
-    }
-
-    if (!resultados.length) return res.status(404).json({ erro: `Nenhum resultado para ${marca} ${modelo} ${ano}` });
-
-    // Retorna a média dos valores encontrados
-    const media = Math.round(resultados.reduce((s, r) => s + r.valor, 0) / resultados.length);
-    res.json({ valor: media, modelo: resultados[0].modelo, ano: resultados[0].ano, marca: marcaObj.nome, variantes: resultados.length });
-  } catch (e) {
-    res.status(502).json({ erro: 'Erro ao consultar FIPE' });
-  }
-});
-
-// ── IA: Estimativa de valor de carro ─────────────────────────
-app.post('/ia/valor-carro', auth(), iaLimiter, async (req, res) => {
-  const { modelo, ano } = req.body;
-  if (!modelo || !ano) return res.status(400).json({ erro: 'modelo e ano obrigatórios' });
-  try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const msg = await client.messages.create({
-      model: 'claude-haiku-5-5',
-      max_tokens: 128,
-      messages: [{
-        role: 'user',
-        content: `Qual o valor médio de mercado no Brasil (em reais) de um ${modelo} ano ${ano}? Responda APENAS com o número inteiro, sem pontuação, sem texto, sem R$. Exemplo: 85000`
-      }]
-    });
-    const texto = msg.content[0].type === 'text' ? msg.content[0].text.trim() : '';
-    const valor = parseInt(texto.replace(/\D/g, ''), 10);
-    if (isNaN(valor)) return res.status(422).json({ erro: 'não foi possível estimar' });
-    res.json({ valor });
-  } catch (e) {
-    res.status(500).json({ erro: 'erro ao consultar IA' });
-  }
-});
-
 // ── Gestão de Pagamentos: receitas lançadas, dívidas, investimentos e ajustes mês a mês ──
 // Receitas: o usuário lança o que entrou em cada mês (a meta é a receita planejada em Recebimentos).
 // Dívidas (PMT > 0, não quitadas), "Outras Dívidas" e a Meta de Investimento Mensal vêm previstas
@@ -2290,19 +2369,41 @@ function mesSeguinte() {
   return `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function grauComprometimento(usuarioId) {
-  const soma = (sql, ...args) => Number(db.prepare(sql).get(...args).t) || 0;
-  const renda = soma(`SELECT COALESCE(SUM(valor), 0) AS t FROM recebimentos
-    WHERE usuario_id = ? AND classe IN ('Mensal Flexível', 'Mensal Comprometido')`, usuarioId);
-  const gastosComprometidos = soma(`SELECT COALESCE(SUM(valor), 0) AS t FROM gastos
-    WHERE usuario_id = ? AND classe = 'Mensal Comprometido' AND categoria <> ?`, usuarioId, CATEGORIA_NI);
-  const passivosFinanceiros = soma(`SELECT COALESCE(SUM(pmt), 0) AS t FROM dividas
-    WHERE usuario_id = ? AND quitado = 0 AND guia = 'financeiros'`, usuarioId);
-  const passivosImobilizados = soma(`SELECT COALESCE(SUM(pmt), 0) AS t FROM dividas
-    WHERE usuario_id = ? AND quitado = 0 AND guia = 'imobilizados'`, usuarioId);
+// Somas do orçamento por usuário (base do GC, do nível de saúde e da lista de clientes do master).
+// Com usuarioId traz só aquele usuário; sem ele, todos de uma vez com GROUP BY (evita N consultas por cliente).
+const somasVazias = () => ({ gastos: {}, pmt: {}, receitaMensal: 0, receitaEventual: 0, sonhos: [], parceladosMesSeguinte: 0 });
+function somasOrcamento(usuarioId) {
+  const um = usuarioId != null;
+  const filtro = um ? 'AND usuario_id = ?' : '';
+  const args = um ? [usuarioId] : [];
+  const mapa = new Map();
+  const de = (id) => { if (!mapa.has(id)) mapa.set(id, somasVazias()); return mapa.get(id); };
+  db.prepare(`SELECT usuario_id, classe, COALESCE(SUM(valor), 0) AS t FROM gastos
+    WHERE categoria <> ? ${filtro} GROUP BY usuario_id, classe`).all(CATEGORIA_NI, ...args)
+    .forEach((r) => { de(r.usuario_id).gastos[r.classe] = Number(r.t) || 0; });
+  db.prepare(`SELECT usuario_id, guia, COALESCE(SUM(pmt), 0) AS t FROM dividas
+    WHERE quitado = 0 ${filtro} GROUP BY usuario_id, guia`).all(...args)
+    .forEach((r) => { de(r.usuario_id).pmt[r.guia] = Number(r.t) || 0; });
+  db.prepare(`SELECT usuario_id,
+      COALESCE(SUM(CASE WHEN classe IN ('Mensal Flexível', 'Mensal Comprometido') THEN valor END), 0) AS mensal,
+      COALESCE(SUM(CASE WHEN classe LIKE 'Eventual%' THEN valor END), 0) AS eventual
+    FROM recebimentos WHERE 1 = 1 ${filtro} GROUP BY usuario_id`).all(...args)
+    .forEach((r) => { const o = de(r.usuario_id); o.receitaMensal = Number(r.mensal) || 0; o.receitaEventual = Number(r.eventual) || 0; });
+  db.prepare(`SELECT * FROM sonhos WHERE 1 = 1 ${filtro}`).all(...args).forEach((r) => de(r.usuario_id).sonhos.push(r));
+  db.prepare(`SELECT usuario_id, COALESCE(SUM(valor), 0) AS t FROM lancamentos_gastos
+    WHERE repeticao = 'parcelado' AND substr(data, 1, 7) = ? ${filtro} GROUP BY usuario_id`).all(mesSeguinte(), ...args)
+    .forEach((r) => { de(r.usuario_id).parceladosMesSeguinte = Number(r.t) || 0; });
+  return mapa;
+}
+const somasDe = (usuarioId) => somasOrcamento(usuarioId).get(Number(usuarioId)) || somasVazias();
+
+function grauComprometimento(usuarioId, somas = somasDe(usuarioId)) {
+  const renda = somas.receitaMensal;
+  const gastosComprometidos = somas.gastos['Mensal Comprometido'] || 0;
+  const passivosFinanceiros = somas.pmt.financeiros || 0;
+  const passivosImobilizados = somas.pmt.imobilizados || 0;
   const mes = mesSeguinte();
-  const parcelados = soma(`SELECT COALESCE(SUM(valor), 0) AS t FROM lancamentos_gastos
-    WHERE usuario_id = ? AND repeticao = 'parcelado' AND substr(data, 1, 7) = ?`, usuarioId, mes);
+  const parcelados = somas.parceladosMesSeguinte;
   const x = gastosComprometidos + passivosFinanceiros + passivosImobilizados + parcelados;
   const r2 = (v) => Math.round(v * 100) / 100;
   return {
@@ -2346,16 +2447,12 @@ function mimSonho(s, hoje = new Date()) {
 }
 
 // Partes do orçamento mensal (valores mensais; eventuais = anual ÷ 12)
-function componentesOrcamento(usuarioId) {
-  const soma = (sql, ...args) => Number(db.prepare(sql).get(...args).t) || 0;
-  const metaClasse = (classe, eventual) => soma(`SELECT COALESCE(SUM(valor), 0) AS t FROM gastos
-    WHERE usuario_id = ? AND classe = ? AND categoria <> ?`, usuarioId, classe, CATEGORIA_NI) / (eventual ? 12 : 1);
-  const pmt = (guia) => soma(`SELECT COALESCE(SUM(pmt), 0) AS t FROM dividas WHERE usuario_id = ? AND quitado = 0 AND guia = ?`, usuarioId, guia);
-  const receitaMensal = soma(`SELECT COALESCE(SUM(valor), 0) AS t FROM recebimentos
-    WHERE usuario_id = ? AND classe IN ('Mensal Flexível', 'Mensal Comprometido')`, usuarioId);
-  const receitaEventual = soma(`SELECT COALESCE(SUM(valor), 0) AS t FROM recebimentos
-    WHERE usuario_id = ? AND classe LIKE 'Eventual%'`, usuarioId) / 12;
-  const mim = db.prepare('SELECT * FROM sonhos WHERE usuario_id = ?').all(usuarioId).reduce((t, s) => t + mimSonho(s), 0);
+function componentesOrcamento(usuarioId, somas = somasDe(usuarioId)) {
+  const metaClasse = (classe, eventual) => (somas.gastos[classe] || 0) / (eventual ? 12 : 1);
+  const pmt = (guia) => somas.pmt[guia] || 0;
+  const receitaMensal = somas.receitaMensal;
+  const receitaEventual = somas.receitaEventual / 12;
+  const mim = somas.sonhos.reduce((t, s) => t + mimSonho(s), 0);
   const r2 = (v) => Math.round(v * 100) / 100;
   return {
     A: r2(pmt('imobilizados')),             // Passivo Patrimonial
@@ -2622,7 +2719,7 @@ function avisosDoDia(usuarioId, hoje, cfg = wpp.configAlertas(usuarioId)) {
 // WhatsApp ligada eles entram na fila de saída ('pendente'); sem ela ficam só registrados ('sem_canal').
 // Devolve só os criados agora.
 async function processarAvisos(hoje, usuarioId = null, hora = agoraBrasilia().hora) {
-  const usuarios = usuarioId ? [{ id: usuarioId }] : db.prepare('SELECT id FROM usuarios').all();
+  const usuarios = usuarioId ? [{ id: usuarioId }] : db.prepare('SELECT id FROM usuarios WHERE bloqueado_em IS NULL').all(); // sem alertas para quem perdeu o acesso
   const criados = [];
   for (const u of usuarios) {
     const cfg = wpp.configAlertas(u.id);
@@ -2642,6 +2739,62 @@ async function rodarAgendadorAvisos() {
 }
 setTimeout(rodarAgendadorAvisos, 5000);
 setInterval(rodarAgendadorAvisos, 60 * 60 * 1000);
+
+// ── Fechamento do mês ──
+// Na virada do mês, cada item "Mensal Comprometido" com valor estimado que não teve nenhum gasto
+// lançado no mês que acabou vai para Em suspenso com o valor estimado pelo cliente, só para ele
+// confirmar (ou excluir, se não pagou). Cada usuário é fechado uma vez por mês (meses_fechados).
+// Só fecha mês que o usuário viveu inteiro e item que já existia no mês; não ensina o app.
+db.exec(`CREATE TABLE IF NOT EXISTS meses_fechados (
+  usuario_id INTEGER NOT NULL,
+  mes TEXT NOT NULL,
+  suspensos INTEGER NOT NULL DEFAULT 0,
+  fechado_em TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (usuario_id, mes)
+)`);
+
+function fecharMes(usuarioId, mes) {
+  const [a, m] = mes.split('-').map(Number);
+  const inicio = `${mes}-01`;
+  const fim = `${mes}-${String(new Date(Date.UTC(a, m, 0)).getUTCDate()).padStart(2, '0')}`;
+  const nomeMes = `${MESES_LONGOS[m - 1]}/${a}`;
+  return db.transaction(() => {
+    if (db.prepare('SELECT 1 FROM meses_fechados WHERE usuario_id = ? AND mes = ?').get(usuarioId, mes)) return null;
+    const itens = db.prepare(`SELECT g.id, g.descricao, g.valor FROM gastos g
+      WHERE g.usuario_id = ? AND g.classe = 'Mensal Comprometido' AND g.valor > 0 AND date(g.criado_em) <= ?
+        AND NOT EXISTS (SELECT 1 FROM lancamentos_gastos l WHERE l.usuario_id = g.usuario_id AND l.gasto_id = g.id AND l.data BETWEEN ? AND ?)
+        AND NOT EXISTS (SELECT 1 FROM gastos_suspensos s WHERE s.usuario_id = g.usuario_id AND s.gasto_sugerido_id = g.id AND s.data BETWEEN ? AND ?)
+      ORDER BY g.categoria, g.id`).all(usuarioId, fim, inicio, fim, inicio, fim);
+    const inserir = db.prepare(`INSERT INTO gastos_suspensos (usuario_id, texto_original, valor, data, descricao, gasto_sugerido_id, origem, aviso)
+      VALUES (?, ?, ?, ?, ?, ?, 'fechamento', ?)`);
+    for (const it of itens) {
+      inserir.run(usuarioId, `Fechamento de ${nomeMes}: nenhum gasto lançado em ${it.descricao}`, it.valor, fim, it.descricao, it.id,
+        `Valor estimado por você. Confirme se foi pago (ajuste o valor e a data, se precisar) ou exclua se não houve esse gasto em ${nomeMes}.`);
+    }
+    db.prepare('INSERT INTO meses_fechados (usuario_id, mes, suspensos) VALUES (?, ?, ?)').run(usuarioId, mes, itens.length);
+    return itens.length;
+  })();
+}
+
+// Fecha o mês anterior de quem ainda não foi fechado (roda ao subir o servidor e a cada hora)
+function fecharMesesPendentes() {
+  try { fecharMesesPendentesAgora(); } catch (e) { console.error('[fechamento] falha:', e); }
+}
+function fecharMesesPendentesAgora() {
+  const { hoje } = agoraBrasilia();
+  const [a, m] = hoje.split('-').map(Number);
+  const mes = m === 1 ? `${a - 1}-12` : `${a}-${String(m - 1).padStart(2, '0')}`;
+  const usuarios = db.prepare(`SELECT id FROM usuarios
+    WHERE bloqueado_em IS NULL AND papel != 'planejador' AND date(criado_em) <= ?
+      AND id NOT IN (SELECT usuario_id FROM meses_fechados WHERE mes = ?)`).all(`${mes}-01`, mes);
+  let total = 0;
+  for (const u of usuarios) {
+    try { total += fecharMes(u.id, mes) || 0; } catch (e) { console.error(`[fechamento] usuário ${u.id}:`, e); }
+  }
+  if (usuarios.length) console.log(`[fechamento] ${mes}: ${usuarios.length} usuário(s) fechado(s), ${total} gasto(s) estimado(s) em suspenso`);
+}
+setTimeout(fecharMesesPendentes, 6000);
+setInterval(fecharMesesPendentes, 60 * 60 * 1000);
 
 // Histórico do usuário (menu Alertas)
 app.get('/avisos', auth(), (req, res) => {
@@ -2665,9 +2818,28 @@ if (process.env.DEV_SEM_LOGIN === '1') {
 }
 
 // Área master (clientes, anúncios e avisos), assinaturas e convites — ver admin.js, pagamentos.js e convites.js
-const adm = require('./admin')({ app, db, auth, componentesOrcamento, nivelSaude, grauComprometimento, agoraBrasilia, DATA_DIR });
+const adm = require('./admin')({ app, db, auth, somasOrcamento, somasVazias, componentesOrcamento, nivelSaude, grauComprometimento, agoraBrasilia, DATA_DIR });
 const pagamentos = require('./pagamentos')({ app, db, auth, master: adm.master, agoraBrasilia, dividirEmParcelas, somarMeses });
 adm.definirTemAssinatura(pagamentos.temAssinatura);
 convites = require('./convites')({ app, db, master: adm.master, enviarEmail, FRONTEND_URL, escaparHtml, normalizarEmail, loginLimiter });
+const planejadores = require('./planejadores')({ app, db, auth, master: adm.master, ehMaster: adm.ehMaster, convites, gerarTokenSuporte });
+podeAcessarCliente = planejadores.podeAcessarCliente;
+
+// Erro não tratado numa rota: responde JSON (o app mostra a mensagem) e registra no log, sem expor detalhes
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  const status = err.status || err.statusCode || 500;
+  if (status >= 500) console.error('[erro]', req.method, req.path, err);
+  res.status(status).json({ erro: status < 500 && err.expose ? err.message : status === 413 ? 'Arquivo grande demais.' : 'Erro interno. Tente de novo.' });
+});
+process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e));
+
+// Índices das consultas mais frequentes (login por e-mail, suspensos, saldo por item, fila do WhatsApp)
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_usuarios_email_norm ON usuarios(lower(trim(email)));
+  CREATE INDEX IF NOT EXISTS idx_suspensos_usuario ON gastos_suspensos(usuario_id, gasto_sugerido_id);
+  CREATE INDEX IF NOT EXISTS idx_lanc_usuario_gasto_data ON lancamentos_gastos(usuario_id, gasto_id, data);
+  CREATE INDEX IF NOT EXISTS idx_avisos_status ON avisos(status, criado_em);
+`);
 
 app.listen(PORT, () => console.log(`API rodando na porta ${PORT}`));

@@ -1,0 +1,45 @@
+// ── Tokens de estilo do Zevem ────────────────────────────────────────────────
+// Fonte única de cores e formas. Cada .scss usa com `@use 'tokens' as *;` (pasta src/styles está em
+// stylePreprocessorOptions.includePaths no angular.json). As mesmas cores viram variáveis CSS --ag-*
+// em src/styles.scss, para quem preferir var(--ag-…).
+
+// Paleta da marca
+$profundo: #05261a;      // verde-profundo: texto principal, fundos escuros
+$floresta: #0b3d2e;      // verde-floresta: destaque sobre fundo claro, sucesso
+$lima: #b8f15a;          // verde-limão: botões principais, destaque sobre fundo escuro
+$lima-hover: #c8f67a;
+$lima-borda: #c4f58a;
+$lima-claro: #e6f8d2;    // verde-claro: fundos suaves, selos
+$off-white: #f7f8f5;     // fundo das telas
+$apple: #39d353;         // verde da marca antiga (Apple Green), só no login
+$rosa: #ff2e63;          // rosa elétrico: vídeos de instrução e avisos
+$rosa-texto: #d61e4c;    // rosa para textos pequenos sobre fundo claro
+$rosa-claro: #fff0f3;
+
+// Neutros
+$texto: #05261a;
+$texto-2: #40534a;
+$suave: #5c6f66;         // texto secundário
+$apagado: #8a9d92;       // texto desativado, legendas
+$borda: #dde5d9;
+$borda-forte: #c3cfbf;
+$superficie: #edf1e9;    // fundo de botões secundários, trilhos
+
+// Estados
+$sucesso: $floresta;
+$sucesso-claro: $lima-claro;
+$erro: #d63a3a;
+$erro-claro: #fdecea;
+$alerta: #d48806;
+$alerta-claro: #fff4dc;
+
+// Formas
+$raio-controle: 8px;     // botões e campos
+$raio-cartao: 14px;
+$raio-modal: 16px;
+$raio-selo: 999px;
+$sombra-cartao: 0 2px 12px rgba(0, 0, 0, 0.06);
+$sombra-modal: 0 8px 40px rgba(0, 0, 0, 0.18);
+$overlay: rgba(5, 38, 26, 0.45);   // fundo escurecido atrás dos modais
+$anel-foco: 0 0 0 3px rgba(184, 241, 90, 0.15);
+$titulo-modal: 18px;

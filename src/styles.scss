@@ -1,26 +1,28 @@
+@use 'tokens' as *;
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Poppins:wght@500;600&display=swap');
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-// Paleta Zevem (referência para estilos novos)
+// Paleta Zevem: valores em src/styles/_tokens.scss (fonte única); aqui viram variáveis CSS
 :root {
-  --ag-verde-profundo: #05261a;
-  --ag-verde-floresta: #0b3d2e;
-  --ag-verde-apple: #39d353;
-  --ag-verde-lima: #b8f15a;
+  --ag-verde-profundo: #{$profundo};
+  --ag-verde-floresta: #{$floresta};
+  --ag-verde-apple: #{$apple};
+  --ag-verde-lima: #{$lima};
+  --ag-verde-claro: #{$lima-claro};
   --ag-carvao: #111111;
-  --ag-off-white: #f7f8f5;
+  --ag-off-white: #{$off-white};
   // Rosa elétrico: só para informação e vídeos de instrução (energia, atenção, atitude)
-  --ag-rosa: #ff2e63;
-  --ag-rosa-texto: #d61e4c; // para textos pequenos sobre fundo claro
-  --ag-rosa-claro: #fff0f3;
+  --ag-rosa: #{$rosa};
+  --ag-rosa-texto: #{$rosa-texto}; // para textos pequenos sobre fundo claro
+  --ag-rosa-claro: #{$rosa-claro};
 }
 
-html, body { background: #f7f8f5; }
+html, body { background: $off-white; }
 
 body {
   font-family: 'Montserrat', sans-serif;
-  color: #05261a;
+  color: $profundo;
 }
 
 input, button, select, textarea {
@@ -43,10 +45,10 @@ table, table input, table select { font-variant-numeric: tabular-nums; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #e6f8d2;
-  border: 1.5px solid #c4f58a;
+  background: $lima-claro;
+  border: 1.5px solid $lima-borda;
   border-radius: 8px;
-  color: #0b3d2e;
+  color: $floresta;
   font-size: 12px;
   font-weight: 600;
   font-family: inherit;
@@ -54,9 +56,9 @@ table, table input, table select { font-variant-numeric: tabular-nums; }
   padding: 6px 12px;
   white-space: nowrap;
   transition: background 0.15s, box-shadow 0.15s;
-  &:hover { background: #c4f58a; box-shadow: 0 0 0 2px #e6f8d2; }
+  &:hover { background: $lima-borda; box-shadow: 0 0 0 2px $lima-claro; }
   &:focus { outline: none; }
-  &:focus-visible { box-shadow: 0 0 0 2px #b8f15a; }
+  &:focus-visible { box-shadow: 0 0 0 2px $lima; }
 }
 
 // ── Selo de vídeo no título da página (<h1 class="titulo-video">Título<app-video-badge /></h1>) ──
@@ -90,7 +92,7 @@ app-video-badge { display: contents; }
       width: 40px;
       height: 3px;
       border-radius: 3px;
-      background: var(--ag-verde-apple);
+      background: var(--ag-verde-lima);
     }
   }
 
@@ -105,7 +107,7 @@ app-video-badge { display: contents; }
 
   .ph-texto p {
     font-size: 14px;
-    color: #5c6f66;
+    color: $suave;
     margin-top: 6px;
   }
 }
@@ -115,7 +117,7 @@ app-video-badge { display: contents; }
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: #5c6f66;
+  color: $suave;
 }
 
 // ── Botões do cabeçalho das páginas: um tamanho só e duas cores ──
@@ -159,11 +161,11 @@ app-video-badge { display: contents; }
   :is(.ph-botoes, .ph-acoes) > button,
   :is(.ph-botoes, .ph-acoes) > .menu-ferramentas > button, // botão que abre um menu agrupado
   > .btn-tema {
-    background: #e6f8d2;
-    border: 1.5px solid #c4f58a;
-    color: #0b3d2e;
+    background: $lima-claro;
+    border: 1.5px solid $lima-borda;
+    color: $floresta;
     box-shadow: none;
-    &:hover { background: #c4f58a; border-color: #c4f58a; box-shadow: none; }
+    &:hover { background: $lima-borda; border-color: $lima-borda; box-shadow: none; }
   }
 
   // Ação principal
@@ -172,7 +174,7 @@ app-video-badge { display: contents; }
     border-color: var(--ag-verde-lima);
     color: var(--ag-verde-profundo);
     font-weight: 700;
-    &:hover { background: #c8f67a; border-color: #c8f67a; }
+    &:hover { background: $lima-hover; border-color: $lima-hover; }
   }
 
   // Em suspenso com pendências: aviso em âmbar
