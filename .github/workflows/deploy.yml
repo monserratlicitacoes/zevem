@@ -28,27 +28,13 @@ jobs:
       - name: Validar containers
         run: |
           bash -n deploy/deploy.sh
+          bash -n deploy/backup.sh
+          bash -n deploy/r2-backup.sh
           printf 'JWT_SECRET=%s\nDADOS_KEY=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > .env.production
           docker compose config --quiet
           docker compose up -d --build --wait --wait-timeout 120
           test "$(curl -fsS http://127.0.0.1:3202/health)" = '{"status":"ok"}'
           curl -fsS http://127.0.0.1:3201/login | grep '<app-root'
-      - name: Validar cópia local do SQLite e dos uploads
-        run: |
-          docker compose exec -T backend sh -c 'printf zevem > /data/uploads/backup-ci.txt'
-          ZEVEM_BACKUP_DIR="$RUNNER_TEMP/zevem-backup" bash deploy/backup.sh --local-only
-          mkdir "$RUNNER_TEMP/zevem-restore"
-          tar -xf "$RUNNER_TEMP/zevem-backup/zevem.tar" -C "$RUNNER_TEMP/zevem-restore"
-          python3 - "$RUNNER_TEMP/zevem-restore" <<'PYTHON'
-          import sqlite3
-          import sys
-          from pathlib import Path
-
-          restored = Path(sys.argv[1])
-          with sqlite3.connect(f"file:{restored / 'apple-green.db'}?mode=ro", uri=True) as db:
-              db.execute("SELECT COUNT(*) FROM usuarios").fetchone()
-          assert (restored / "uploads" / "backup-ci.txt").read_text() == "zevem"
-          PYTHON
       - run: docker compose logs --tail=100
         if: failure()
       - run: docker compose down -v

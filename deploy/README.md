@@ -104,6 +104,9 @@ location.assign('/api/auth/google?token=' + encodeURIComponent(localStorage.getI
 
 O timer roda às 03:40 no horário de São Paulo. O arquivo local mais recente
 fica em `/var/backups/zevem/zevem.tar` e contém o SQLite e a pasta `uploads`.
+O systemd executa `deploy/backup.sh` e, se a cópia local passar, executa
+`deploy/r2-backup.sh`. Para gerar só a cópia local na VPS, rode
+`bash /opt/zevem/deploy/backup.sh`.
 O Restic guarda cópias criptografadas em um bucket exclusivo do Zevem, com
 retenção de 3 snapshots diários, 2 semanais e 3 mensais.
 

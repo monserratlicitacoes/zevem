@@ -8,6 +8,7 @@ Wants=network-online.target
 Type=oneshot
 WorkingDirectory=/opt/zevem
 ExecStart=/bin/bash /opt/zevem/deploy/backup.sh
+ExecStartPost=/bin/bash /opt/zevem/deploy/r2-backup.sh
 TimeoutStartSec=30min
 Nice=10
 IOSchedulingClass=best-effort
