@@ -50,6 +50,9 @@ nginx -t && systemctl reload nginx
    Com tudo pronto, faça um push na `main` ou execute manualmente
    **Validar e publicar Zevem** na `main`. A publicação roda após a validação.
 
+Para receber o resultado no Telegram, configure os secrets `TELEGRAM_BOT_TOKEN`
+e `TELEGRAM_CHAT_ID` no GitHub.
+
 ```bash
 curl -fsS https://app.zevem.com.br/api/health
 curl -fsS https://app.zevem.com.br/login

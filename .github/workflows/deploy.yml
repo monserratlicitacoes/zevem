@@ -66,3 +66,50 @@ jobs:
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" \
             "DEPLOY_COMMIT='$GITHUB_SHA' bash -s" < deploy/deploy.sh
+
+  notify:
+    name: Notificar Telegram
+    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [validate, deploy]
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 2
+    steps:
+      - name: Enviar resultado
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+        run: |
+          if [[ -z "$TELEGRAM_BOT_TOKEN" || -z "$TELEGRAM_CHAT_ID" ]]; then
+            echo "::warning::Configure TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID para receber notificações."
+            exit 0
+          fi
+
+          if [[ "$DEPLOY_RESULT" == "success" ]]; then
+            STATUS="✅ Deploy concluído"
+          elif [[ "$VALIDATE_RESULT" == "cancelled" || "$DEPLOY_RESULT" == "cancelled" ]]; then
+            STATUS="⚠️ Execução cancelada"
+          elif [[ "$VALIDATE_RESULT" != "success" ]]; then
+            STATUS="❌ Validação falhou"
+          elif [[ "$DEPLOY_RESULT" == "skipped" ]]; then
+            STATUS="⚠️ Deploy não executado"
+          else
+            STATUS="❌ Deploy falhou"
+          fi
+
+          MESSAGE="Zevem — ${STATUS}
+          Repositório: ${GITHUB_REPOSITORY}
+          Commit: ${GITHUB_SHA:0:7}
+          Autor: ${GITHUB_ACTOR}
+          Execução: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          curl --fail --silent --show-error --output /dev/null \
+            --connect-timeout 10 --max-time 30 \
+            --request POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}"
+          echo "Telegram aceitou a notificação."
