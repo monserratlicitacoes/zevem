@@ -53,3 +53,6 @@ backend/uploads/
 backend/.env
 backend/google_credentials.json
 backend/google_token.json
+/.env.production
+/.deploy.lock
+/.last-successful-deploy

@@ -1,0 +1,15 @@
+[Unit]
+Description=Backup local e R2 do Zevem
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/zevem
+ExecStart=/bin/bash /opt/zevem/deploy/backup.sh
+ExecStartPost=/bin/bash /opt/zevem/deploy/r2-backup.sh
+TimeoutStartSec=30min
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

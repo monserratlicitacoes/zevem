@@ -1,0 +1,13 @@
+**
+!package.json
+!package-lock.json
+!angular.json
+!tsconfig*.json
+!src/
+!src/**
+!public/
+!public/**
+!scripts/
+!scripts/**
+!deploy/
+!deploy/frontend.conf

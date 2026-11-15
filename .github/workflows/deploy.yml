@@ -1,0 +1,128 @@
+name: Validar e publicar Zevem
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zevem-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test -- --watch=false
+      - name: Validar containers
+        run: |
+          bash -n deploy/deploy.sh
+          bash -n deploy/backup.sh
+          bash -n deploy/r2-backup.sh
+          printf 'JWT_SECRET=%s\nDADOS_KEY=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > .env.production
+          docker compose config --quiet
+          docker compose up -d --build --wait --wait-timeout 120
+          test "$(curl -fsS http://127.0.0.1:3202/health)" = '{"status":"ok"}'
+          curl -fsS http://127.0.0.1:3201/login | grep '<app-root'
+      - run: docker compose logs --tail=100
+        if: failure()
+      - run: docker compose down -v
+        if: always()
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - name: Publicar via SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+        run: |
+          test -n "$DEPLOY_SSH_KEY"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          install -d -m 700 "$HOME/.ssh"
+          umask 077
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/zevem_deploy"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          ssh -i "$HOME/.ssh/zevem_deploy" -p "$DEPLOY_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_COMMIT='$GITHUB_SHA' bash -s" < deploy/deploy.sh
+
+  notify:
+    name: Notificar Telegram
+    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [validate, deploy]
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 2
+    steps:
+      - name: Enviar resultado
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          if [[ -z "$TELEGRAM_BOT_TOKEN" || -z "$TELEGRAM_CHAT_ID" ]]; then
+            echo "::warning::Configure TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID para receber notificações."
+            exit 0
+          fi
+
+          if [[ "$DEPLOY_RESULT" == "success" ]]; then
+            STATUS="✅ Deploy concluído"
+          elif [[ "$VALIDATE_RESULT" == "cancelled" || "$DEPLOY_RESULT" == "cancelled" ]]; then
+            STATUS="⚠️ Execução cancelada"
+          elif [[ "$VALIDATE_RESULT" != "success" ]]; then
+            STATUS="❌ Validação falhou"
+          elif [[ "$DEPLOY_RESULT" == "skipped" ]]; then
+            STATUS="⚠️ Deploy não executado"
+          else
+            STATUS="❌ Deploy falhou"
+          fi
+
+          COMMIT_SUBJECT="${HEAD_COMMIT_MESSAGE%%$'\n'*}"
+          COMMIT_LABEL="${GITHUB_REPOSITORY}@${GITHUB_SHA:0:7}"
+          COMMIT_SUMMARY="${COMMIT_SUBJECT:+${COMMIT_SUBJECT} · }${COMMIT_LABEL}"
+          COMMIT_SUMMARY_HTML="$(jq -nr --arg text "$COMMIT_SUMMARY" '$text | @html')"
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          COMMIT_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+          MESSAGE="Zevem — ${STATUS}
+          Repositório: ${GITHUB_REPOSITORY}
+          Commit: ${GITHUB_SHA:0:7}
+          Autor: ${GITHUB_ACTOR}
+          Execução: ${RUN_URL}
+          <blockquote><b>GitHub</b>
+          <a href=\"$COMMIT_URL\">$COMMIT_SUMMARY_HTML</a></blockquote>"
+
+          curl --fail --silent --show-error --output /dev/null \
+            --connect-timeout 10 --max-time 30 \
+            --request POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode 'link_preview_options={"is_disabled":true}' \
+            --data-urlencode "text=${MESSAGE}"
+          echo "Telegram aceitou a notificação."
