@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const Database = require('better-sqlite3');
 const { google } = require('googleapis');
+const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
@@ -202,10 +203,42 @@ app.get('/auth/google/status', auth(), (req, res) => {
 // de lista (que permitiriam incluir outros destinatários ou cabeçalhos no envio)
 const emailValido = (e) => typeof e === 'string' && e.length <= 254 && /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[a-z]{2,}$/i.test(e);
 
+// Envio pelo SMTP da caixa de e-mail do Zevem (Hostinger: smtp.hostinger.com, porta 465, SSL).
+// Com SMTP_HOST, SMTP_USER e SMTP_PASS definidos, todo e-mail sai por aqui; sem eles, vale o Gmail
+// conectado pelo master (/auth/google), se houver.
+const smtpConfigurado = () => !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+let transporteSmtp = null;
+function smtp() {
+  if (!transporteSmtp) {
+    const porta = Number(process.env.SMTP_PORT) || 465;
+    transporteSmtp = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: porta,
+      secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : porta === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      connectionTimeout: 15_000, greetingTimeout: 15_000, socketTimeout: 30_000,
+    });
+  }
+  return transporteSmtp;
+}
+function remetente() {
+  const email = (process.env.EMAIL_REMETENTE || process.env.SMTP_USER || '').trim();
+  return { name: (process.env.EMAIL_NOME || 'Zevem').trim(), address: email };
+}
+
 async function enviarEmail(destinatario, assunto, htmlBody) {
   if (!emailValido(destinatario)) throw new Error('E-mail do destinatário inválido');
+  if (smtpConfigurado()) {
+    try {
+      await smtp().sendMail({ from: remetente(), to: destinatario, subject: assunto, html: htmlBody });
+    } catch (e) {
+      console.error('[e-mail] falha no SMTP:', e.code || '', e.message);
+      throw new Error(e.code === 'EAUTH' ? 'usuário ou senha do e-mail recusados pelo servidor de e-mail' : 'servidor de e-mail indisponível');
+    }
+    return;
+  }
   const authClient = getAuthorizedClient();
-  if (!authClient) throw new Error('Google não autorizado. Acesse /auth/google para autorizar o envio de e-mails.');
+  if (!authClient) throw new Error('envio de e-mail não configurado no servidor (SMTP_HOST, SMTP_USER e SMTP_PASS)');
   const gmail = google.gmail({ version: 'v1', auth: authClient });
   const mensagem = [
     `To: ${destinatario}`,

@@ -62,42 +62,55 @@ O deploy valida os dois endereços e restaura os containers da versão anterior
 se houver falha. O volume de dados continua no lugar; alterações de esquema
 exigem uma cópia do banco para que os dados também possam ser revertidos.
 
-## Primeira conta master e envio de e-mail
+## Envio de e-mail e primeira conta master
 
-1. Cadastre no site o endereço que você incluiu em `MASTER_EMAILS`. Se o Gmail
-   ainda não estiver conectado, o cadastro será criado e o e-mail não chegará.
-2. Na VPS, recupere o link de confirmação da sua conta. Troque
-   `master@exemplo.com` pelo endereço cadastrado e abra o link em seu navegador.
+O Zevem envia os e-mails (confirmação de cadastro, nova senha e convites) pela caixa da
+Hostinger, por SMTP.
+
+1. Na VPS, acrescente ao `/opt/zevem/.env.production` o endereço e a senha da caixa
+   de e-mail do Zevem (a mesma senha do webmail da Hostinger):
+
+```bash
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_USER=contato@zevem.com.br
+SMTP_PASS=senha-da-caixa
+EMAIL_NOME=Zevem
+```
+
+   Troque `contato@zevem.com.br` pelo endereço real. Depois recrie o backend para
+   ler as variáveis novas: `cd /opt/zevem && docker compose up -d backend`.
+   Sem essas variáveis, o app cria os convites, mas avisa que o e-mail não saiu.
+   (Alternativa antiga: Gmail conectado pelo master em `/api/auth/google`, com
+   `/data/google_credentials.json`; só vale quando o SMTP não está configurado.)
+
+2. Cadastre no site o endereço que você incluiu em `MASTER_EMAILS` e confirme pelo
+   e-mail recebido.
+
+3. Se o e-mail não chegar, gere na VPS um link novo de confirmação. O banco guarda só o
+   hash do token, então o link antigo não pode ser recuperado: este comando cria outro.
+   Troque `master@exemplo.com` pelo endereço cadastrado e abra o link no navegador.
    O link é de uso único e deve ficar com o titular da conta.
 
 ```bash
 cd /opt/zevem
 docker compose exec -T backend node -e '
   const { join } = require("node:path");
+  const crypto = require("node:crypto");
   const Database = require("better-sqlite3");
   const email = process.argv[1].trim().toLowerCase();
   const masters = (process.env.MASTER_EMAILS || "").toLowerCase().split(",").map(e => e.trim());
   if (!masters.includes(email)) throw new Error("Endereço ausente em MASTER_EMAILS");
-  const db = new Database(join(process.env.DATA_DIR, "apple-green.db"), { readonly: true });
-  const conta = db.prepare("SELECT token_confirmacao FROM usuarios WHERE email = ? AND confirmado = 0").get(email);
-  if (!conta?.token_confirmacao) throw new Error("Conta pendente não encontrada");
+  const db = new Database(join(process.env.DATA_DIR, "apple-green.db"));
+  const token = crypto.randomBytes(24).toString("hex");
+  const hash = crypto.createHash("sha256").update(token).digest("hex");
+  const r = db.prepare("UPDATE usuarios SET token_confirmacao = ? WHERE lower(trim(email)) = ? AND confirmado = 0").run(hash, email);
+  if (!r.changes) throw new Error("Conta pendente não encontrada");
   const url = new URL("/confirmar-email", process.env.FRONTEND_URL);
   url.searchParams.set("email", email);
-  url.searchParams.set("token", conta.token_confirmacao);
+  url.searchParams.set("token", token);
   console.log(url.href);
 ' master@exemplo.com
-```
-
-3. Para habilitar confirmações, recuperação de senha e convites por e-mail,
-   cadastre `https://app.zevem.com.br/api/auth/google/callback` no OAuth do
-   Google e use o mesmo endereço como primeiro `redirect_uris` em
-   `google_credentials.json`. Coloque esse arquivo no volume do backend, em
-   `/data/google_credentials.json`, com leitura para o usuário do container
-   (UID 1000). Entre como master no Zevem e rode no console do navegador
-   dessa aba para abrir a autorização do Gmail:
-
-```js
-location.assign('/api/auth/google?token=' + encodeURIComponent(localStorage.getItem('token')));
 ```
 
 ## Backup local e Cloudflare R2

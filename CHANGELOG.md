@@ -3,6 +3,14 @@
 Todas as mudanças relevantes do Zevem (antigo Apple Green) ficam registradas aqui.
 Versionamento semântico: PATCH = correções e pequenos ajustes; MINOR = novas funcionalidades; MAJOR = mudanças estruturais.
 
+## [1.2.0] - 2026-11-16
+
+### Funcionalidades
+- **E-mail pela caixa da Hostinger.** Confirmação de cadastro, nova senha e convites saem por SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_REMETENTE`, `EMAIL_NOME`; padrão smtp.hostinger.com:465 com SSL). Sem SMTP configurado, vale o Gmail conectado pelo master, como antes. Quando o e-mail não sai, o aviso diz o motivo (senha recusada, servidor indisponível ou envio não configurado).
+
+### Técnico
+- Dependência `nodemailer` no backend. `deploy/README.md`: passo a passo do SMTP; o comando que gerava o link de confirmação do master passou a criar um token novo (desde a 1.1.0 o banco guarda só o hash, e o link antigo não pode ser recuperado).
+
 ## [1.1.1] - 2026-11-15
 
 ### Corrigido
