@@ -1485,6 +1485,7 @@ export class GestaoGastos implements OnInit {
           this.erroImportacao = e?.status === 0
             ? 'Sem conexão com o servidor. Verifique se o backend está ligado.'
             : e?.status === 413 ? `O arquivo é grande demais (limite de ${this.limiteFaturaMb} MB).`
+            : e?.status === 504 ? 'A leitura da fatura demorou mais que o servidor espera. Tente de novo em instantes.'
             : e?.error?.erro || 'Não foi possível importar a fatura.';
         }
         this.cdr.detectChanges();

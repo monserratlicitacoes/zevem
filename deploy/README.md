@@ -113,6 +113,24 @@ docker compose exec -T backend node -e '
 ' master@exemplo.com
 ```
 
+## Leitura de faturas em PDF (import de fatura)
+
+O import de fatura e extrato em PDF lê o arquivo com a IA da Anthropic. Sem a chave, o
+app avisa "A leitura de PDF ainda não está configurada no servidor". OFX e CSV funcionam
+sem ela.
+
+1. Crie uma chave em console.anthropic.com (API Keys) e acrescente ao
+   `/opt/zevem/.env.production`:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+2. Recrie o backend para ler a variável:
+   `cd /opt/zevem && docker compose up -d --force-recreate backend`.
+
+A mesma chave também ativa as sugestões de item para os gastos importados.
+
 ## Backup local e Cloudflare R2
 
 O timer roda às 03:40 no horário de São Paulo. O arquivo local mais recente

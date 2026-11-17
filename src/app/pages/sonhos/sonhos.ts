@@ -20,6 +20,16 @@ interface Sonho {
   valor_selado: number | null;
 }
 
+type CorpoSonho = Omit<Sonho, 'id'>;
+
+// Totais do resultado de cada simulador: cartão 1 = total do objetivo, cartão 2 = M.I.M.
+interface TotaisSim {
+  rotulo: string;
+  detalhe: string;
+  valor: number;
+  mim: { valor: number | null; detalhe: string } | null;
+}
+
 @Component({
   selector: 'app-sonhos',
   standalone: true,
@@ -401,13 +411,13 @@ export class Sonhos implements OnInit {
     reserva: null as number | null,
   };
 
-  get resultadoImovel(): { valorMeta: number; entrada: number; valorNecessario: number } {
+  // Meta do imóvel: a entrada (se financiar) ou o valor total. A reserva não é subtraída aqui:
+  // vai para a tabela como valor selado e o M.I.M. a projeta com rendimento até a compra.
+  get resultadoImovel(): { valorMeta: number; entrada: number } {
     const valorTotal = this.simImovel.valor ?? 0;
     const entrada = Math.round(valorTotal * (this.simImovel.entradaPct ?? 0) / 100);
     const valorMeta = this.simImovel.financiar ? entrada : valorTotal;
-    const reserva = this.simImovel.temReserva ? (this.simImovel.reserva ?? 0) : 0;
-    const valorNecessario = Math.max(0, valorMeta - reserva);
-    return { valorMeta, entrada, valorNecessario };
+    return { valorMeta, entrada };
   }
 
   // ── Simulador Viagem ─────────────────────────────────────────
@@ -476,23 +486,21 @@ export class Sonhos implements OnInit {
     return { totalVoo, totalDiaria, totalPasseios, totalAlimentacao, totalTransporte, totalCompras, total };
   }
 
-  adicionarViagemAosSonhos() {
-    const { total } = this.resultadoViagem;
-    const meses = this.simViagem.meses ?? 12;
-    const destino = this.destinosViagem.find(x => x.valor === this.simViagem.destino)?.nome ?? 'Viagem';
-    const hoje = new Date();
-    const dataInicio = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-    const tid = this.tempId--;
-    const temp: Sonho = { id: tid, nome: `Viagem — ${destino}`, descricao: '', valor_total: total, prazo: meses, rentabilidade: 1.0, valor_inicial: null, data_inicio: dataInicio, valor_selado: null };
-    this.sonhos = [...this.sonhos, temp];
-    this.simuladorAberto = false;
-    this.cdr.detectChanges();
-    const body = { nome: `Viagem — ${destino}`, descricao: '', valor_total: total, prazo: meses, rentabilidade: 1.0, valor_inicial: null, data_inicio: dataInicio, valor_selado: null };
-    this.http.post<Sonho>(this.api, body).subscribe({
-      next: s => { this.sonhos = this.sonhos.map(x => x.id === tid ? s : x); this.cdr.detectChanges(); },
-      error: () => { this.sonhos = this.sonhos.filter(x => x.id !== tid); this.cdr.detectChanges(); }
-    });
+  private get nomeDestinoViagem(): string {
+    return this.destinosViagem.find(x => x.valor === this.simViagem.destino)?.nome ?? 'Viagem';
   }
+
+  get corpoViagem(): CorpoSonho {
+    return this.corpoSonho(`Viagem — ${this.nomeDestinoViagem}`, this.resultadoViagem.total, this.simViagem.meses ?? 12);
+  }
+
+  get totaisViagem(): TotaisSim {
+    const { pessoas, dias } = this.simViagem;
+    const detalhe = `${this.nomeDestinoViagem} · ${pessoas} ${pessoas === 1 ? 'pessoa' : 'pessoas'} · ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
+    return this.totais('Custo total da viagem', detalhe, this.resultadoViagem.total, [this.corpoViagem]);
+  }
+
+  adicionarViagemAosSonhos() { this.incluirNaTabela([this.corpoViagem]); }
 
   // ── Novo Filho ──────────────────────────────────────────────
   simFilho = {
@@ -545,22 +553,23 @@ export class Sonhos implements OnInit {
     return { totalEnxoval: custoEnxoval, totalLicenca, total: custoEnxoval + totalLicenca };
   }
 
-  adicionarFilhoAosSonhos() {
+  get corpoFilho(): CorpoSonho | null {
     const res = this.resultadoFilho;
-    if (!res) return;
-    const hoje = new Date();
-    const dataInicio = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-    const prazo = this.simFilho.mesesAteNascimento ?? 9;
-    const tid = this.tempId--;
-    const temp: Sonho = { id: tid, nome: 'Novo Filho', descricao: '', valor_total: res.total, prazo, rentabilidade: 1.0, valor_inicial: null, data_inicio: dataInicio, valor_selado: null };
-    this.sonhos = [...this.sonhos, temp];
-    this.simuladorAberto = false;
-    this.cdr.detectChanges();
-    const body = { nome: 'Novo Filho', descricao: '', valor_total: res.total, prazo, rentabilidade: 1.0, valor_inicial: null, data_inicio: dataInicio, valor_selado: null };
-    this.http.post<Sonho>(this.api, body).subscribe({
-      next: s => { this.sonhos = this.sonhos.map(x => x.id === tid ? s : x); this.cdr.detectChanges(); },
-      error: () => { this.sonhos = this.sonhos.filter(x => x.id !== tid); this.cdr.detectChanges(); }
-    });
+    if (!res) return null;
+    return this.corpoSonho('Novo Filho', res.total, this.simFilho.mesesAteNascimento ?? 9);
+  }
+
+  get totaisFilho(): TotaisSim | null {
+    const res = this.resultadoFilho;
+    const corpo = this.corpoFilho;
+    if (!res || !corpo) return null;
+    const m = this.simFilho.mesesLicenca;
+    return this.totais('Total a reservar', `enxoval + quarto e ${m} ${m === 1 ? 'mês' : 'meses'} de licença`, res.total, [corpo]);
+  }
+
+  adicionarFilhoAosSonhos() {
+    const corpo = this.corpoFilho;
+    if (corpo) this.incluirNaTabela([corpo]);
   }
 
   readonly tiposFaculdade = [
@@ -598,18 +607,140 @@ export class Sonhos implements OnInit {
     return { itens: res, total: res.reduce((s, r) => s + (r?.total ?? 0), 0), temAlgum: res.some(r => r !== null) };
   }
 
-  adicionarFaculdadeAosSonhos() {
+  // Uma linha por filho na tabela (cada um com o próprio prazo até os 18 anos).
+  private corpoFaculdade(f: ReturnType<Sonhos['_novoFilho']>, i: number): CorpoSonho | null {
+    const res = this.calcFilho(f);
+    if (!res) return null;
+    const label = f.nome?.trim() ? `Faculdade — ${f.nome}` : `Faculdade — Filho ${i + 1}`;
+    return this.corpoSonho(label, res.total, res.prazoMeses || 12);
+  }
+
+  get corposFaculdade(): CorpoSonho[] {
+    return this.filhosFaculdade.map((f, i) => this.corpoFaculdade(f, i)).filter((c): c is CorpoSonho => c !== null);
+  }
+
+  mimFaculdade(i: number): number | null {
+    const corpo = this.corpoFaculdade(this.filhosFaculdade[i], i);
+    return corpo ? mimSonho(corpo) : null;
+  }
+
+  get totaisFaculdade(): TotaisSim {
+    const corpos = this.corposFaculdade;
+    const n = corpos.length;
+    const detalhe = n === 1 ? corpos[0].nome.replace('Faculdade — ', '') : `soma de ${n} filhos`;
+    return this.totais('Custo total da faculdade', `${detalhe} · corrigido pelo IPCA estimado de 4% a.a.`, this.resultadosFaculdade.total, corpos);
+  }
+
+  adicionarFaculdadeAosSonhos() { this.incluirNaTabela(this.corposFaculdade); }
+
+  // Leva a aposentadoria para a grade: meta = patrimônio necessário, prazo = meses até a aposentadoria
+  // e rentabilidade = a da acumulação, sem desconto da inflação (para o M.I.M. da grade bater com o aporte).
+  get corpoAposentadoria(): CorpoSonho | null {
+    const res = this.resultadoAposentadoria;
+    const ap = this.aposAporteMensal;
+    if (!res || res.patrimonio === null || !this.aposAporteOk(ap)) return null;
+    const a = this.simAposentadoria;
+    const formato = a.formatoRenda === 'perene' ? 'Fluxo perene' : `Consumo de estoque até ${a.idadeMorte} anos`;
+    const inflacao = a.inflacaoAa ? ` − inflação ${this.fmtPct(a.inflacaoAa)}% a.a.` : '';
+    const descricao = `${formato} · renda de R$ ${this.fmtMoeda(res.rendaAGerar)}/mês · ${this.fmtPct(a.rentabilidadeAm)}% a.m.${inflacao}`;
+    return this.corpoSonho('Aposentadoria', Math.round(res.patrimonio * 100) / 100, ap.meses, { rentabilidade: ap.taxaAm, descricao });
+  }
+
+  // Cartão 1 = patrimônio necessário; cartão 2 (M.I.M.) só quando há prazo até a aposentadoria.
+  get totaisAposentadoria(): TotaisSim | null {
+    const res = this.resultadoAposentadoria;
+    if (!res || res.erro || res.patrimonio === null) return null;
+    const formato = this.simAposentadoria.formatoRenda === 'perene' ? 'fluxo perene' : 'consumo de estoque';
+    const corpo = this.corpoAposentadoria;
+    return this.totais(`Patrimônio necessário · ${formato}`, '', res.patrimonio, corpo ? [corpo] : []);
+  }
+
+  adicionarAposentadoriaAosSonhos() {
+    const corpo = this.corpoAposentadoria;
+    if (corpo) this.incluirNaTabela([corpo]);
+  }
+
+  get corpoImovel(): CorpoSonho {
+    const reserva = this.simImovel.temReserva ? (this.simImovel.reserva ?? null) : null;
+    return this.corpoSonho('Imóvel', this.resultadoImovel.valorMeta, this.simImovel.meses ?? 12, { valor_selado: reserva });
+  }
+
+  get totaisImovel(): TotaisSim {
+    const i = this.simImovel;
+    const rotulo = i.financiar ? `Valor da entrada · ${i.entradaPct}% do imóvel` : 'Valor total do imóvel';
+    const reserva = i.temReserva && i.reserva ? i.reserva : 0;
+    const detalhe = reserva ? `R$ ${this.fmtMoeda(reserva)} já reservados entram como valor selado e rendem até a compra` : '';
+    return this.totais(rotulo, detalhe, this.resultadoImovel.valorMeta, [this.corpoImovel]);
+  }
+
+  adicionarImovelAosSonhos() { this.incluirNaTabela([this.corpoImovel]); }
+
+  get corpoCarro(): CorpoSonho {
+    const marca = this.fipeMarcas.find(m => m.codigo === this.fipeMarcaCod)?.nome ?? '';
+    const modelo = this.fipeModelos.find(m => String(m.codigo) === String(this.fipeModeloCod))?.nome ?? '';
+    const nomeCarro = `${marca} ${modelo}`.trim() || 'Carro';
+    return this.corpoSonho(nomeCarro, this.resultadoCarro.valorNecessario, this.simCarro.meses ?? 12);
+  }
+
+  get totaisCarro(): TotaisSim {
+    const r = this.resultadoCarro;
+    const detalhe = r.valorAtual > 0 ? `carro novo de R$ ${this.fmtMoeda(r.valorNovo)} − carro atual de R$ ${this.fmtMoeda(r.valorAtual)}` : '';
+    return this.totais('Valor necessário para o carro', detalhe, r.valorNecessario, [this.corpoCarro]);
+  }
+
+  adicionarCarroAosSonhos() { this.incluirNaTabela([this.corpoCarro]); }
+
+  get resultadoCarro(): { valorNovo: number; valorAtual: number; valorNecessario: number } {
+    const valorNovo = this.simCarro.valorNovo ?? 0;
+    const valorAtual = this.simCarro.temCarroAtual
+      ? (this.simCarro.valorAtualEditado ?? this.valorCarroAtualDaqui ?? this.simCarro.valorAtual ?? 0)
+      : 0;
+    const valorNecessario = Math.max(0, valorNovo - valorAtual);
+    return { valorNovo, valorAtual, valorNecessario };
+  }
+
+  // ── Base comum dos simuladores ──────────────────────────────
+  // O corpo de cada simulação é o mesmo objeto que vai para a tabela ao clicar em "Adicionar":
+  // o M.I.M. mostrado no simulador sai de mimSonho() sobre esse corpo, a mesma conta da coluna M.I.M.
+  private corpoSonho(nome: string, valorTotal: number, prazo: number,
+                     extra: { rentabilidade?: number; valor_selado?: number | null; descricao?: string } = {}): CorpoSonho {
     const hoje = new Date();
     const dataInicio = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-    this.filhosFaculdade.forEach((f, i) => {
-      const res = this.calcFilho(f);  // already computed, call once per child
-      if (!res) return;
-      const label = f.nome?.trim() ? `Faculdade — ${f.nome}` : `Faculdade — Filho ${i + 1}`;
-      const prazo = res.prazoMeses || 12;
+    return {
+      nome, descricao: extra.descricao ?? '', valor_total: valorTotal, prazo,
+      rentabilidade: extra.rentabilidade ?? 1.0, valor_inicial: null, data_inicio: dataInicio,
+      valor_selado: extra.valor_selado ?? null,
+    };
+  }
+
+  // Cartão 1 (total do objetivo) + cartão 2 (M.I.M. = soma das linhas que irão para a tabela).
+  private totais(rotulo: string, detalhe: string, valor: number, corpos: CorpoSonho[]): TotaisSim {
+    if (!corpos.length) return { rotulo, detalhe, valor, mim: null };
+    const mims = corpos.map(c => mimSonho(c));
+    const valorMim = mims.some(m => m !== null) ? mims.reduce<number>((t, m) => t + (m ?? 0), 0) : null;
+    const taxa = `rentabilidade de ${this.fmtPct(corpos[0].rentabilidade)}% a.m.`;
+    let detalheMim: string;
+    if (corpos.length === 1) {
+      const n = corpos[0].prazo;
+      const hoje = new Date();
+      const fim = new Date(hoje.getFullYear(), hoje.getMonth() + n, 1);
+      detalheMim = `por ${n} ${n === 1 ? 'mês' : 'meses'}, de hoje até ${this.fmtMesAno(fim)} · ${taxa}`;
+    } else {
+      detalheMim = `soma das ${corpos.length} linhas que vão para a tabela, uma por filho · ${taxa}`;
+    }
+    return { rotulo, detalhe, valor, mim: { valor: valorMim, detalhe: detalheMim } };
+  }
+
+  // Mesmo valor da coluna M.I.M. (que mostra o valor inteiro), no formato com centavos dos cartões.
+  fmtMim(v: number | null): string {
+    return v === null || v === undefined ? '-' : this.fmtMoeda(Math.round(v));
+  }
+
+  private incluirNaTabela(corpos: CorpoSonho[]) {
+    if (!corpos.length) return;
+    corpos.forEach(body => {
       const tid = this.tempId--;
-      const temp: Sonho = { id: tid, nome: label, descricao: '', valor_total: res.total, prazo, rentabilidade: 1.0, valor_inicial: null, data_inicio: dataInicio, valor_selado: null };
-      this.sonhos = [...this.sonhos, temp];
-      const body = { nome: label, descricao: '', valor_total: res.total, prazo, rentabilidade: 1.0, valor_inicial: null, data_inicio: dataInicio, valor_selado: null };
+      this.sonhos = [...this.sonhos, { id: tid, ...body }];
       this.http.post<Sonho>(this.api, body).subscribe({
         next: s => { this.sonhos = this.sonhos.map(x => x.id === tid ? s : x); this.cdr.detectChanges(); },
         error: () => { this.sonhos = this.sonhos.filter(x => x.id !== tid); this.cdr.detectChanges(); }
@@ -617,83 +748,6 @@ export class Sonhos implements OnInit {
     });
     this.simuladorAberto = false;
     this.cdr.detectChanges();
-  }
-
-  // Leva a aposentadoria para a grade: meta = patrimônio necessário, prazo = meses até a aposentadoria
-  // e rentabilidade = a da acumulação, sem desconto da inflação (para o M.I.M. da grade bater com o aporte).
-  adicionarAposentadoriaAosSonhos() {
-    const res = this.resultadoAposentadoria;
-    const ap = this.aposAporteMensal;
-    if (!res || res.patrimonio === null || !this.aposAporteOk(ap)) return;
-    const a = this.simAposentadoria;
-    const hoje = new Date();
-    const dataInicio = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-    const formato = a.formatoRenda === 'perene' ? 'Fluxo perene' : `Consumo de estoque até ${a.idadeMorte} anos`;
-    const inflacao = a.inflacaoAa ? ` − inflação ${this.fmtPct(a.inflacaoAa)}% a.a.` : '';
-    const descricao = `${formato} · renda de R$ ${this.fmtMoeda(res.rendaAGerar)}/mês · ${this.fmtPct(a.rentabilidadeAm)}% a.m.${inflacao}`;
-    const body = {
-      nome: 'Aposentadoria', descricao,
-      valor_total: Math.round(res.patrimonio * 100) / 100,
-      prazo: ap.meses,
-      rentabilidade: ap.taxaAm,
-      valor_inicial: null, data_inicio: dataInicio, valor_selado: null,
-    };
-    const tid = this.tempId--;
-    this.sonhos = [...this.sonhos, { id: tid, ...body } as Sonho];
-    this.simuladorAberto = false;
-    this.cdr.detectChanges();
-    this.http.post<Sonho>(this.api, body).subscribe({
-      next: s => { this.sonhos = this.sonhos.map(x => x.id === tid ? s : x); this.cdr.detectChanges(); },
-      error: () => { this.sonhos = this.sonhos.filter(x => x.id !== tid); this.cdr.detectChanges(); }
-    });
-  }
-
-  adicionarImovelAosSonhos() {
-    const meses = this.simImovel.meses ?? 12;
-    const hoje = new Date();
-    const dataInicio = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-    const tid = this.tempId--;
-    const reserva = this.simImovel.temReserva ? (this.simImovel.reserva ?? null) : null;
-    const temp: Sonho = { id: tid, nome: 'Imóvel', descricao: '', valor_total: this.resultadoImovel.valorMeta, prazo: meses, rentabilidade: 1.0, valor_inicial: null, data_inicio: dataInicio, valor_selado: reserva };
-    this.sonhos = [...this.sonhos, temp];
-    this.simuladorAberto = false;
-    this.cdr.detectChanges();
-    const body = { nome: 'Imóvel', descricao: '', valor_total: this.resultadoImovel.valorMeta, prazo: meses, rentabilidade: 1.0, valor_inicial: null, data_inicio: dataInicio, valor_selado: reserva };
-    this.http.post<Sonho>(this.api, body).subscribe({
-      next: s => { this.sonhos = this.sonhos.map(x => x.id === tid ? s : x); this.cdr.detectChanges(); },
-      error: () => { this.sonhos = this.sonhos.filter(x => x.id !== tid); this.cdr.detectChanges(); }
-    });
-  }
-
-  adicionarCarroAosSonhos() {
-    const { valorNecessario } = this.resultadoCarro;
-    const meses = this.simCarro.meses ?? 12;
-    const hoje = new Date();
-    const dataInicio = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-    const tid = this.tempId--;
-    const marca = this.fipeMarcas.find(m => m.codigo === this.fipeMarcaCod)?.nome ?? '';
-    const modelo = this.fipeModelos.find(m => String(m.codigo) === String(this.fipeModeloCod))?.nome ?? '';
-    const nomeCarro = `${marca} ${modelo}`.trim() || 'Carro';
-    const temp: Sonho = { id: tid, nome: nomeCarro, descricao: '', valor_total: valorNecessario, prazo: meses, rentabilidade: 1.0, valor_inicial: null, data_inicio: dataInicio, valor_selado: null };
-    this.sonhos = [...this.sonhos, temp];
-    this.simuladorAberto = false;
-    this.cdr.detectChanges();
-    const body = { nome: nomeCarro, descricao: '', valor_total: valorNecessario, prazo: meses, rentabilidade: 1.0, valor_inicial: null, data_inicio: dataInicio, valor_selado: null };
-    this.http.post<Sonho>(this.api, body).subscribe({
-      next: s => { this.sonhos = this.sonhos.map(x => x.id === tid ? s : x); this.cdr.detectChanges(); },
-      error: () => { this.sonhos = this.sonhos.filter(x => x.id !== tid); this.cdr.detectChanges(); }
-    });
-  }
-
-  get resultadoCarro(): { valorNecessario: number; mim: number } {
-    const valorNovo = this.simCarro.valorNovo ?? 0;
-    const valorAtual = this.simCarro.temCarroAtual
-      ? (this.simCarro.valorAtualEditado ?? this.valorCarroAtualDaqui ?? this.simCarro.valorAtual ?? 0)
-      : 0;
-    const meses = this.simCarro.meses ?? 1;
-    const valorNecessario = Math.max(0, valorNovo - valorAtual);
-    const mim = meses > 0 ? Math.round(valorNecessario / meses) : 0;
-    return { valorNecessario, mim };
   }
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}

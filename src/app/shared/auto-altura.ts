@@ -1,11 +1,14 @@
-import { AfterViewInit, Directive, ElementRef, HostListener, OnDestroy, Optional } from '@angular/core';
+import { AfterViewInit, Directive, ElementRef, HostListener, Input, OnDestroy, Optional } from '@angular/core';
 import { NgModel } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
-// Caixa de texto de uma linha que cresce em altura quando o texto não cabe na largura da coluna.
+// Caixa de texto de uma linha que cresce em altura quando o texto não cabe na largura da coluna,
+// até `autoAlturaMax` linhas (padrão 2). O que passar disso fica cortado com um esmaecido no fim
+// e aparece inteiro ao passar o mouse (title); durante a edição, rola dentro das 2 linhas.
 // Enter não quebra linha: sai do campo (dispara o blur, que salva).
 @Directive({ selector: 'textarea[autoAltura]' })
 export class AutoAltura implements AfterViewInit, OnDestroy {
+  @Input() autoAlturaMax = 2;
   private observador?: ResizeObserver;
   private mudancas?: Subscription;
   private larguraAnterior = 0;
@@ -36,10 +39,22 @@ export class AutoAltura implements AfterViewInit, OnDestroy {
   }
 
   @HostListener('input')
+  @HostListener('blur')
   ajustar() {
     const t = this.el.nativeElement;
+    const estilo = getComputedStyle(t);
+    const linha = parseFloat(estilo.lineHeight) || 18;
+    const respiro = parseFloat(estilo.paddingTop) + parseFloat(estilo.paddingBottom);
+    const maximo = Math.ceil(linha * this.autoAlturaMax + respiro);
     t.style.height = 'auto';
-    t.style.height = `${t.scrollHeight}px`;
+    const precisa = t.scrollHeight;
+    t.style.height = `${Math.min(precisa, maximo)}px`;
+    // Direto no elemento: o ajuste roda fora dos eventos do Angular (timers, ResizeObserver)
+    const cortado = precisa > maximo + 1;
+    t.classList.toggle('cortado', cortado);
+    if (cortado) t.title = t.value; else t.removeAttribute('title');
+    // Fora da edição volta ao começo do texto (a rolagem da edição não fica pela metade)
+    if (document.activeElement !== t) t.scrollTop = 0;
   }
 
   @HostListener('keydown.enter', ['$event'])

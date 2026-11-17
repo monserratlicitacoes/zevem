@@ -187,6 +187,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   // Rótulo da faixa sob o valor: a sálvia é clara demais para texto no claro e escura demais no noturno
   corRotuloFaixa(cor: string): string {
     if (cor === COR.salvia) return this.noturno ? '#b9d3c2' : COR.floresta;
+    // No escuro o rosa puro em letra pequena fica apagado: usa o rosa claro do verso do cartão
+    if (cor === COR.rosa && this.noturno) return '#ff6b8e';
     return this.tomDestaque(cor);
   }
 

@@ -99,7 +99,23 @@
                 </td>
                 <td class="td-center td-venc">
                   @switch (tipoVencimento(g)) {
-                    @case ('cartao') { <span class="venc-info" title="Pago no cartão: vence com a fatura">Fatura</span> }
+                    @case ('cartao') {
+                      @if (cartoes.length > 1) {
+                        <!-- Fechado, o campo mostra o vencimento da fatura; aberto, a lista traz nome e dia de cada cartão -->
+                        <span class="cartao-campo" [class.pendente]="!cartaoDoGasto(g)?.dia_vencimento">
+                          <span class="cartao-rotulo" aria-hidden="true">{{ campoCartao(g) }}</span>
+                          <select class="sel-venc sel-cartao" [(ngModel)]="g.cartao_id"
+                            (change)="onCartaoChange(g)" [title]="tituloFatura(g)">
+                            <option [ngValue]="null">cartão?</option>
+                            @for (c of cartoes; track c.id) { <option [ngValue]="c.id">{{ rotuloCartao(c) }}</option> }
+                          </select>
+                        </span>
+                      } @else {
+                        <span class="venc-info" [title]="tituloFatura(g)">
+                          Fatura{{ cartaoDoGasto(g)?.dia_vencimento ? ' · dia ' + cartaoDoGasto(g)?.dia_vencimento : '' }}
+                        </span>
+                      }
+                    }
                     @case ('dia') {
                       <input class="input-venc" type="text" inputmode="numeric" maxlength="2" placeholder="dia"
                         title="Dia do mês em que a conta vence" [value]="g.dia_vencimento ?? ''" (blur)="onDiaVencimentoBlur($event, g)" />

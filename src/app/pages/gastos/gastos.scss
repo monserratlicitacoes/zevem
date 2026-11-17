@@ -238,8 +238,15 @@
   padding: 9px 4px;
   resize: none;
   overflow: hidden;
-  &:focus { background: $off-white; border-radius: 6px; }
+  &:focus { background: $off-white; border-radius: 6px; overflow-y: auto; }
   &::placeholder { color: $borda-forte; }
+  // Texto maior que 2 linhas (autoAltura): esmaece o fim da 2ª linha; o texto inteiro aparece no hover
+  &.cortado:not(:focus) {
+    // 9px de respiro + 1ª linha (18px) inteira; 2ª linha esmaecendo no fim; nada abaixo dela
+    $l2: linear-gradient(to right, #000 calc(100% - 40px), transparent) 0 27px / 100% 18px no-repeat;
+    -webkit-mask: linear-gradient(#000, #000) 0 0 / 100% 27px no-repeat, $l2;
+    mask: linear-gradient(#000, #000) 0 0 / 100% 27px no-repeat, $l2;
+  }
 }
 
 .td-center { text-align: center; }
@@ -575,4 +582,33 @@
   cursor: pointer;
   &:focus { border-color: $lima; }
 }
-.venc-info { font-size: 11px; font-weight: 600; color: $apagado; }
+.venc-info { font-size: 11px; font-weight: 600; color: $apagado; white-space: nowrap; }
+// Cartão do gasto (2+ cartões): o campo fechado mostra o dia do vencimento ("10"); a lista, nome e dia
+// de cada cartão. O texto do select fica transparente e o rótulo por cima mostra o vencimento.
+.cartao-campo {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+.cartao-rotulo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center; // centralizado como o campo de dia das outras linhas
+  font-size: 12px;
+  font-weight: 600;
+  color: $profundo;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+}
+.sel-cartao {
+  color: transparent;
+  option { color: $profundo; }
+}
+// Sem cartão escolhido ou cartão sem dia de vencimento cadastrado
+.cartao-campo.pendente {
+  .sel-cartao { border-style: dashed; border-color: $alerta; }
+  .cartao-rotulo { color: $alerta; }
+}

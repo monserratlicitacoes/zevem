@@ -683,6 +683,131 @@
   &:hover { background: $lima-hover; }
 }
 
+.btn-calcular:disabled { opacity: 0.6; cursor: default; }
+
+// ── Simulador: adicionar o financiamento simulado à tabela ────
+.sim-adicionar {
+  border: 1.5px solid $borda;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.sim-adicionar-campos {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sim-adicionar-acoes {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sim-msg {
+  font-size: 12px;
+  font-weight: 600;
+  color: $floresta;
+  &.erro { color: $erro; }
+}
+
+.sim-nota {
+  font-size: 12px;
+  color: $suave;
+  line-height: 1.5;
+  margin: 0 0 12px;
+  strong { color: $profundo; }
+}
+
+.sim-aviso {
+  margin-top: 16px;
+  background: $alerta-claro;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: $profundo;
+}
+
+// ── Simulador: Quitação Antecipada ────────────────────────────
+// Totais em destaque no padrão do app: cartão verde profundo, rótulo claro à esquerda e valor em lima à direita
+.sim-totais {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.sim-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: $profundo;
+  border-radius: 10px;
+  padding: 14px 18px;
+
+  span {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(247, 248, 245, 0.85);
+  }
+  strong {
+    font-size: 20px;
+    font-weight: 700;
+    color: $lima;
+    white-space: nowrap;
+  }
+}
+
+.sim-total-largo { grid-column: 1 / -1; strong { font-size: 24px; } }
+
+.sim-tabela-auto {
+  max-height: none;
+  margin-bottom: 12px;
+}
+
+.sim-tabela th.sth-left { text-align: left; }
+.stl { text-align: left; font-weight: 600; }
+
+.sim-subtitulo {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: $profundo;
+  margin: 20px 0 8px;
+}
+
+.sim-comparativo {
+  tbody tr { cursor: pointer; }
+  // Valores em uma linha só (o negrito da linha escolhida alargava e quebrava "R$ 1.435")
+  .str { white-space: nowrap; }
+  tr.selecionada td { font-weight: 700; background: $off-white; }
+  tr.melhor td { background: $lima-claro; }
+  tr.melhor:hover td { background: $lima-claro; }
+  .na { color: $apagado; font-weight: 400; text-align: left; white-space: normal; }
+}
+
+.selo-melhor {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: $raio-selo;
+  background: $profundo;
+  color: $lima;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .sim-adicionar-campos, .sim-totais { grid-template-columns: 1fr; }
+}
+
 // ── Modal Dashboard ───────────────────────────────────────────
 .modal-overlay {
   position: fixed;

@@ -3,6 +3,32 @@
 Todas as mudanças relevantes do Zevem (antigo Apple Green) ficam registradas aqui.
 Versionamento semântico: PATCH = correções e pequenos ajustes; MINOR = novas funcionalidades; MAJOR = mudanças estruturais.
 
+## [1.3.0] - 2026-11-17
+
+### Funcionalidades
+- **Quitação Antecipada** (nova aba do Simulador de Dívidas). O cliente escolhe uma dívida da tabela, informa o aporte e a modalidade e vê o antes e depois de: saldo devedor, parcela, prazo e juros a pagar, mais a economia. Modalidades: antecipar parcelas (pagando as últimas), pagar as próximas parcelas, amortizar o saldo reduzindo a parcela, amortizar o saldo reduzindo o prazo e quitação total. Embaixo, um comparativo das cinco com o selo "maior economia". É só simulação: a dívida não muda. Dívida em SAC é simulada como parcela fixa, com aviso de valor aproximado.
+- **Financiamento simulado vai para a tabela de Dívidas.** Depois de calcular, o botão "+ Adicionar à tabela de Dívidas" grava a dívida com descrição, guia e data de início. As parcelas que já venceram até hoje saem das restantes.
+- **M.I.M. em todos os simuladores de Sonhos.** As seis abas (Aposentadoria, Imóvel, Carro, Viagem, Novo Filho, Faculdade) mostram o mesmo resultado: o cartão do total e o do "Investimento mensal necessário", com prazo, mês final e rentabilidade, mais o botão "+ Adicionar à tabela de Sonhos".
+- **Cartão de cada gasto.** Quem tem mais de um cartão escolhe, na linha do gasto pago no cartão, em qual cartão ele cai, e o aviso de vencimento usa o dia da fatura desse cartão. O campo mostra o dia de vencimento da fatura, só o número e centralizado, como nas outras linhas, e a lista aberta mostra o nome e o dia de cada cartão. Sem cartão escolhido, ou com um cartão sem dia de vencimento cadastrado, o campo fica tracejado em âmbar ("cartão?" ou "?"). Com um cartão só, nada muda.
+- **Titular no cadastro de pessoas.** Quem cria a conta já aparece em Configurações › Usuários, com nome e e-mail. Contas antigas sem nenhuma pessoa recebem o titular ao subir o servidor; planejadores ficam de fora.
+
+### Alterado
+- Gastos: a descrição ocupa no máximo duas linhas, então todas as linhas da tabela ficam com a mesma altura. O texto que não cabe termina esmaecido e aparece inteiro ao passar o mouse. Durante a edição, o texto rola dentro das duas linhas.
+
+### Corrigido
+- **Versão noturna:**
+  - Textos vermelhos, rosas e âmbar ficaram mais claros, no mesmo tom. Antes ficavam escuros demais sobre o fundo verde.
+  - Os rótulos "Elevado" e "Ruim" dos medidores do Dashboard usam o rosa claro.
+  - Botões verde-limão sem cor de texto própria (ex.: "Enviar convite" e "Criar assinatura" na área master) voltaram a ter letra escura.
+- **Import de fatura em PDF na produção:**
+  - Faltava a chave da Anthropic no servidor; ela já foi configurada.
+  - O nginx da VPS cortava a leitura depois de 60 s (resposta "Não foi possível importar a fatura"). Agora espera até 5 min (`proxy_read_timeout` em `deploy/nginx-host/zevem-https.conf`; aplicar na VPS).
+  - Se o tempo ainda estourar, a tela diz que a leitura demorou.
+
+### Técnico
+- Coluna `gastos.cartao_id`. Ao excluir um cartão, os gastos dele voltam a "sem cartão".
+- As contas da quitação ficam em `src/app/pages/dividas/quitacao.ts`, separadas do componente.
+
 ## [1.2.0] - 2026-11-16
 
 ### Funcionalidades

@@ -9,6 +9,7 @@ export interface Gasto {
   categoria: string;
   descricao: string;
   com_cartao: boolean;
+  cartao_id?: number | null; // pago no cartão: qual cartão (vence com a fatura dele)
   classe: string;
   valor: number;
   valor_mensal?: number;

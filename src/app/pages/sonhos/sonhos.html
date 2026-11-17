@@ -443,21 +443,11 @@
                 </p>
                 @if (res.erro) {
                   <span class="sim-erro">{{ res.erro }}</span>
-                } @else {
-                  <div class="sim-res-total">
-                    <span class="sim-res-label">Patrimônio necessário · {{ simAposentadoria.formatoRenda === 'perene' ? 'fluxo perene' : 'consumo de estoque' }}</span>
-                    <span class="sim-res-val">R$ {{ fmtMoeda(res.patrimonio) }}</span>
-                  </div>
+                } @else if (totaisAposentadoria; as t) {
+                  <ng-container *ngTemplateOutlet="cardsTotais; context: { $implicit: t }" />
                 }
                 @if (aposAporteMensal; as ap) {
                   @if (aposAporteOk(ap)) {
-                    <div class="sim-res-total">
-                      <span class="sim-res-label">
-                        Investimento mensal necessário
-                        <small class="sim-res-sub">por {{ ap.meses }} meses, de hoje até {{ fmtMesAno(ap.dataAposentadoria) }} · rentabilidade de {{ fmtPct(ap.taxaAm) }}% a.m.</small>
-                      </span>
-                      <span class="sim-res-val">R$ {{ fmtMoeda(ap.valor) }}</span>
-                    </div>
                     <button class="btn-adicionar-sonho" (click)="adicionarAposentadoriaAosSonhos()" type="button">
                       <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
                         <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -623,16 +613,19 @@
             @if (simCarro.valorNovo && simCarro.meses) {
               <div class="sim-resultado-carro">
                 <p class="sim-secao-titulo">Resultado</p>
-                <div class="sim-resultado-grid">
-                  <div class="sim-res-item">
-                    <span class="sim-res-label">Valor necessário</span>
-                    <span class="sim-res-val">R$ {{ fmt(resultadoCarro.valorNecessario) }}</span>
+                @if (resultadoCarro.valorAtual > 0) {
+                  <div class="sim-resultado-grid">
+                    <div class="sim-res-item">
+                      <span class="sim-res-label">Valor do carro novo</span>
+                      <span class="sim-res-val">R$ {{ fmt(resultadoCarro.valorNovo) }}</span>
+                    </div>
+                    <div class="sim-res-item">
+                      <span class="sim-res-label">(−) Carro atual daqui a {{ simCarro.meses }} meses</span>
+                      <span class="sim-res-val">R$ {{ fmt(resultadoCarro.valorAtual) }}</span>
+                    </div>
                   </div>
-                  <div class="sim-res-item">
-                    <span class="sim-res-label">M.I.M. estimado</span>
-                    <span class="sim-res-val sim-res-destaque">R$ {{ fmt(resultadoCarro.mim) }}</span>
-                  </div>
-                </div>
+                }
+                <ng-container *ngTemplateOutlet="cardsTotais; context: { $implicit: totaisCarro }" />
                 <button class="btn-adicionar-sonho" (click)="adicionarCarroAosSonhos()" type="button">
                   <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
                     <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -707,25 +700,23 @@
             @if (simImovel.valor && simImovel.entradaPct && simImovel.meses) {
               <div class="sim-resultado-carro">
                 <p class="sim-secao-titulo">Resultado</p>
-                <div class="sim-resultado-grid">
-                  @if (simImovel.financiar) {
-                    <div class="sim-res-item">
-                      <span class="sim-res-label">Valor da entrada ({{ simImovel.entradaPct }}%)</span>
-                      <span class="sim-res-val">R$ {{ fmt(resultadoImovel.entrada) }}</span>
-                    </div>
-                  } @else {
-                    <div class="sim-res-item">
-                      <span class="sim-res-label">Valor total do imóvel</span>
-                      <span class="sim-res-val">R$ {{ fmt(simImovel.valor) }}</span>
-                    </div>
-                  }
-                  @if (simImovel.temReserva && simImovel.reserva) {
-                    <div class="sim-res-item">
-                      <span class="sim-res-label">Valor necessário (− reserva)</span>
-                      <span class="sim-res-val">R$ {{ fmt(resultadoImovel.valorNecessario) }}</span>
-                    </div>
-                  }
-                </div>
+                @if (simImovel.financiar || (simImovel.temReserva && simImovel.reserva)) {
+                  <div class="sim-resultado-grid">
+                    @if (simImovel.financiar) {
+                      <div class="sim-res-item">
+                        <span class="sim-res-label">Valor total do imóvel</span>
+                        <span class="sim-res-val">R$ {{ fmt(simImovel.valor) }}</span>
+                      </div>
+                    }
+                    @if (simImovel.temReserva && simImovel.reserva) {
+                      <div class="sim-res-item">
+                        <span class="sim-res-label">Valor já reservado</span>
+                        <span class="sim-res-val">R$ {{ fmt(simImovel.reserva) }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+                <ng-container *ngTemplateOutlet="cardsTotais; context: { $implicit: totaisImovel }" />
                 <button class="btn-adicionar-sonho" (click)="adicionarImovelAosSonhos()" type="button">
                   <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
                     <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -894,10 +885,7 @@
                   </div>
                 </div>
 
-                <div class="sim-res-total">
-                  <span class="sim-res-label">Total geral</span>
-                  <span class="sim-res-val">R$ {{ fmt(resultadoViagem.total) }}</span>
-                </div>
+                <ng-container *ngTemplateOutlet="cardsTotais; context: { $implicit: totaisViagem }" />
 
                 <button class="btn-adicionar-sonho" (click)="adicionarViagemAosSonhos()" type="button">
                   <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
@@ -1006,10 +994,9 @@
                     <span class="sim-res-val">R$ {{ fmt(res.totalLicenca) }}</span>
                   </div>
                 </div>
-                <div class="sim-res-total">
-                  <span class="sim-res-label">Total a reservar</span>
-                  <span class="sim-res-val">R$ {{ fmt(res.total) }}</span>
-                </div>
+                @if (totaisFilho; as t) {
+                  <ng-container *ngTemplateOutlet="cardsTotais; context: { $implicit: t }" />
+                }
                 <button class="btn-adicionar-sonho" (click)="adicionarFilhoAosSonhos()" type="button">
                   <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
                     <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -1117,6 +1104,7 @@
                         @if (filho.tipo !== 'publica') { Mensalidades <strong>R$ {{ fmt(res.totalMensalidades) }}</strong> · }
                         @if (filho.morarFora) { Moradia <strong>R$ {{ fmt(res.totalMoradia) }}</strong> · }
                         Prazo <strong>{{ res.prazoMeses }} meses</strong>
+                        · M.I.M. <strong>R$ {{ fmtMim(mimFaculdade($index)) }}</strong>
                       </span>
                       <span class="fac-res-total">R$ {{ fmt(res.total) }}</span>
                     </div>
@@ -1134,11 +1122,8 @@
 
             @if (resultadosFaculdade.temAlgum) {
               <div class="sim-resultado-carro">
-                <p class="sim-secao-titulo">Total geral</p>
-                <div class="sim-res-total">
-                  <span class="sim-res-label">Soma de todos os filhos</span>
-                  <span class="sim-res-val">R$ {{ fmt(resultadosFaculdade.total) }}</span>
-                </div>
+                <p class="sim-secao-titulo">Resultado</p>
+                <ng-container *ngTemplateOutlet="cardsTotais; context: { $implicit: totaisFaculdade }" />
                 <button class="btn-adicionar-sonho" (click)="adicionarFaculdadeAosSonhos()" type="button">
                   <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
                     <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -1154,3 +1139,24 @@
     </div>
   </div>
 }
+
+<!-- Totais finais de todos os simuladores: cartão 1 = total do objetivo, cartão 2 = M.I.M.
+     (o mesmo valor que aparece na coluna M.I.M. depois de "Adicionar à tabela de Sonhos"). -->
+<ng-template #cardsTotais let-t>
+  <div class="sim-res-total">
+    <span class="sim-res-label">
+      {{ t.rotulo }}
+      @if (t.detalhe) { <small class="sim-res-sub">{{ t.detalhe }}</small> }
+    </span>
+    <span class="sim-res-val">R$ {{ fmtMoeda(t.valor) }}</span>
+  </div>
+  @if (t.mim) {
+    <div class="sim-res-total">
+      <span class="sim-res-label">
+        Investimento mensal necessário
+        <small class="sim-res-sub">{{ t.mim.detalhe }}</small>
+      </span>
+      <span class="sim-res-val">R$ {{ fmtMim(t.mim.valor) }}</span>
+    </div>
+  }
+</ng-template>

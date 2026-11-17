@@ -187,6 +187,9 @@
           <button class="sim-aba" [class.ativa]="simAba === 'taxas'" (click)="simAba = 'taxas'; convResultado = null">
             Conversão de Taxas
           </button>
+          <button class="sim-aba" [class.ativa]="simAba === 'quitacao'" (click)="simAba = 'quitacao'">
+            Quitação Antecipada
+          </button>
         </div>
 
         @if (simAba === 'financiamento') {
@@ -269,6 +272,41 @@
                     <span class="sim-card-val">R$ {{ fmtSim(simResultado.totalJuros) }}</span>
                   </div>
                 </div>
+
+                <div class="sim-adicionar">
+                  <div class="sim-adicionar-campos">
+                    <div class="sim-campo sim-adicionar-nome">
+                      <label>Descrição na tabela</label>
+                      <div class="sim-input-wrap">
+                        <input type="text" [(ngModel)]="addNome" maxlength="120" placeholder="Ex: Financiamento do carro" class="sim-input" />
+                      </div>
+                    </div>
+                    <div class="sim-campo">
+                      <label>Guia</label>
+                      <select [(ngModel)]="addGuia" class="sim-select">
+                        <option value="financeiros">Financeiros</option>
+                        <option value="imobilizados">Imobilizados</option>
+                      </select>
+                    </div>
+                    <div class="sim-campo">
+                      <label>Data de início</label>
+                      <div class="sim-input-wrap">
+                        <input type="date" [(ngModel)]="addInicio" class="sim-input" />
+                      </div>
+                    </div>
+                  </div>
+                  @if (addParcelasPagas > 0) {
+                    <p class="sim-nota">Desde a data de início já venceram {{ fmtPrazo(addParcelasPagas) }}: a dívida entra com {{ simResultado.parcelas.length - addParcelasPagas }} parcelas restantes.</p>
+                  }
+                  <div class="sim-adicionar-acoes">
+                    <button class="btn-calcular" (click)="adicionarSimulado()" [disabled]="addSalvando">
+                      {{ addSalvando ? 'Adicionando…' : '+ Adicionar à tabela de Dívidas' }}
+                    </button>
+                    @if (addMensagem) {
+                      <span class="sim-msg" [class.erro]="!addMensagem.ok">{{ addMensagem.texto }}</span>
+                    }
+                  </div>
+                </div>
                 <div class="sim-tabela-wrap">
                   <table class="sim-tabela">
                     <thead>
@@ -288,6 +326,180 @@
                           <td class="str"><span class="rs-esq">R$</span>{{ fmtSim(p.amort) }}</td>
                           <td class="str juros"><span class="rs-esq">R$</span>{{ fmtSim(p.juros) }}</td>
                           <td class="str"><span class="rs-esq">R$</span>{{ fmtSim(p.saldo) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        @if (simAba === 'quitacao') {
+          <div class="sim-body">
+            <div class="sim-campos">
+              <div class="sim-campo">
+                <label>Dívida</label>
+                <select [(ngModel)]="quitDividaId" (ngModelChange)="limparQuitacao()" class="sim-select">
+                  <option [ngValue]="null">Escolha uma dívida cadastrada</option>
+                  @for (g of quitOpcoes; track g.label) {
+                    <optgroup [label]="g.label">
+                      @for (d of g.dividas; track d.id) {
+                        <option [ngValue]="d.id">{{ quitOpcaoLabel(d) }}</option>
+                      }
+                    </optgroup>
+                  }
+                </select>
+              </div>
+              <div class="sim-campo">
+                <label>Valor do aporte</label>
+                <div class="sim-input-wrap">
+                  <span class="sim-prefix">R$</span>
+                  <input type="text" inputmode="decimal" [ngModel]="quitAporte"
+                    (focus)="onQuitAporteFocus($event)"
+                    (blur)="onQuitAporteBlur($event)"
+                    placeholder="0,00" class="sim-input" />
+                </div>
+              </div>
+              <div class="sim-campo">
+                <label>Modalidade</label>
+                <select [(ngModel)]="quitModo" class="sim-select">
+                  @for (m of modosQuitacao; track m.id) {
+                    <option [value]="m.id">{{ m.label }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+            <button class="btn-calcular" (click)="calcularQuitacaoAntecipada()">Simular</button>
+
+            @if (quitAviso) {
+              <div class="sim-aviso">{{ quitAviso }}</div>
+            }
+
+            @if (quitCenarios && quitCenario; as c) {
+              <div class="sim-resultado">
+                <p class="sim-nota">
+                  Saldo devedor atual a valor presente: <strong>R$ {{ fmtSim(c.saldoAntes) }}</strong>
+                  ({{ fmtPrazo(c.prazoAntes) }} de R$ {{ fmtSim(c.parcelaAntes) }} a {{ quitDivida?.taxa }}).
+                  @if (quitDivida?.modalidade === 'SAC') {
+                    Esta dívida é SAC: a simulação considera as parcelas restantes fixas (Price), então os valores são aproximados.
+                  }
+                  Só simulação: a dívida na tabela não muda.
+                </p>
+
+                @if (!c.aplicavel) {
+                  <div class="sim-aviso">{{ c.motivo }}</div>
+                } @else {
+                  <div class="sim-totais">
+                    @switch (c.modo) {
+                      @case ('ultimas') {
+                        <div class="sim-total"><span>Parcelas que somem</span><strong>{{ c.parcelasQuitadas }}</strong></div>
+                        <div class="sim-total"><span>Prazo novo</span><strong>{{ fmtPrazo(c.prazoDepois) }}</strong></div>
+                      }
+                      @case ('proximas') {
+                        <div class="sim-total"><span>Parcelas pagas</span><strong>{{ c.parcelasQuitadas }}</strong></div>
+                        <div class="sim-total"><span>Pagas até</span><strong>{{ mesDaqui(c.parcelasQuitadas) }}</strong></div>
+                      }
+                      @case ('reduzir_parcela') {
+                        <div class="sim-total"><span>Parcela nova</span><strong>R$ {{ fmtSim(c.parcelaDepois) }}</strong></div>
+                        <div class="sim-total"><span>Prazo</span><strong>{{ fmtPrazo(c.prazoDepois) }}</strong></div>
+                      }
+                      @case ('reduzir_prazo') {
+                        <div class="sim-total"><span>Prazo novo</span><strong>{{ fmtPrazo(c.prazoDepois) }}</strong></div>
+                        <div class="sim-total"><span>Parcela</span><strong>R$ {{ fmtSim(c.parcelaDepois) }}</strong></div>
+                      }
+                      @case ('total') {
+                        <div class="sim-total"><span>Para quitar hoje</span><strong>R$ {{ fmtSim(c.aporteUsado) }}</strong></div>
+                        <div class="sim-total"><span>Troco</span><strong>R$ {{ fmtSim(c.sobra) }}</strong></div>
+                      }
+                    }
+                    <div class="sim-total sim-total-largo"><span>Economia de juros</span><strong>R$ {{ fmtSim(c.economia) }}</strong></div>
+                  </div>
+
+                  <div class="sim-tabela-wrap sim-tabela-auto">
+                    <table class="sim-tabela">
+                      <thead>
+                        <tr><th class="sth-left">Item</th><th>Antes</th><th>Depois</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td class="stl">Saldo devedor <span class="label-hint">(valor presente)</span></td>
+                          <td class="str"><span class="rs-esq">R$</span>{{ fmtSim(c.saldoAntes) }}</td>
+                          <td class="str"><span class="rs-esq">R$</span>{{ fmtSim(c.saldoDepois) }}</td>
+                        </tr>
+                        <tr>
+                          <td class="stl">Parcela</td>
+                          <td class="str"><span class="rs-esq">R$</span>{{ fmtSim(c.parcelaAntes) }}</td>
+                          <td class="str"><span class="rs-esq">R$</span>{{ fmtSim(c.parcelaDepois) }}
+                            @if (c.ultimaParcelaDepois) { <span class="label-hint">(última R$ {{ fmtSim(c.ultimaParcelaDepois) }})</span> }
+                          </td>
+                        </tr>
+                        <tr>
+                          <td class="stl">Prazo restante</td>
+                          <td class="str">{{ fmtPrazo(c.prazoAntes) }}</td>
+                          <td class="str">{{ fmtPrazo(c.prazoDepois) }}</td>
+                        </tr>
+                        <tr>
+                          <td class="stl">Juros que ainda seriam pagos</td>
+                          <td class="str juros"><span class="rs-esq">R$</span>{{ fmtSim(c.jurosAntes) }}</td>
+                          <td class="str juros"><span class="rs-esq">R$</span>{{ fmtSim(c.jurosDepois) }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  @switch (c.modo) {
+                    @case ('ultimas') {
+                      <p class="sim-nota">O aporte quita as {{ c.parcelasQuitadas }} últimas parcelas, cada uma trazida a valor presente pela taxa da dívida: custam R$ {{ fmtSim(c.aporteUsado) }} em vez de R$ {{ fmtSim(c.parcelasQuitadas * c.parcelaAntes) }}.
+                        @if (c.sobra >= 1) { Sobram R$ {{ fmtSim(c.sobra) }} do aporte, que não pagam mais uma parcela inteira. }</p>
+                    }
+                    @case ('proximas') {
+                      <p class="sim-nota">Sem economia de juros: as parcelas são pagas pelo valor cheio, com os R$ {{ fmtSim(c.jurosEmbutidos) }} de juros embutidos nelas. Só adianta o calendário: as parcelas até {{ mesDaqui(c.parcelasQuitadas) }} ficam pagas (contando a próxima no mês que vem) e os pagamentos voltam em {{ mesDaqui(c.parcelasQuitadas + 1) }}.
+                        @if (c.sobra >= 1) { Sobram R$ {{ fmtSim(c.sobra) }} do aporte. }</p>
+                    }
+                    @case ('reduzir_parcela') {
+                      <p class="sim-nota">O aporte abate o saldo devedor e o banco recalcula a parcela no mesmo prazo.</p>
+                    }
+                    @case ('reduzir_prazo') {
+                      <p class="sim-nota">O aporte abate o saldo devedor e a parcela continua a mesma; o prazo encurta.</p>
+                    }
+                    @case ('total') {
+                      <p class="sim-nota">O aporte cobre o saldo devedor a valor presente: a dívida acaba hoje e todos os juros futuros deixam de ser pagos.</p>
+                    }
+                  }
+                }
+
+                <h3 class="sim-subtitulo">Comparativo das modalidades com este aporte</h3>
+                <div class="sim-tabela-wrap sim-tabela-auto">
+                  <table class="sim-tabela sim-comparativo">
+                    <thead>
+                      <tr>
+                        <th class="sth-left">Modalidade</th>
+                        <th>Saldo depois</th>
+                        <th>Parcela</th>
+                        <th>Prazo</th>
+                        <th>Juros a pagar</th>
+                        <th>Economia</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (q of quitCenarios; track q.modo) {
+                        <tr [class.selecionada]="q.modo === quitModo" [class.melhor]="q.modo === quitMelhor"
+                          (click)="quitModo = q.modo" title="Ver os detalhes desta modalidade">
+                          <td class="stl">
+                            {{ q.label }}
+                            @if (q.modo === quitMelhor) { <span class="selo-melhor">maior economia</span> }
+                          </td>
+                          @if (q.aplicavel) {
+                            <td class="str"><span class="rs-esq">R$</span>{{ fmtSim(q.saldoDepois) }}</td>
+                            <td class="str"><span class="rs-esq">R$</span>{{ fmtSim(q.parcelaDepois) }}</td>
+                            <td class="str">{{ q.prazoDepois }}</td>
+                            <td class="str juros"><span class="rs-esq">R$</span>{{ fmtSim(q.jurosDepois) }}</td>
+                            <td class="str"><span class="rs-esq">R$</span>{{ fmtSim(q.economia) }}</td>
+                          } @else {
+                            <td class="str na" colspan="5">{{ q.motivo }}</td>
+                          }
                         </tr>
                       }
                     </tbody>

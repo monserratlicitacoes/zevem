@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { GastoService, Gasto, CLASSES_GASTO, CATEGORIA_NAO_IDENTIFICADO } from '../../services/gasto.service';
 import { PessoaService, Pessoa } from '../../services/pessoa.service';
+import { CartaoService, Cartao } from '../../services/cartao.service';
 import { VideoBadge } from '../../shared/video-badge/video-badge';
 import { JarroOrcamento } from '../../shared/jarro-orcamento/jarro-orcamento';
 import { ClassificacaoGastos } from '../../shared/classificacao-gastos/classificacao-gastos';
@@ -22,6 +23,7 @@ export class Gastos implements OnInit {
   jarroAberto = false; // modal "Jarro do Orçamento"
   classes = CLASSES_GASTO;
   pessoas: Pessoa[] = [];
+  cartoes: Cartao[] = [];
   abas: Aba[] = [];
   abaAtiva = 'moradia';
   todosGastos: Gasto[] = [];
@@ -48,12 +50,14 @@ export class Gastos implements OnInit {
   constructor(
     private gastoService: GastoService,
     private pessoaService: PessoaService,
+    private cartaoService: CartaoService,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
     this.construirAbas();
     this.carregarTodos();
+    this.cartaoService.listar().subscribe({ next: (lista) => { this.cartoes = lista; this.cdr.detectChanges(); } });
     this.pessoaService.listar().subscribe({
       next: (lista) => {
         this.pessoas = lista;
@@ -177,6 +181,37 @@ export class Gastos implements OnInit {
     if (g.classe === 'Mensal Comprometido') return 'dia';
     if (g.classe === 'Eventual Comprometido') return 'mes';
     return 'sem';
+  }
+
+  // Pago no cartão: com 2 ou mais cartões, escolhe-se qual (cada fatura vence num dia); com um só, é ele
+  cartaoDoGasto(g: Gasto): Cartao | undefined {
+    if (this.cartoes.length === 1) return this.cartoes[0];
+    return this.cartoes.find((c) => c.id === g.cartao_id);
+  }
+
+  rotuloCartao(c: Cartao): string {
+    const nome = c.nome + (c.ultimos_digitos ? ` ${c.ultimos_digitos}` : '');
+    return c.dia_vencimento ? `${nome} · dia ${c.dia_vencimento}` : nome;
+  }
+
+  // Texto do campo fechado: o dia de vencimento da fatura do cartão escolhido (só o número, como
+  // nos campos de dia das outras linhas)
+  campoCartao(g: Gasto): string {
+    const c = this.cartaoDoGasto(g);
+    if (!c) return 'cartão?';
+    return c.dia_vencimento ? String(c.dia_vencimento) : '?';
+  }
+
+  tituloFatura(g: Gasto): string {
+    const c = this.cartaoDoGasto(g);
+    if (!this.cartoes.length) return 'Pago no cartão: vence com a fatura. Cadastre seus cartões em Configurações para ver o vencimento.';
+    if (!c) return 'Escolha em qual cartão este gasto é pago';
+    return `Pago no cartão ${c.nome}${c.dia_vencimento ? `: a fatura vence no dia ${c.dia_vencimento}` : ' (informe o dia de vencimento da fatura em Configurações)'}`;
+  }
+
+  onCartaoChange(g: Gasto) {
+    g.cartao_id = g.cartao_id ? Number(g.cartao_id) : null;
+    this.salvarLinha(g);
   }
 
   // Dia do mês (1 a 31); fora disso ou vazio, fica sem data

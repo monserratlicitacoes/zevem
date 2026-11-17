@@ -437,6 +437,7 @@ app.post('/auth/cadastro', cadastroLimiter, async (req, res) => {
     const r = db.transaction(() => {
       const novo = db.prepare('INSERT INTO usuarios (nome, email, senha_hash, confirmado) VALUES (?, ?, ?, 1)').run(nome, email, senha_hash);
       convites.aplicar(convite, novo.lastInsertRowid, dados);
+      criarPessoaTitular(novo.lastInsertRowid);
       return novo;
     })();
     const usuario = { id: r.lastInsertRowid, nome, email };
@@ -447,6 +448,7 @@ app.post('/auth/cadastro', cadastroLimiter, async (req, res) => {
   const r = db.prepare(
     'INSERT INTO usuarios (nome, email, senha_hash, token_confirmacao) VALUES (?, ?, ?, ?)'
   ).run(nome, email, senha_hash, hashTokenConfirmacao(token_confirmacao));
+  criarPessoaTitular(r.lastInsertRowid);
 
   let avisoEmail = null;
   try {
@@ -693,6 +695,16 @@ db.exec(`
 `);
 db.exec('CREATE INDEX IF NOT EXISTS idx_pessoas_usuario_id ON pessoas(usuario_id)');
 
+// O titular da conta já aparece como a 1ª pessoa em Configurações → usuários, com o nome e o e-mail
+// do cadastro (ele completa telefone, CPF etc. depois). Planejador não usa o app como cliente.
+function criarPessoaTitular(usuarioId) {
+  const u = db.prepare('SELECT nome, email, papel FROM usuarios WHERE id = ?').get(usuarioId);
+  if (!u || u.papel === 'planejador' || /@zevem\.invalid$/i.test(u.email)) return;
+  if (db.prepare('SELECT 1 FROM pessoas WHERE usuario_id = ?').get(usuarioId)) return;
+  db.prepare('INSERT INTO pessoas (usuario_id, nome, email) VALUES (?, ?, ?)')
+    .run(usuarioId, String(u.nome || '').trim().slice(0, 100) || 'Titular', cifrar(u.email));
+}
+
 // CPF, e-mail e telefone ficam cifrados (cripto.js). telefone_indice acha a pessoa pelo número sem abri-lo;
 // telefone_verificado: a pessoa mandou pelo próprio WhatsApp o código gerado no app (só então o número vale).
 try { db.prepare('ALTER TABLE pessoas ADD COLUMN telefone_indice TEXT').run(); } catch {}
@@ -879,7 +891,10 @@ app.put('/cartoes/:id', auth(), (req, res) => {
 });
 
 app.delete('/cartoes/:id', auth(), (req, res) => {
-  db.prepare('DELETE FROM cartoes WHERE id = ? AND usuario_id = ?').run(req.params.id, req.user.id);
+  db.transaction(() => {
+    db.prepare('DELETE FROM cartoes WHERE id = ? AND usuario_id = ?').run(req.params.id, req.user.id);
+    db.prepare('UPDATE gastos SET cartao_id = NULL WHERE cartao_id = ? AND usuario_id = ?').run(req.params.id, req.user.id);
+  })();
   res.json({ ok: true });
 });
 
@@ -1033,9 +1048,11 @@ const mesAtualIso = () => {
 // que vence uma vez por ano, usa só o mês. Gasto pago no cartão vence com a fatura (sem data própria).
 try { db.prepare('ALTER TABLE gastos ADD COLUMN dia_vencimento INTEGER').run(); } catch {}
 try { db.prepare('ALTER TABLE gastos ADD COLUMN mes_vencimento INTEGER').run(); } catch {}
+// Pago no cartão: qual cartão (cada um tem seu vencimento de fatura). Vazio = cartão não informado.
+try { db.prepare('ALTER TABLE gastos ADD COLUMN cartao_id INTEGER').run(); } catch {}
 
 const GASTO_SELECT = `
-  SELECT id, usuario_id, categoria, descricao, com_cartao, classe, valor, criado_em, meta_desde, dia_vencimento, mes_vencimento,
+  SELECT id, usuario_id, categoria, descricao, com_cartao, cartao_id, classe, valor, criado_em, meta_desde, dia_vencimento, mes_vencimento,
     CASE WHEN classe LIKE 'Eventual%' THEN ROUND(valor / 12.0, 0) ELSE valor END AS valor_mensal
   FROM gastos
 `;
@@ -1084,6 +1101,13 @@ function vencimentoGasto(body) {
   return { dia: null, mes: null };
 }
 
+// Cartão do gasto: só um cartão do próprio usuário e só para gasto pago no cartão
+function cartaoDoGasto(usuarioId, body, atual) {
+  if (!body.com_cartao) return null;
+  const id = 'cartao_id' in body ? Number(body.cartao_id) || null : atual?.cartao_id ?? null;
+  return id && db.prepare('SELECT 1 FROM cartoes WHERE id = ? AND usuario_id = ?').get(id, usuarioId) ? id : null;
+}
+
 app.get('/gastos', auth(), (req, res) => {
   const total = db.prepare('SELECT COUNT(*) AS n FROM gastos WHERE usuario_id = ? AND categoria <> ?').get(req.user.id, CATEGORIA_NI).n;
   if (total === 0) seedGastosDefault(req.user.id);
@@ -1110,8 +1134,8 @@ app.post('/gastos', auth(), (req, res) => {
     if (existente) return res.status(409).json({ erro: `Já existe "${existente.descricao}" nesta categoria.`, gasto: existente });
   }
   const r = db.prepare(
-    'INSERT INTO gastos (usuario_id, categoria, descricao, com_cartao, classe, valor, meta_desde) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).run(req.user.id, categoria || '', descricao || '', com_cartao ? 1 : 0, classe || '', Number(valor) || 0,
+    'INSERT INTO gastos (usuario_id, categoria, descricao, com_cartao, cartao_id, classe, valor, meta_desde) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(req.user.id, categoria || '', descricao || '', com_cartao ? 1 : 0, cartaoDoGasto(req.user.id, req.body), classe || '', Number(valor) || 0,
     Number(valor) > 0 ? mesAtualIso() : null);
   res.status(201).json(db.prepare(GASTO_SELECT + 'WHERE id = ?').get(r.lastInsertRowid));
 });
@@ -1121,7 +1145,7 @@ app.put('/gastos/:id', auth(), (req, res) => {
   if (erro) return res.status(400).json({ erro });
   if (ehNaoIdentificado(req.user.id, req.params.id)) return res.status(403).json({ erro: `O item "${NOME_NI}" é fixo e não pode ser editado.` });
   const { descricao, com_cartao, classe, valor } = req.body;
-  const atual = db.prepare('SELECT valor, meta_desde, dia_vencimento, mes_vencimento FROM gastos WHERE id = ? AND usuario_id = ?').get(req.params.id, req.user.id);
+  const atual = db.prepare('SELECT valor, meta_desde, dia_vencimento, mes_vencimento, cartao_id FROM gastos WHERE id = ? AND usuario_id = ?').get(req.params.id, req.user.id);
   // Quem não manda os campos de vencimento (ex.: edição só da meta) mantém o que já está gravado
   const semVencimento = !('dia_vencimento' in req.body) && !('mes_vencimento' in req.body);
   const venc = vencimentoGasto(semVencimento && atual ? { ...req.body, dia_vencimento: atual.dia_vencimento, mes_vencimento: atual.mes_vencimento } : req.body);
@@ -1129,8 +1153,8 @@ app.put('/gastos/:id', auth(), (req, res) => {
   // A meta passa a contar no mês em que deixa de ser zero; zerada, deixa de contar.
   const metaDesde = novoValor > 0 ? (atual?.valor > 0 && atual.meta_desde ? atual.meta_desde : mesAtualIso()) : null;
   db.prepare(
-    'UPDATE gastos SET descricao=?, com_cartao=?, classe=?, valor=?, meta_desde=?, dia_vencimento=?, mes_vencimento=? WHERE id=? AND usuario_id=?'
-  ).run(descricao || '', com_cartao ? 1 : 0, classe || '', novoValor, metaDesde, venc.dia, venc.mes, req.params.id, req.user.id);
+    'UPDATE gastos SET descricao=?, com_cartao=?, cartao_id=?, classe=?, valor=?, meta_desde=?, dia_vencimento=?, mes_vencimento=? WHERE id=? AND usuario_id=?'
+  ).run(descricao || '', com_cartao ? 1 : 0, cartaoDoGasto(req.user.id, req.body, atual), classe || '', novoValor, metaDesde, venc.dia, venc.mes, req.params.id, req.user.id);
   const gasto = db.prepare(GASTO_SELECT + 'WHERE id = ? AND usuario_id = ?').get(req.params.id, req.user.id);
   if (!gasto) return res.status(404).json({ erro: 'Item não encontrado' });
   res.json(gasto);
@@ -2878,5 +2902,9 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_lanc_usuario_gasto_data ON lancamentos_gastos(usuario_id, gasto_id, data);
   CREATE INDEX IF NOT EXISTS idx_avisos_status ON avisos(status, criado_em);
 `);
+
+// Contas que já existiam sem nenhuma pessoa cadastrada ganham o titular (uma vez; quem já tem pessoa fica como está)
+db.prepare(`SELECT id FROM usuarios WHERE papel <> 'planejador' AND email NOT LIKE '%@zevem.invalid'
+  AND NOT EXISTS (SELECT 1 FROM pessoas p WHERE p.usuario_id = usuarios.id)`).all().forEach((u) => criarPessoaTitular(u.id));
 
 app.listen(PORT, () => console.log(`API rodando na porta ${PORT}`));

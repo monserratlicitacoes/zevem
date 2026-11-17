@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { VideoBadge } from '../../shared/video-badge/video-badge';
 import { JarroOrcamento } from '../../shared/jarro-orcamento/jarro-orcamento';
+import { CenarioQuitacao, MODOS_QUITACAO, ModoQuitacao, simularQuitacao, valorPresente } from './quitacao';
 
 export interface Divida {
   id?: number;
@@ -123,7 +124,7 @@ export class Dividas implements OnInit {
 
   // ── Simulador ──────────────────────────────────────────────
   simAberto = false;
-  simAba: 'financiamento' | 'taxas' = 'financiamento';
+  simAba: 'financiamento' | 'taxas' | 'quitacao' = 'financiamento';
 
   // Financiamento
   simValor = '';
@@ -212,6 +213,182 @@ export class Dividas implements OnInit {
       }
       this.simResultado = { pmt: parcelas[0].pmt, ultimaParcela: parcelas[n - 1].pmt, totalPago, totalJuros, taxaEfetiva, parcelas };
     }
+    this.prepararAdicao();
+  }
+
+  // ── Financiamento simulado → tabela de Dívidas ─────────────
+  addNome = '';
+  addGuia = 'financeiros';
+  addInicio = '';            // yyyy-mm-dd; parcelas já vencidas desde esta data saem das restantes
+  addSalvando = false;
+  addMensagem: { ok: boolean; texto: string } | null = null;
+  // Dados da simulação no momento do Calcular (se o usuário mexer nos campos depois, vale o que foi simulado)
+  private addBase: { pv: number; taxaPct: number; modalidade: 'PRICE' | 'SAC'; correcao: string } | null = null;
+
+  private hojeIso(): string {
+    const h = new Date();
+    return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}-${String(h.getDate()).padStart(2, '0')}`;
+  }
+
+  private prepararAdicao() {
+    this.addMensagem = null;
+    if (!this.simResultado) return;
+    const pv = this.parseNum(this.simValor);
+    const n = this.simResultado.parcelas.length;
+    this.addBase = { pv, taxaPct: this.parseNum(this.simTaxa), modalidade: this.simModalidade, correcao: this.simCorrecao };
+    this.addNome = `Financiamento R$ ${this.fmtSim(pv)} em ${n}x`;
+    this.addGuia = this.guiaAtiva;
+    if (!this.addInicio) this.addInicio = this.hojeIso();
+  }
+
+  /** Meses inteiros entre a data de início e hoje = parcelas já pagas (0 se a data for hoje ou futura). */
+  get addParcelasPagas(): number {
+    const n = this.simResultado?.parcelas.length ?? 0;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(this.addInicio);
+    if (!m) return 0;
+    const h = new Date();
+    let meses = (h.getFullYear() - +m[1]) * 12 + (h.getMonth() + 1 - +m[2]);
+    if (h.getDate() < +m[3]) meses--;
+    return Math.max(0, Math.min(n, meses));
+  }
+
+  adicionarSimulado() {
+    const r = this.simResultado, b = this.addBase;
+    if (!r || !b || this.addSalvando) return;
+    const n = r.parcelas.length;
+    const pagas = this.addParcelasPagas;
+    if (pagas >= n) {
+      this.addMensagem = { ok: false, texto: 'Pela data de início, todas as parcelas já venceram: não há o que adicionar.' };
+      return;
+    }
+    const nome = this.addNome.trim() || 'Financiamento simulado';
+    // SAC: a parcela da tabela é a próxima a vencer; Price: a parcela fixa
+    const pmt = b.modalidade === 'SAC' ? r.parcelas[pagas].pmt : r.pmt;
+    const saldo = pagas === 0 ? b.pv : r.parcelas[pagas - 1].saldo;
+    const nova: Partial<Divida> = {
+      guia: this.addGuia,
+      nome,
+      quitado: false,
+      modalidade: b.modalidade,
+      pmt: Math.round(pmt * 100) / 100,
+      parcelas_totais: n,
+      parcelas_restantes: n - pagas,
+      quitacao_a_vista: Math.round(saldo),
+      taxa: b.taxaPct.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4, useGrouping: false }) + '% a.m.',
+      correcao: b.correcao === 'NENHUM' ? 'NÃO HÁ' : b.correcao,
+    };
+    this.addSalvando = true;
+    this.addMensagem = null;
+    this.http.post<Divida>(this.api, nova).subscribe({
+      next: () => {
+        this.addSalvando = false;
+        const guia = this.guias.find(g => g.id === nova.guia);
+        this.addMensagem = { ok: true, texto: `"${nome}" foi adicionada a ${guia?.label ?? 'Dívidas'}.` };
+        this.guiaAtiva = nova.guia!;   // ao fechar o simulador, a tabela já mostra a guia da nova dívida
+        this.carregar();
+      },
+      error: (e) => {
+        this.addSalvando = false;
+        this.addMensagem = { ok: false, texto: e?.error?.erro || 'Não foi possível adicionar a dívida. Tente de novo.' };
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  // ── Quitação Antecipada ────────────────────────────────────
+  readonly modosQuitacao = MODOS_QUITACAO;
+  quitDividaId: number | null = null;
+  quitAporte = '';
+  quitModo: ModoQuitacao = 'reduzir_prazo';
+  quitCenarios: CenarioQuitacao[] | null = null;
+  quitAviso = '';
+
+  /** Dívidas que podem ser simuladas (as quitadas ficam de fora), por guia. */
+  get quitOpcoes(): { label: string; dividas: Divida[] }[] {
+    return this.guias
+      .map(g => ({ label: g.label, dividas: this.todosDividas.filter(d => d.guia === g.id && !d.quitado) }))
+      .filter(g => g.dividas.length);
+  }
+
+  get quitDivida(): Divida | null {
+    return this.todosDividas.find(d => d.id === this.quitDividaId) ?? null;
+  }
+
+  /** O que falta na dívida para simular (vazio = pode simular). */
+  quitFaltando(d: Divida): string[] {
+    const falta: string[] = [];
+    if (!d.pmt) falta.push('o valor da parcela (PMT)');
+    if (!this.parseTaxa(d.taxa || '')) falta.push('a taxa de juros mensal');
+    if (!d.parcelas_restantes) falta.push('as parcelas restantes');
+    return falta;
+  }
+
+  /** Saldo devedor a valor presente (Price); sem dados, o que estiver em Quitação à Vista. */
+  quitSaldo(d: Divida): number {
+    const i = this.parseTaxa(d.taxa || '');
+    if (d.pmt && i && d.parcelas_restantes) return valorPresente(d.pmt, i, d.parcelas_restantes);
+    return d.quitacao_a_vista || 0;
+  }
+
+  quitOpcaoLabel(d: Divida): string {
+    const saldo = this.quitSaldo(d);
+    return `${d.nome || 'Sem nome'} — saldo R$ ${saldo ? this.fmtSim(saldo) : '—'}`;
+  }
+
+  onQuitAporteBlur(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const v = this.parseNum(input.value);
+    this.quitAporte = v ? v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+    input.value = this.quitAporte;
+  }
+
+  onQuitAporteFocus(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const v = this.parseNum(this.quitAporte);
+    input.value = v ? String(v).replace('.', ',') : '';
+    this.quitAporte = input.value;
+    input.select();
+  }
+
+  limparQuitacao() {
+    this.quitCenarios = null;
+    this.quitAviso = '';
+  }
+
+  calcularQuitacaoAntecipada() {
+    this.limparQuitacao();
+    const d = this.quitDivida;
+    if (!d) { this.quitAviso = 'Escolha uma dívida.'; return; }
+    const falta = this.quitFaltando(d);
+    if (falta.length) {
+      const lista = falta.length > 1 ? falta.slice(0, -1).join(', ') + ' e ' + falta[falta.length - 1] : falta[0];
+      this.quitAviso = `Para simular, preencha na tabela ${lista} de "${d.nome || 'Sem nome'}".`;
+      return;
+    }
+    const aporte = this.parseNum(this.quitAporte);
+    if (!aporte) { this.quitAviso = 'Informe o valor do aporte.'; return; }
+    this.quitCenarios = simularQuitacao(d.pmt, this.parseTaxa(d.taxa)!, d.parcelas_restantes!, aporte);
+  }
+
+  get quitCenario(): CenarioQuitacao | null {
+    return this.quitCenarios?.find(c => c.modo === this.quitModo) ?? null;
+  }
+
+  /** Modalidade aplicável com a maior economia de juros (para destacar no comparativo). */
+  get quitMelhor(): ModoQuitacao | null {
+    const ok = (this.quitCenarios ?? []).filter(c => c.aplicavel && c.economia > 0.005);
+    return ok.length ? ok.reduce((a, b) => (b.economia > a.economia ? b : a)).modo : null;
+  }
+
+  /** Mês/ano daqui a k meses (a próxima parcela é contada como a do mês que vem). */
+  mesDaqui(k: number): string {
+    const h = new Date();
+    const d = new Date(h.getFullYear(), h.getMonth() + k, 1);
+    return d.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('. de ', '/').replace(' de ', '/');
+  }
+
+  fmtPrazo(n: number): string {
+    return n === 1 ? '1 parcela' : `${n} parcelas`;
   }
 
   private toMonthly(v: number, de: string): number {

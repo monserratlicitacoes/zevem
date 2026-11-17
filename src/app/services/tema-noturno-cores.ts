@@ -5,7 +5,8 @@
 //   • fundos, bordas e sombras claros e pouco saturados (brancos, off-white, cinzas esverdeados,
 //     tons claros de lima/rosa/âmbar) viram verdes quase pretos, mantendo o matiz;
 //   • textos e traços escuros viram claros;
-//   • cores vivas (lima, rosa, verdes de status) e transparências leves ficam como estão.
+//   • textos de cor viva e brilho médio (vermelho de erro, rosa, âmbar) ganham uma versão clara do
+//     mesmo matiz; nos fundos e bordas, as cores vivas e as transparências leves ficam como estão.
 // As regras geradas repetem o seletor original com ":root.tema-noturno" na frente: ganham da regra
 // clara de mesmo seletor, mas perdem para estilos inline ([style.x]="..." dos gráficos).
 // O Dashboard tem uma versão noturna própria, feita à mão (.page.noturno), e fica de fora.
@@ -58,7 +59,10 @@ function converter(cor: Rgba, papel: Papel): Rgba | null {
   const neutro = C < 0.02;
   const matiz = neutro ? MATIZ_MARCA : H;
   if (papel === 'texto') {
-    if (L >= 0.62 || C >= 0.13) return null; // já claro ou cor viva
+    // Cor viva de brilho médio (vermelho de erro, rosa, âmbar, verdes de status): mantém o matiz e
+    // clareia, senão some no fundo verde-escuro (ex.: o vermelho #d63a3a dos valores negativos)
+    if (C >= 0.13) return L >= 0.74 ? null : deOklch(0.76, Math.min(C, 0.16), H, a);
+    if (L >= 0.62) return null; // já claro
     return deOklch(Math.min(0.96, 0.97 - (L - 0.25) * 0.9), neutro ? CROMA_NEUTRO * 0.6 : Math.min(C, 0.09), matiz, a);
   }
   if (L < 0.78 || C >= 0.1) return null; // escuro ou cor viva (lima, rosa)
@@ -151,6 +155,12 @@ function regraEscura(regra: CSSStyleRule, ignorar: RegExp | null): string {
     // As cores que não mudam também são repetidas: assim a ordem entre as regras continua a mesma
     // (ex.: o lima do botão "Resumo" segue valendo sobre o fundo genérico dos botões, que escureceu)
     decl.push(`${prop}: ${n ?? v}${st.getPropertyPriority(prop) ? ' !important' : ''};`);
+  }
+  // Fundo vivo e claro (lima) sem cor de texto própria: a letra vinha herdada de outra regra (ex.: a
+  // de ".botao", que clareou) e ficaria clara sobre o lima. Fixa o verde-profundo, como no tema claro.
+  if (fundoVivo && !st.getPropertyValue('color')) {
+    const c = lerCor((fundo.match(RE_COR) || [])[0] || '');
+    if (c && c[3] >= 0.9 && paraOklch(c)[0] >= 0.8) decl.push('color: #05261a;');
   }
   // Atalhos com variável (ex.: "background: var(--ag-verde-lima)"): o navegador não expõe a cor nas
   // propriedades longas, então o atalho é repetido como está
