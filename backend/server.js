@@ -1788,7 +1788,8 @@ async function textoDoPdf(buffer, senha) {
   return paginas.join('\n\n');
 }
 
-const MODELO_IA = 'claude-opus-5-5';
+// Sonnet 5.5: lê faturas bem, mais rápido e mais barato que o Opus (a leitura cabia mal nos 60 s do proxy)
+const MODELO_IA = 'claude-sonnet-5-5';
 
 // Chamada com saída em JSON garantida pelo schema. Fallback do servidor caso o modelo recuse.
 async function perguntarIA(content, schema, maxTokens) {

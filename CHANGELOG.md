@@ -3,6 +3,11 @@
 Todas as mudanças relevantes do Zevem (antigo Apple Green) ficam registradas aqui.
 Versionamento semântico: PATCH = correções e pequenos ajustes; MINOR = novas funcionalidades; MAJOR = mudanças estruturais.
 
+## [1.3.1] - 2026-11-17
+
+### Alterado
+- Import de fatura em PDF e sugestão de item usam o **Claude Sonnet 5.5** (antes, Claude Opus 5.5): leitura mais rápida e mais barata, com a mesma saída em JSON e o mesmo fallback da Anthropic.
+
 ## [1.3.0] - 2026-11-17
 
 ### Funcionalidades
