@@ -3,6 +3,12 @@
 Todas as mudanças relevantes do Zevem (antigo Apple Green) ficam registradas aqui.
 Versionamento semântico: PATCH = correções e pequenos ajustes; MINOR = novas funcionalidades; MAJOR = mudanças estruturais.
 
+## [1.5.1] - 2026-11-18
+
+### Alterado
+- **MEVEM® na página de venda.** A marca registrada ganhou o ® nas quatro vezes em que aparece: no topo, na legenda da foto, no bloco do fundador e no rodapé.
+- `.env.example`: em produção (docker compose), a chave do Asaas vai entre aspas simples; sem elas, o "$" do começo da chave é lido como variável e a chave chega cortada.
+
 ## [1.5.0] - 2026-11-18
 
 ### Adicionado
