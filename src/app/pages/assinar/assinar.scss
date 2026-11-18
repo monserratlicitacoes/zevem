@@ -170,9 +170,9 @@ h1 {
 
 .numeros {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  margin-top: 80px;
+  margin-top: 72px;
   padding-top: 32px;
   border-top: 1px solid $linha;
 }
@@ -181,16 +181,66 @@ h1 {
   span { color: $suave; font-size: 14px; }
 }
 
+// Pontos fortes
+.fortes { padding: 0 0 24px; background: $preto; }
+.fortes-grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.forte {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  border-radius: 20px;
+  background: $lima;
+  color: $preto;
+  strong { font-size: clamp(19px, 2vw, 23px); line-height: 1.25; font-weight: 800; letter-spacing: -0.4px; }
+}
+.forte-topo { display: flex; align-items: center; justify-content: space-between; }
+.forte-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: $preto;
+  color: $lima;
+  svg { width: 24px; height: 24px; }
+}
+.forte-num { font-size: 13px; font-weight: 800; opacity: 0.45; letter-spacing: 0.08em; }
+
+// Curso + sistema + IA
+.formula { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 16px; align-items: stretch; }
+.formula-item {
+  padding: 28px;
+  border-radius: 20px;
+  background: $cartao;
+  border: 1px solid rgba(177, 247, 13, 0.25);
+  h3 { font-size: 19px; line-height: 1.3; }
+  p { margin: 0; color: $suave; font-size: 14px; }
+}
+.formula-icone {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; margin-bottom: 18px; border-radius: 14px;
+  background: rgba(177, 247, 13, 0.12); color: $lima;
+  svg { width: 24px; height: 24px; }
+}
+.formula-mais { align-self: center; color: $lima; font-size: 40px; font-weight: 800; line-height: 1; }
+
 // ── Seções ──
 .secao { padding: 88px 0; }
 .secao-escura { background: $preto-2; border-top: 1px solid $linha; border-bottom: 1px solid $linha; }
 h2 { margin: 16px 0 40px; font-size: clamp(26px, 3.4vw, 38px); line-height: 1.15; letter-spacing: -1px; font-weight: 800; }
+h2 em { font-style: normal; color: $lima; }
 h3 { margin: 0 0 8px; font-size: 17px; font-weight: 700; }
 p { line-height: 1.6; }
 
-.passos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.como-grade { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 56px; align-items: center; }
+.passos { display: grid; gap: 16px; }
 .passo {
-  padding: 28px;
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 24px;
   border-radius: 20px;
   background: $cartao;
   border: 1px solid $linha;
@@ -202,7 +252,7 @@ p { line-height: 1.6; }
   justify-content: center;
   width: 36px;
   height: 36px;
-  margin-bottom: 18px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: $lima;
   color: $preto;
@@ -217,6 +267,185 @@ p { line-height: 1.6; }
 }
 .recurso-icone { display: block; margin-bottom: 14px; color: $lima; font-size: 22px; }
 
+
+// Minha foto / vídeo na abertura
+.hero-midia { position: relative; }
+.midia-quadro {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 28px;
+  overflow: hidden;
+  background: linear-gradient(160deg, rgba(177, 247, 13, 0.9), #5d8504);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(177, 247, 13, 0.35);
+  img, video { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; background: $preto; }
+}
+.midia-vazia {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: $preto;
+  span { font-size: 96px; font-weight: 800; letter-spacing: -4px; }
+  small { font-size: 13px; font-weight: 700; opacity: 0.7; }
+}
+.midia-legenda {
+  position: absolute;
+  left: -28px;
+  bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: rgba(24, 24, 24, 0.92);
+  border: 1px solid $linha;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+  strong { font-size: 15px; }
+  span { font-size: 12px; color: $suave; }
+}
+
+// Zevem × outros apps
+.contraste { border: 1px solid $linha; border-radius: 20px; overflow: hidden; }
+.contraste-cab, .contraste-linha { display: grid; grid-template-columns: 1fr 1fr; }
+.contraste-cab {
+  > span { padding: 18px 28px; font-weight: 800; font-size: 15px; }
+  .cab-zevem { display: flex; align-items: center; gap: 8px; background: rgba(177, 247, 13, 0.1); font-size: 22px; letter-spacing: -0.6px; }
+  .cab-outros { color: $suave; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; display: flex; align-items: center; }
+}
+.contraste-linha {
+  border-top: 1px solid $linha;
+  p { margin: 0; padding: 18px 28px; display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
+  .sinal { font-weight: 800; flex-shrink: 0; width: 18px; }
+  .lado-zevem { background: rgba(177, 247, 13, 0.05); font-weight: 600; .sinal { color: $lima; } }
+  .lado-outros { color: #7d8279; .sinal { color: #ff8a80; } }
+}
+// Garantia: a linha que fecha o contraste, em destaque
+.contraste-linha.contraste-garantia {
+  border-top: 2px solid $lima;
+  .lado-zevem { background: $lima; color: $preto; font-weight: 700; font-size: 16px; .sinal { color: $preto; } }
+  .lado-outros b { color: $suave; }
+}
+
+
+// Orientação pelo WhatsApp
+.zap { border-bottom: 1px solid $linha; background: radial-gradient(520px 360px at 80% 50%, rgba(37, 211, 102, 0.1), transparent 70%), $preto; }
+.zap-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; padding-top: 24px; }
+.zap-texto { margin: -16px 0 24px; color: $suave; font-size: 16px; }
+.zap-lista {
+  list-style: none; margin: 0; padding: 0; display: grid; gap: 10px;
+  li { font-size: 15px; font-weight: 600; &::before { content: '✓  '; color: $lima; font-weight: 800; } }
+}
+.celular {
+  position: relative;
+  width: 300px;
+  margin: 0 auto;
+  padding: 12px;
+  border-radius: 44px;
+  background: #0b0b0b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.55);
+}
+.celular-tela { height: 480px; border-radius: 34px; overflow: hidden; background: #0b141a; display: flex; flex-direction: column; }
+.zap-topo {
+  display: flex; align-items: center; gap: 10px; padding: 40px 16px 12px; background: #1f2c34;
+  strong { display: block; font-size: 14px; } small { color: #8696a0; font-size: 11px; }
+}
+.zap-avatar {
+  display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;
+  background: $preto; font-size: 11px; font-weight: 800; letter-spacing: -0.3px;
+}
+.zap-conversa { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 16px 12px; }
+.zap-dia { align-self: center; margin-bottom: 4px; padding: 4px 10px; border-radius: 8px; background: #182229; color: #8696a0; font-size: 11px; }
+.balao {
+  position: relative; max-width: 86%; padding: 8px 10px 18px; border-radius: 0 10px 10px 10px;
+  background: #202c33; color: #e9edef; font-size: 13.5px; line-height: 1.45;
+  strong { color: $lima; }
+  time { position: absolute; right: 8px; bottom: 4px; font-size: 10px; color: #8696a0; }
+  &.balao-eu { align-self: flex-end; padding-right: 44px; padding-bottom: 8px; border-radius: 10px 0 10px 10px; background: #005c4b; }
+}
+.notificacao {
+  position: absolute; left: -64px; top: -28px; display: flex; gap: 10px; width: 290px; padding: 12px 14px;
+  border-radius: 16px; background: rgba(40, 40, 40, 0.94); border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  animation: notificacao-chega 0.8s 0.3s both cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  span:last-child { font-size: 12.5px; line-height: 1.4; color: $texto; strong { display: block; margin-bottom: 2px; font-size: 12px; color: $suave; } }
+}
+.notificacao-icone { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px; background: #25d366; font-size: 16px; }
+@keyframes notificacao-chega { from { opacity: 0; transform: translateY(-16px) scale(0.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .notificacao { animation: none; } }
+
+// WhatsApp e cônjuge
+.destaques { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+.destaque {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 28px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(177, 247, 13, 0.12), rgba(177, 247, 13, 0.03));
+  border: 1px solid rgba(177, 247, 13, 0.25);
+  p { margin: 0; color: $suave; font-size: 14px; }
+}
+.destaque-icone { font-size: 28px; line-height: 1; }
+
+// Comparativo de preço
+.precos { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.preco-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 32px;
+  border-radius: 24px;
+  text-align: left;
+  font: inherit;
+  color: $texto;
+  .preco-pergunta { font-size: 16px; font-weight: 600; line-height: 1.4; }
+  strong { font-size: clamp(40px, 5.5vw, 60px); font-weight: 800; letter-spacing: -2px; line-height: 1; small { display: inline-block; margin-left: 2px; font-size: 18px; letter-spacing: 0; font-weight: 600; color: $suave; } }
+  .preco-nota { font-size: 13px; color: $suave; }
+}
+.preco-caro { background: $cartao; border: 1px solid $linha; strong { color: #8d9289; text-decoration: line-through; text-decoration-thickness: 3px; text-decoration-color: rgba(255, 138, 128, 0.7); } }
+.preco-zevem {
+  background: rgba(177, 247, 13, 0.08);
+  border: 1.5px solid $lima;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  strong { color: $lima; }
+  u { color: $lima; font-weight: 700; }
+  &:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(177, 247, 13, 0.18); }
+}
+
+// Depoimentos
+.depoimentos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.depoimento {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  border-radius: 20px;
+  background: $cartao;
+  border: 1px solid $linha;
+  blockquote { flex: 1; margin: 0 0 24px; font-size: 15px; line-height: 1.6; font-weight: 500; }
+  figcaption { display: flex; gap: 12px; align-items: center; strong { display: block; font-size: 14px; } small { color: $suave; font-size: 12px; } }
+  &.vazio { border-style: dashed; border-color: rgba(177, 247, 13, 0.3); blockquote { color: #6c7168; font-style: italic; } }
+}
+.aspas { color: $lima; font-size: 48px; line-height: 0.6; font-weight: 800; height: 24px; }
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(177, 247, 13, 0.15);
+  color: $lima;
+  font-weight: 800;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 // Quem acompanha
 .fundador { display: grid; grid-template-columns: 180px 1fr; gap: 48px; align-items: center; }
 .fundador-foto {
@@ -230,6 +459,8 @@ p { line-height: 1.6; }
   color: $preto;
   font-size: 48px;
   font-weight: 800;
+  overflow: hidden;
+  img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; transform: scale(1.6); transform-origin: 50% 22%; }
 }
 blockquote { margin: 20px 0 16px; font-size: clamp(18px, 2.2vw, 22px); line-height: 1.55; font-weight: 500; }
 .fundador-nome { margin: 0; font-weight: 700; span { color: $suave; font-weight: 500; } }
@@ -265,52 +496,17 @@ blockquote { margin: 20px 0 16px; font-size: clamp(18px, 2.2vw, 22px); line-heig
   h3 { font-size: 22px; }
 }
 .form-sub { margin: 0 0 20px; color: $suave; font-size: 14px; }
-form { display: flex; flex-direction: column; gap: 14px; }
-label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 700; color: $suave; }
-input:not([type='checkbox']) {
-  height: 46px;
-  padding: 0 14px;
-  border-radius: 12px;
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  background: $preto;
-  color: $texto;
-  font: inherit;
-  font-size: 15px;
-  outline: none;
-  &::placeholder { color: #5f645c; }
-  &:focus { border-color: $lima; }
-}
-.form-dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.armadilha { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-.aceite {
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 10px;
-  font-weight: 500;
-  font-size: 13px;
-  line-height: 1.5;
-  cursor: pointer;
-  input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: $lima; flex-shrink: 0; }
-}
-.erro { margin: 0; color: #ff8a80; font-size: 13px; font-weight: 600; }
-.form-nota { margin: 0; text-align: center; color: $suave; font-size: 12px; }
-.sucesso {
-  text-align: center;
-  padding: 24px 0;
-  p { color: $suave; font-size: 15px; strong { color: $texto; } }
-}
-.sucesso-icone {
-  display: inline-flex;
-  align-items: center;
+.erro { margin: 12px 0 0; color: #ff8a80; font-size: 13px; font-weight: 600; text-align: center; }
+.btn-grande { height: 56px; margin-top: 4px; font-size: 16px; }
+.pagar-garantias {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  margin-bottom: 16px;
-  border-radius: 50%;
-  background: $lima;
-  color: $preto;
-  font-size: 24px;
-  font-weight: 800;
+  gap: 8px 18px;
+  margin: 20px 0 0;
+  padding: 0;
+  li { font-size: 12px; color: $suave; &::before { content: '✓ '; color: $lima; font-weight: 800; } }
 }
 
 // Perguntas
@@ -340,9 +536,19 @@ input:not([type='checkbox']) {
 @media (max-width: 900px) {
   .hero { padding-top: 48px; }
   .hero-grade, .plano-grade { grid-template-columns: 1fr; gap: 48px; }
+  .hero-midia { max-width: 380px; width: 100%; margin: 0 auto; }
+  .midia-legenda { left: 12px; bottom: 12px; }
+  .como-grade { grid-template-columns: 1fr; gap: 48px; }
+  .formula { grid-template-columns: 1fr; gap: 8px; }
+  .formula-mais { justify-self: center; font-size: 32px; }
   .hero-previa { max-width: 420px; }
   .previa-meta { right: 12px; }
-  .passos, .recursos { grid-template-columns: 1fr; }
+  .recursos, .destaques, .precos, .fortes-grade, .zap-grade { grid-template-columns: 1fr; }
+  .zap-grade { gap: 48px; }
+  .notificacao { left: -12px; top: -36px; }
+  .forte { padding: 22px 24px; }
+  .depoimentos { grid-template-columns: 1fr 1fr; }
+  .numeros { grid-template-columns: 1fr 1fr; gap: 28px 16px; }
   .fundador { grid-template-columns: 1fr; gap: 24px; }
   .fundador-foto { width: 120px; height: 120px; font-size: 34px; }
   .secao { padding: 64px 0; }
@@ -351,8 +557,67 @@ input:not([type='checkbox']) {
   .topo-links .link:first-child { display: none; }
   .topo-links { gap: 14px; }
   .marca small { display: none; }
-  .numeros { grid-template-columns: 1fr; gap: 20px; margin-top: 64px; }
+  .topo-links .link:nth-child(2) { display: none; }
+  .numeros { margin-top: 56px; }
+  .depoimentos { grid-template-columns: 1fr; }
+  .contraste-cab { display: none; }
+  .contraste-linha { grid-template-columns: 1fr; p { padding: 14px 20px; } .lado-outros { padding-top: 0; background: rgba(177, 247, 13, 0.05); font-size: 13px; } }
+  .preco-cartao, .destaque { padding: 24px 20px; }
+  .celular { width: 270px; }
+  .notificacao { left: -16px; width: 250px; }
   .form-cartao { padding: 24px 20px; }
-  .form-dupla { grid-template-columns: 1fr; }
   .hero-acoes .btn { flex: 1 1 100%; }
 }
+
+.sem-quebra { white-space: nowrap; margin-left: 0.3em; }
+.btn { flex-wrap: wrap; text-align: center; }
+@media (max-width: 600px) {
+  .hero-acoes .btn, .faq-cta .btn { height: auto; min-height: 48px; padding: 12px 20px; line-height: 1.35; }
+}
+
+// Ícone da maçã do Zevem ao lado do nome
+.marca-icone { width: 26px; height: 26px; margin-right: 6px; align-self: center; object-fit: contain; }
+.rodape .marca-icone, .contraste-cab .marca-icone { width: 20px; height: 20px; margin-right: 4px; vertical-align: -4px; }
+
+// Garantia de 30 dias
+// Selo de garantia sobre a foto da abertura
+.midia-selo {
+  position: absolute;
+  top: -26px;
+  right: -26px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 116px;
+  height: 116px;
+  border-radius: 50%;
+  background: $lima;
+  color: $preto;
+  transform: rotate(10deg);
+  box-shadow: 0 0 0 6px rgba(177, 247, 13, 0.18), 0 16px 32px rgba(0, 0, 0, 0.45);
+  strong { font-size: 46px; font-weight: 800; line-height: 1; }
+  span { font-size: 11px; font-weight: 800; line-height: 1.15; text-align: center; text-transform: uppercase; letter-spacing: 0.04em; }
+}
+.preco-detalhe { margin: -18px 0 22px; color: $suave; font-size: 13px; }
+.garantia {
+  display: flex; align-items: center; gap: 28px; margin-top: 48px; padding: 28px 32px;
+  border-radius: 24px; border: 1.5px dashed rgba(177, 247, 13, 0.45); background: rgba(177, 247, 13, 0.05);
+  h3 { font-size: 20px; }
+  p { margin: 0; color: $suave; font-size: 15px; }
+}
+.garantia-selo {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 112px; height: 112px; border-radius: 50%; background: $lima; color: $preto;
+  box-shadow: 0 0 0 6px rgba(177, 247, 13, 0.15);
+  strong { font-size: 44px; font-weight: 800; line-height: 1; }
+  span { font-size: 11px; font-weight: 800; line-height: 1.15; text-align: center; text-transform: uppercase; letter-spacing: 0.04em; }
+}
+@media (max-width: 600px) {
+  .garantia { flex-direction: column; text-align: center; padding: 28px 20px; gap: 18px; }
+}
+@media (max-width: 900px) {
+  .midia-selo { top: -18px; right: 10px; width: 96px; height: 96px; strong { font-size: 38px; } span { font-size: 10px; } }
+}
+.sem-quebra-h { white-space: nowrap; }

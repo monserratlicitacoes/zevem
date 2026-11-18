@@ -48,6 +48,8 @@ const PROVEDORES = {
     async cancelarAssinatura() {},
     interpretarWebhook() { throw new Error('O provedor manual não recebe webhooks'); },
   },
+  // Asaas: assinaturas nascem pelo checkout (checkout.js); aqui ficam renovação, cancelamento e webhook
+  asaas: require('./asaas').provedor,
 };
 
 module.exports = function registrarPagamentos(ctx) {
@@ -126,6 +128,12 @@ module.exports = function registrarPagamentos(ctx) {
   `);
 
   try { db.prepare('ALTER TABLE assinaturas ADD COLUMN encerrada_em DATETIME').run(); } catch {}
+  // Gateway (Asaas): cartão guardado no gateway para a renovação (token, nunca o número), compra parcelada
+  // do ciclo atual (para estorno) e IP de origem (o Asaas pede nas cobranças de cartão)
+  try { db.prepare('ALTER TABLE assinaturas ADD COLUMN cartao_token TEXT').run(); } catch {}
+  try { db.prepare('ALTER TABLE assinaturas ADD COLUMN provedor_parcelamento_id TEXT').run(); } catch {}
+  try { db.prepare('ALTER TABLE assinaturas ADD COLUMN ip_origem TEXT').run(); } catch {}
+  try { db.prepare('ALTER TABLE assinaturas ADD COLUMN aviso_renovacao_ciclo INTEGER').run(); } catch {}
 
   const provedorAtual = () => process.env.PAGAMENTOS_PROVEDOR || 'manual';
   const hoje = () => agoraBrasilia().hoje;
@@ -138,12 +146,37 @@ module.exports = function registrarPagamentos(ctx) {
   function parcelasDoCiclo(valorAnual, n, inicio) {
     return dividirEmParcelas(valorAnual, n).map((valor, i) => ({ parcela: i + 1, total_parcelas: n, valor, vencimento: somarMeses(inicio, i) }));
   }
+  // doProvedor: dados do gateway na mesma ordem das parcelas. Se o gateway devolver as próprias parcelas
+  // (com valor e vencimento: compra parcelada no cartão, Pix à vista, cobrança única por link), valem as dele.
   function gravarCobrancas(assinatura, ciclo, parcelas, doProvedor) {
-    const ins = db.prepare(`INSERT INTO cobrancas (assinatura_id, usuario_id, ciclo, parcela, total_parcelas, valor, vencimento, provedor_cobranca_id, link_pagamento)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    parcelas.forEach((p, i) => ins.run(assinatura.id, assinatura.usuario_id, ciclo, p.parcela, p.total_parcelas, p.valor, p.vencimento,
-      doProvedor?.[i]?.provedor_cobranca_id ?? null, doProvedor?.[i]?.link_pagamento ?? null));
+    if (doProvedor?.length && doProvedor[0].valor != null && doProvedor[0].vencimento) {
+      parcelas = doProvedor.map((c, i) => ({ parcela: i + 1, total_parcelas: doProvedor.length, valor: c.valor, vencimento: c.vencimento }));
+    }
+    const ins = db.prepare(`INSERT INTO cobrancas (assinatura_id, usuario_id, ciclo, parcela, total_parcelas, valor, vencimento, status, pago_em, valor_pago,
+      forma_pagamento, provedor_cobranca_id, link_pagamento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    parcelas.forEach((p, i) => {
+      const d = doProvedor?.[i] || {};
+      const paga = d.status === 'paga';
+      ins.run(assinatura.id, assinatura.usuario_id, ciclo, p.parcela, p.total_parcelas, p.valor, p.vencimento, paga ? 'paga' : 'pendente',
+        paga ? (d.pago_em || hoje()) : null, paga ? p.valor : null, d.forma ?? null, d.provedor_cobranca_id ?? null, d.link_pagamento ?? null);
+    });
   }
+
+  // Assinatura já paga no gateway (checkout): grava a assinatura e as cobranças do 1º ciclo
+  function registrarAssinaturaPaga({ usuarioId, plano, inicio, provedor, cliente_id, parcelamento_id, cartao_token, ip, cobrancas }) {
+    return db.transaction(() => {
+      const r = db.prepare(`INSERT INTO assinaturas (usuario_id, plano_id, inicio_ciclo, fim_ciclo, valor_ciclo, provedor, provedor_cliente_id,
+        provedor_parcelamento_id, cartao_token, ip_origem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(usuarioId, plano.id, inicio, fimDoCiclo(inicio), plano.valor_anual, provedor, cliente_id ?? null, parcelamento_id ?? null, cartao_token ?? null, ip ?? null);
+      const a = db.prepare('SELECT * FROM assinaturas WHERE id = ?').get(r.lastInsertRowid);
+      gravarCobrancas(a, 1, parcelasDoCiclo(plano.valor_anual, plano.parcelas, inicio), cobrancas);
+      return a.id;
+    })();
+  }
+
+  // Outros módulos (checkout.js) olham os eventos do webhook antes de aplicá-los (ex.: Pix do checkout pago)
+  const ouvintesEvento = [];
+  const aoEvento = (fn) => ouvintesEvento.push(fn);
 
   async function criarAssinatura(usuarioId, plano, inicio) {
     const provedor = PROVEDORES[provedorAtual()];
@@ -184,8 +217,9 @@ module.exports = function registrarPagamentos(ctx) {
         try {
           const resp = await provedor.renovarCiclo({ assinatura: a, plano, cobrancas: parcelas });
           db.transaction(() => {
-            db.prepare(`UPDATE assinaturas SET ciclo = ciclo + 1, inicio_ciclo = ?, fim_ciclo = ?, valor_ciclo = ?, atualizado_em = CURRENT_TIMESTAMP WHERE id = ?`)
-              .run(inicio, fimDoCiclo(inicio), plano.valor_anual, a.id);
+            db.prepare(`UPDATE assinaturas SET ciclo = ciclo + 1, inicio_ciclo = ?, fim_ciclo = ?, valor_ciclo = ?,
+              provedor_parcelamento_id = COALESCE(?, provedor_parcelamento_id), atualizado_em = CURRENT_TIMESTAMP WHERE id = ?`)
+              .run(inicio, fimDoCiclo(inicio), plano.valor_anual, resp.parcelamento_id ?? null, a.id);
             gravarCobrancas(a, a.ciclo + 1, parcelas, resp.cobrancas);
           })();
         } catch (e) { console.error(`[pagamentos] falha ao renovar a assinatura ${a.id}:`, e.message); }
@@ -229,6 +263,7 @@ module.exports = function registrarPagamentos(ctx) {
       const r = ins.run(req.params.provedor, String(ev.id), ev.tipo, JSON.stringify(req.body ?? {}));
       if (!r.changes) continue; // já recebido
       try {
+        for (const fn of ouvintesEvento) await fn(ev, req.params.provedor);
         aplicarEvento(ev);
         db.prepare('UPDATE pagamentos_eventos SET processado = 1 WHERE id = ?').run(r.lastInsertRowid);
       } catch (e) {
@@ -399,7 +434,8 @@ module.exports = function registrarPagamentos(ctx) {
 
   // Cancela no gateway e no banco. Lança erro se o gateway recusar.
   async function cancelarAssinatura(a, imediato) {
-    await (PROVEDORES[a.provedor] || PROVEDORES.manual).cancelarAssinatura({ assinatura: a, imediato });
+    const abertas = imediato ? db.prepare("SELECT * FROM cobrancas WHERE assinatura_id = ? AND status IN ('pendente', 'vencida')").all(a.id) : [];
+    await (PROVEDORES[a.provedor] || PROVEDORES.manual).cancelarAssinatura({ assinatura: a, imediato, abertas });
     db.transaction(() => {
       db.prepare(`UPDATE assinaturas SET renovacao_automatica = 0, cancelada_em = CURRENT_TIMESTAMP, status = ?,
         encerrada_em = CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE encerrada_em END, atualizado_em = CURRENT_TIMESTAMP WHERE id = ?`)
@@ -491,7 +527,24 @@ module.exports = function registrarPagamentos(ctx) {
     res.json({ ok: true });
   });
 
-  return { temAssinatura, atualizarAssinaturas };
+  // ── Master: estorno (garantia de 30 dias) — devolve o ciclo atual no gateway e cancela a assinatura na hora ──
+  app.post('/admin/assinaturas/:id/estornar', master(), async (req, res) => {
+    const a = db.prepare('SELECT * FROM assinaturas WHERE id = ?').get(req.params.id);
+    if (!a) return res.status(404).json({ erro: 'Assinatura não encontrada' });
+    const provedor = PROVEDORES[a.provedor];
+    if (!provedor?.estornarCiclo) return res.status(400).json({ erro: 'Este provedor não faz estorno pelo Zevem. Devolva o valor por fora e cancele a assinatura.' });
+    const pagas = db.prepare("SELECT * FROM cobrancas WHERE assinatura_id = ? AND ciclo = ? AND status = 'paga'").all(a.id, a.ciclo);
+    if (!pagas.length) return res.status(400).json({ erro: 'Não há pagamento deste ciclo para estornar.' });
+    try { await provedor.estornarCiclo({ assinatura: a, pagas }); }
+    catch (e) { return res.status(502).json({ erro: `O gateway recusou o estorno: ${e.message}` }); }
+    db.prepare("UPDATE cobrancas SET status = 'estornada' WHERE assinatura_id = ? AND ciclo = ? AND status = 'paga'").run(a.id, a.ciclo);
+    try { await cancelarAssinatura(a, true); } catch (e) { console.error(`[pagamentos] estorno ok, mas o cancelamento falhou (assinatura ${a.id}):`, e.message); }
+    db.prepare(`UPDATE pedidos_cancelamento SET status = 'concluido', resolucao = 'cancelar_agora', resolvido_em = CURRENT_TIMESTAMP
+      WHERE assinatura_id = ? AND status = 'aberto'`).run(a.id);
+    res.json({ ok: true });
+  });
+
+  return { temAssinatura, atualizarAssinaturas, registrarAssinaturaPaga, aoEvento, PROVEDORES };
 };
 
 module.exports.PROVEDORES = PROVEDORES;

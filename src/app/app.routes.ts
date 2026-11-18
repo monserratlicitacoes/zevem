@@ -10,6 +10,7 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'cadastro', loadComponent: () => import('./pages/cadastro/cadastro').then((m) => m.Cadastro) },
   { path: 'assinar', loadComponent: () => import('./pages/assinar/assinar').then((m) => m.Assinar) }, // página pública de venda
+  { path: 'checkout', loadComponent: () => import('./pages/checkout/checkout').then((m) => m.Checkout) }, // paga e entra na hora
   { path: 'confirmar-email', loadComponent: () => import('./pages/confirmar-email/confirmar-email').then((m) => m.ConfirmarEmail) },
   { path: 'redefinir-senha', loadComponent: () => import('./pages/redefinir-senha/redefinir-senha').then((m) => m.RedefinirSenha) }, // sem token: pede o e-mail; com token (link do e-mail): nova senha
   { path: 'dashboard', loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.Dashboard), canActivate: [authGuard] },

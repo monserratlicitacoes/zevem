@@ -1,0 +1,415 @@
+// Mesma identidade da página de venda (MEVEM): verde-limão sobre quase-preto
+$preto: #181818;
+$preto-2: #121212;
+$cartao: #202020;
+$campo: #262626;
+$linha: rgba(255, 255, 255, 0.08);
+$lima: #b1f70d;
+$texto: #f4f5f0;
+$suave: #a3a8a0;
+$erro: #ff8a7a;
+
+:host { display: block; }
+
+.ck {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) 1.3fr;
+  background: $preto;
+  color: $texto;
+  font-family: 'Montserrat', sans-serif;
+}
+
+// ── Lado esquerdo ──
+.ck-lado {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 40px clamp(24px, 4vw, 56px);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(177, 247, 13, 0.12), transparent 55%),
+    $preto-2;
+  border-right: 1px solid $linha;
+}
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: $texto;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 20px;
+}
+.marca-icone { width: 34px; height: 34px; border-radius: 9px; }
+
+h1 {
+  margin: 0 0 10px;
+  font-size: clamp(26px, 2.6vw, 34px);
+  line-height: 1.15;
+  font-weight: 800;
+  em { font-style: normal; color: $lima; }
+}
+.lado-sub { margin: 0 0 32px; color: $suave; font-size: 15px; }
+
+.passos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  li {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    color: $suave;
+    transition: background 0.2s, color 0.2s;
+  }
+  li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 29px;
+    top: 46px;
+    width: 2px;
+    height: 16px;
+    background: $linha;
+  }
+  li.atual { background: rgba(177, 247, 13, 0.08); color: $texto; }
+  li.feito { color: $texto; }
+  li.feito:not(:last-child)::after { background: $lima; }
+}
+.passo-num {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 14px;
+  border: 2px solid $linha;
+  .atual & { border-color: $lima; color: $lima; }
+  .feito & { background: $lima; border-color: $lima; color: $preto; }
+  svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+}
+.passo-txt {
+  display: flex;
+  flex-direction: column;
+  strong { font-size: 15px; }
+  small { font-size: 12.5px; color: $suave; }
+}
+
+.lado-garantia {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  p { margin: 0; color: $suave; font-size: 13px; line-height: 1.5; }
+}
+.selo {
+  flex: 0 0 auto;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: $lima;
+  color: $preto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 17px;
+  line-height: 1;
+  transform: rotate(-8deg);
+  small { font-size: 9.5px; font-weight: 700; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.02em; }
+}
+
+// ── Lado direito ──
+.ck-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px clamp(16px, 5vw, 72px) 24px;
+}
+.barra {
+  width: min(560px, 100%);
+  height: 6px;
+  border-radius: 99px;
+  background: $linha;
+  overflow: hidden;
+  span { display: block; height: 100%; min-width: 6%; background: $lima; border-radius: inherit; transition: width 0.4s ease; }
+}
+.etapa-de { width: min(560px, 100%); margin: 10px 0 24px; color: $suave; font-size: 13px; font-weight: 600; }
+
+.cartao-form {
+  width: min(560px, 100%);
+  background: $cartao;
+  border: 1px solid $linha;
+  border-radius: 20px;
+  padding: clamp(22px, 4vw, 36px);
+
+  h2 { margin: 0 0 6px; font-size: 26px; font-weight: 800; }
+  .sub { margin: 0 0 24px; color: $suave; font-size: 14.5px; line-height: 1.5; b { color: $texto; } }
+}
+
+form { display: flex; flex-direction: column; gap: 16px; }
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: $suave;
+}
+input:not([type='checkbox']) {
+  width: 100%;
+  box-sizing: border-box;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid $linha;
+  background: $campo;
+  color: $texto;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &::placeholder { color: #6d716b; }
+  &:focus { border-color: $lima; box-shadow: 0 0 0 3px rgba(177, 247, 13, 0.15); }
+}
+.duas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.marcar {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  input { width: 18px; height: 18px; accent-color: $lima; }
+}
+.armadilha { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+.campo-bandeira { position: relative; display: block; }
+.bandeira {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-weight: 800;
+  color: $preto;
+  background: $lima;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.erro {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 138, 122, 0.1);
+  border: 1px solid rgba(255, 138, 122, 0.35);
+  color: $erro;
+  font-size: 14px;
+  line-height: 1.45;
+  a { color: $lima; font-weight: 700; margin-left: 6px; }
+}
+
+.btn-principal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 14px;
+  background: $lima;
+  color: $preto;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s, filter 0.15s;
+  &:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+  &:disabled { opacity: 0.55; cursor: default; }
+}
+.btn-voltar {
+  min-height: 54px;
+  padding: 0 22px;
+  border-radius: 14px;
+  border: 1px solid $linha;
+  background: transparent;
+  color: $texto;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  &:hover:not(:disabled) { border-color: $suave; }
+}
+.acoes { display: flex; gap: 12px; margin-top: 8px; .btn-principal { flex: 1; } }
+
+// Plano
+.plano {
+  border: 2px solid $lima;
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 20px;
+  background: rgba(177, 247, 13, 0.04);
+}
+.plano-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.plano-nome { font-weight: 800; font-size: 15px; }
+.plano-tag { font-size: 11.5px; font-weight: 800; background: $lima; color: $preto; padding: 4px 10px; border-radius: 99px; }
+.plano-preco {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  small { font-size: 15px; font-weight: 700; color: $suave; letter-spacing: 0; }
+}
+.plano-total { margin: 4px 0 18px; color: $suave; font-size: 14px; }
+.plano-lista {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  li { position: relative; padding-left: 26px; font-size: 14.5px; line-height: 1.4; }
+  li::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 4px;
+    width: 12px;
+    height: 7px;
+    border-left: 2.5px solid $lima;
+    border-bottom: 2.5px solid $lima;
+    transform: rotate(-45deg);
+  }
+}
+.plano-renova { margin: 0; color: $suave; font-size: 12.5px; line-height: 1.5; }
+
+// Formas de pagamento
+.formas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px; }
+.formas button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1.5px solid $linha;
+  background: $campo;
+  color: $texto;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; margin-bottom: 4px; }
+  small { color: $suave; font-weight: 500; font-size: 12.5px; }
+  &.ativa { border-color: $lima; background: rgba(177, 247, 13, 0.07); svg { color: $lima; } }
+}
+
+// Pix
+.pix { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; .acoes { width: 100%; } }
+.pix-qr { width: 220px; height: 220px; border-radius: 14px; background: #fff; padding: 10px; image-rendering: pixelated; }
+.pix-valor { margin: 0; font-size: 26px; font-weight: 900; }
+.pix-instrucao { margin: 0; color: $suave; font-size: 14px; line-height: 1.5; b { color: $texto; } }
+.pix-copia {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  input { font-size: 13px; }
+  button {
+    flex: 0 0 auto;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 12px;
+    background: $lima;
+    color: $preto;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+}
+.pix-espera { display: flex; align-items: center; gap: 10px; margin: 4px 0 0; color: $suave; font-size: 13.5px; text-align: left; }
+.pulso {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: $lima;
+  animation: pulso 1.4s ease-in-out infinite;
+}
+@keyframes pulso {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.7); }
+}
+
+.seguranca {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid $linha;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  li { position: relative; padding-left: 16px; color: $suave; font-size: 12.5px; }
+  li::before { content: ''; position: absolute; left: 0; top: 5px; width: 7px; height: 7px; border-radius: 50%; background: $lima; }
+}
+
+// Ativação
+.confirmado {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 99px;
+  background: rgba(177, 247, 13, 0.12);
+  color: $lima;
+  font-weight: 800;
+  font-size: 13px;
+  svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+}
+
+.rodape { margin: 24px 0 0; color: #6d716b; font-size: 12.5px; text-align: center; }
+
+// ── Celular e telas estreitas: etapas viram uma faixa no topo ──
+@media (max-width: 900px) {
+  .ck { grid-template-columns: 1fr; }
+  .ck-lado {
+    position: static;
+    height: auto;
+    gap: 18px;
+    padding: 20px 16px 18px;
+    border-right: 0;
+    border-bottom: 1px solid $linha;
+  }
+  h1 { font-size: 22px; margin-bottom: 14px; }
+  .lado-sub, .lado-garantia, .passo-txt small { display: none; }
+  .passos {
+    flex-direction: row;
+    gap: 4px;
+    li { flex: 1; flex-direction: column; gap: 6px; padding: 8px 4px; text-align: center; }
+    li:not(:last-child)::after { display: none; }
+  }
+  .passo-num { width: 30px; height: 30px; font-size: 13px; }
+  .passo-txt strong { font-size: 11.5px; }
+  .ck-form { padding: 20px 16px; }
+  .duas { grid-template-columns: 1fr; }
+  .acoes { flex-direction: column-reverse; }
+}
+@media (max-width: 420px) {
+  .formas { grid-template-columns: 1fr; }
+}

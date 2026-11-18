@@ -14,7 +14,7 @@ import { BoasVindasService } from './services/boas-vindas.service';
 
 // Telas de entrada: abrem sem menu nem vídeos mesmo com alguém logado no navegador
 // (ex.: o master abrindo um link de convite para testar)
-const ROTAS_PUBLICAS = ['/login', '/cadastro', '/confirmar-email', '/redefinir-senha', '/assinar'];
+const ROTAS_PUBLICAS = ['/login', '/cadastro', '/confirmar-email', '/redefinir-senha', '/assinar', '/checkout'];
 const semQuery = (url: string) => url.split(/[?#]/)[0];
 // Telas das áreas Master e Planejador
 const ROTAS_SEM_VIDEO = ['/admin', '/planejador', '/alertas'];

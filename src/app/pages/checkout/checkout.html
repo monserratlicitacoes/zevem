@@ -1,0 +1,243 @@
+<div class="ck">
+  <!-- Lado esquerdo: marca, etapas e garantia -->
+  <aside class="ck-lado">
+    <a class="marca" routerLink="/assinar">
+      <img src="/zevem-icone.png" alt="" class="marca-icone" />
+      <span>Zevem</span>
+    </a>
+
+    <div class="lado-meio">
+      <h1>Seu planejador financeiro<br /><em>começa agora.</em></h1>
+      <p class="lado-sub">Quatro passos rápidos e você já entra no app.</p>
+
+      <ol class="passos">
+        @for (e of etapas; track e.n) {
+          <li [class.atual]="etapa() === e.n" [class.feito]="etapa() > e.n">
+            <span class="passo-num">
+              @if (etapa() > e.n) {
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+              } @else {
+                {{ e.n }}
+              }
+            </span>
+            <span class="passo-txt">
+              <strong>{{ e.titulo }}</strong>
+              <small>{{ e.texto }}</small>
+            </span>
+          </li>
+        }
+      </ol>
+    </div>
+
+    <div class="lado-garantia">
+      <span class="selo">30 dias<small>de garantia</small></span>
+      <p>Se não for para você, é só pedir em até 30 dias e eu devolvo 100% do valor.</p>
+    </div>
+  </aside>
+
+  <!-- Lado direito: a etapa atual -->
+  <main class="ck-form">
+    <div class="barra" role="progressbar" [attr.aria-valuenow]="etapa()" aria-valuemin="1" aria-valuemax="4">
+      <span [style.width.%]="progresso()"></span>
+    </div>
+    <p class="etapa-de">Etapa {{ etapa() }} de 4</p>
+
+    <div class="cartao-form">
+      @switch (etapa()) {
+        <!-- 1. Quem é você -->
+        @case (1) {
+          <h2>Quem é você</h2>
+          <p class="sub">Esses dados criam a sua conta no Zevem.</p>
+          <form (ngSubmit)="continuarDados()" autocomplete="on" novalidate>
+            <label>Nome completo
+              <input name="nome" [(ngModel)]="dados.nome" autocomplete="name" placeholder="Como está no seu documento" required />
+            </label>
+            <label>E-mail
+              <input name="email" type="email" [(ngModel)]="dados.email" autocomplete="email" placeholder="voce@email.com" required />
+            </label>
+            <div class="duas">
+              <label>WhatsApp
+                <input name="telefone" inputmode="tel" [ngModel]="dados.telefone" (ngModelChange)="dados.telefone = mascaraTelefone($event)"
+                  autocomplete="tel-national" placeholder="(00) 00000-0000" required />
+              </label>
+              <label>CPF
+                <input name="cpf" inputmode="numeric" [ngModel]="dados.cpf" (ngModelChange)="dados.cpf = mascaraCpf($event)" placeholder="000.000.000-00" required />
+              </label>
+            </div>
+            <!-- campo-armadilha para robôs (escondido) -->
+            <input class="armadilha" name="site" [(ngModel)]="dados.site" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+            @if (erro()) {
+              <p class="erro" role="alert">{{ erro() }}
+                @if (contaExiste()) { <a routerLink="/login">Entrar no Zevem</a> }
+              </p>
+            }
+            <button class="btn-principal" type="submit" [disabled]="carregando()">
+              {{ carregando() ? 'Um instante…' : 'Continuar' }}
+            </button>
+          </form>
+        }
+
+        <!-- 2. Seu plano -->
+        @case (2) {
+          <h2>Seu plano</h2>
+          <p class="sub">Tudo o que você precisa para planejar a sua vida financeira.</p>
+          <div class="plano">
+            <div class="plano-topo">
+              <span class="plano-nome">Plano anual</span>
+              <span class="plano-tag">Mais escolhido</span>
+            </div>
+            <p class="plano-preco">
+              <small>12x de</small> R$ {{ moeda(plano()?.valor_parcela) }}
+            </p>
+            <p class="plano-total">R$ {{ moeda(plano()?.valor_anual) }} por ano · ou à vista no Pix</p>
+            <ul class="plano-lista">
+              <li>Curso de planejamento financeiro, em vídeos</li>
+              <li>Sistema de orçamento, metas, dívidas e sonhos</li>
+              <li>IA que lê faturas e te orienta sobre gastos</li>
+              <li>Lançamentos e orientações pelo WhatsApp</li>
+              <li>Orçamento compartilhado com o cônjuge</li>
+            </ul>
+            <p class="plano-renova">Renova automaticamente a cada ano. Você pode cancelar a renovação quando quiser.</p>
+          </div>
+          <div class="acoes">
+            <button class="btn-voltar" type="button" (click)="voltar()">Voltar</button>
+            <button class="btn-principal" type="button" (click)="irPara(3)">Ir para o pagamento</button>
+          </div>
+        }
+
+        <!-- 3. Pagamento -->
+        @case (3) {
+          <h2>Pagamento</h2>
+          <p class="sub">Pague aqui mesmo, em ambiente seguro.</p>
+
+          <div class="formas" role="tablist">
+            <button type="button" role="tab" [class.ativa]="forma() === 'cartao'" [attr.aria-selected]="forma() === 'cartao'" (click)="escolher('cartao')">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2.5" /><path d="M3 10h18M7 15h4" /></svg>
+              Cartão de crédito
+              <small>12x de R$ {{ moeda(plano()?.valor_parcela) }}</small>
+            </button>
+            <button type="button" role="tab" [class.ativa]="forma() === 'pix'" [attr.aria-selected]="forma() === 'pix'" (click)="escolher('pix')">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 4-4 4-4-4 4-4zM12 13l4 4-4 4-4-4 4-4zM3 12l4-4 4 4-4 4-4-4zM13 12l4-4 4 4-4 4-4-4z" /></svg>
+              Pix
+              <small>R$ {{ moeda(plano()?.valor_anual) }} à vista</small>
+            </button>
+          </div>
+
+          @if (plano() && !plano()!.disponivel) {
+            <p class="erro" role="alert">O pagamento ainda não está disponível. Tente de novo mais tarde.</p>
+          }
+
+          @if (forma() === 'cartao') {
+            <form (ngSubmit)="pagarCartao()" autocomplete="on" novalidate>
+              <label>Número do cartão
+                <span class="campo-bandeira">
+                  <input name="cc-number" inputmode="numeric" autocomplete="cc-number" [ngModel]="cartao.numero"
+                    (ngModelChange)="cartao.numero = mascaraCartao($event)" placeholder="0000 0000 0000 0000" required />
+                  @if (bandeira()) { <span class="bandeira">{{ bandeira() }}</span> }
+                </span>
+              </label>
+              <label>Nome impresso no cartão
+                <input name="cc-name" autocomplete="cc-name" [(ngModel)]="cartao.nome" placeholder="Como está no cartão" required />
+              </label>
+              <div class="duas">
+                <label>Validade
+                  <input name="cc-exp" inputmode="numeric" autocomplete="cc-exp" [ngModel]="cartao.validade"
+                    (ngModelChange)="cartao.validade = mascaraValidade($event)" placeholder="MM/AA" required />
+                </label>
+                <label>CVV
+                  <input name="cc-csc" inputmode="numeric" autocomplete="cc-csc" [(ngModel)]="cartao.cvc" maxlength="4" placeholder="000" required />
+                </label>
+              </div>
+              <div class="duas">
+                <label>CEP do titular
+                  <input name="cep" inputmode="numeric" autocomplete="postal-code" [ngModel]="titular.cep"
+                    (ngModelChange)="titular.cep = mascaraCep($event)" placeholder="00000-000" required />
+                </label>
+                <label>Número do endereço
+                  <input name="numero" [(ngModel)]="titular.numero" placeholder="Ex.: 120" required />
+                </label>
+              </div>
+              <label class="marcar">
+                <input type="checkbox" name="outro" [(ngModel)]="outroTitular" />
+                O cartão está no nome de outra pessoa
+              </label>
+              @if (outroTitular) {
+                <label>CPF do titular do cartão
+                  <input name="cpf-titular" inputmode="numeric" [ngModel]="titular.cpf" (ngModelChange)="titular.cpf = mascaraCpf($event)" placeholder="000.000.000-00" />
+                </label>
+              }
+
+              @if (erro()) { <p class="erro" role="alert">{{ erro() }}</p> }
+              <div class="acoes">
+                <button class="btn-voltar" type="button" (click)="voltar()" [disabled]="carregando()">Voltar</button>
+                <button class="btn-principal" type="submit" [disabled]="carregando() || !plano()?.disponivel">
+                  {{ carregando() ? 'Processando o pagamento…' : 'Pagar 12x de R$ ' + moeda(plano()?.valor_parcela) }}
+                </button>
+              </div>
+            </form>
+          } @else {
+            <div class="pix">
+              @if (pix(); as p) {
+                <img class="pix-qr" [src]="'data:image/png;base64,' + p.qr" alt="QR Code do Pix" />
+                <p class="pix-valor">R$ {{ moeda(plano()?.valor_anual) }}</p>
+                <p class="pix-instrucao">Abra o app do seu banco, escolha <b>Pix › Ler QR Code</b> ou use o código abaixo.</p>
+                <div class="pix-copia">
+                  <input readonly [value]="p.copia" aria-label="Código Pix copia e cola" />
+                  <button type="button" (click)="copiarPix()">{{ copiado() ? 'Copiado!' : 'Copiar' }}</button>
+                </div>
+                <p class="pix-espera"><span class="pulso"></span> Aguardando o pagamento. Assim que cair, você segue para a ativação.</p>
+              } @else if (carregando()) {
+                <p class="pix-espera"><span class="pulso"></span> Gerando o seu Pix…</p>
+              }
+              @if (erro()) { <p class="erro" role="alert">{{ erro() }}</p> }
+              <div class="acoes">
+                <button class="btn-voltar" type="button" (click)="voltar()">Voltar</button>
+              </div>
+            </div>
+          }
+
+          <ul class="seguranca">
+            <li>Pagamento processado pelo Asaas</li>
+            <li>Os dados do cartão não ficam no Zevem</li>
+            <li>30 dias de garantia</li>
+          </ul>
+        }
+
+        <!-- 4. Ativação -->
+        @case (4) {
+          @if (jaAtivado()) {
+            <h2>Pagamento confirmado!</h2>
+            <p class="sub">A sua conta já está ativa. Entre com o seu e-mail e a sua senha.</p>
+            <a class="btn-principal" routerLink="/login">Entrar no Zevem</a>
+          } @else {
+            <div class="confirmado">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+              Pagamento confirmado
+            </div>
+            <h2>Crie a sua senha</h2>
+            <p class="sub">É com ela e com o e-mail <b>{{ dados.email }}</b> que você entra no Zevem.</p>
+            <form (ngSubmit)="ativar()" novalidate>
+              <input class="armadilha" name="username" autocomplete="username" [value]="dados.email" tabindex="-1" aria-hidden="true" />
+              <label>Senha
+                <input name="senha" [type]="verSenha ? 'text' : 'password'" autocomplete="new-password" [(ngModel)]="senha" placeholder="Mínimo de 8 caracteres" required />
+              </label>
+              <label>Repita a senha
+                <input name="senha2" [type]="verSenha ? 'text' : 'password'" autocomplete="new-password" [(ngModel)]="senha2" required />
+              </label>
+              <label class="marcar">
+                <input type="checkbox" name="ver" [(ngModel)]="verSenha" /> Mostrar a senha
+              </label>
+              @if (erro()) { <p class="erro" role="alert">{{ erro() }}</p> }
+              <button class="btn-principal" type="submit" [disabled]="carregando()">
+                {{ carregando() ? 'Entrando…' : 'Entrar no Zevem' }}
+              </button>
+            </form>
+          }
+        }
+      }
+    </div>
+
+    <p class="rodape">Zevem · Dúvidas? Responda o e-mail de boas-vindas que eu te ajudo.</p>
+  </main>
+</div>

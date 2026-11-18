@@ -3,6 +3,39 @@
 Todas as mudanças relevantes do Zevem (antigo Apple Green) ficam registradas aqui.
 Versionamento semântico: PATCH = correções e pequenos ajustes; MINOR = novas funcionalidades; MAJOR = mudanças estruturais.
 
+## [1.5.0] - 2026-11-18
+
+### Adicionado
+- **Checkout próprio em `/checkout`, pelo Asaas: o cliente paga e entra na hora, sem sair do Zevem.**
+  - Tela dividida: à esquerda, as etapas e a garantia; à direita, a etapa atual. No celular, as etapas viram uma faixa no topo.
+  - As 4 etapas: Quem é você (nome, e-mail, WhatsApp, CPF) → Seu plano (anual, 12x de R$ 27,90) → Pagamento (cartão em 12x ou Pix à vista, aqui mesmo) → Ativação (cria a senha e entra direto no app).
+  - Cartão: compra parcelada aprovada na hora. Recusa mostra o motivo do Asaas. Os dados do cartão não são gravados nem vão para o log; o Asaas guarda o cartão e devolve um token para a renovação.
+  - Pix: QR Code e copia-e-cola. A tela consulta a cada 4 segundos e avança sozinha quando o pagamento cai, pelo webhook ou pela consulta. Trocar do Pix para o cartão apaga o Pix em aberto.
+  - Com o pagamento confirmado, a conta nasce confirmada, com CPF e WhatsApp no titular, e a assinatura nasce paga no plano "Zevem Anual" (o preço pode ser mudado em Master › Planos). Um e-mail de boas-vindas leva para "criar senha" se o cliente fechar a página antes da etapa 4.
+  - Se recarregar a página no meio da compra, ela continua de onde parou (só o id do checkout fica no navegador). E-mail que já tem conta é mandado para o login.
+- **Asaas como provedor das assinaturas** (`backend/asaas.js`):
+  - Renovação anual no mesmo cartão (12x). Sem cartão guardado, ou com o cartão recusado, gera uma cobrança com link de pagamento.
+  - Aviso por e-mail 7 dias antes da renovação.
+  - Webhook em `/pagamentos/webhook/asaas`, validado pelo token.
+  - Estorno pelo master (garantia de 30 dias): `POST /admin/assinaturas/:id/estornar` devolve o ano no Asaas e cancela a assinatura na hora.
+  - Configuração no `.env`: `ASAAS_API_KEY`, `ASAAS_AMBIENTE` (sandbox | producao) e `ASAAS_WEBHOOK_TOKEN`. Sem a chave, o checkout avisa que o pagamento está indisponível.
+
+### Alterado
+- **Página `/assinar` em primeira pessoa, com o João como planejador.** Abertura com a frase "Você não precisa entender sobre dinheiro. Eu serei seu planejador." e espaço para a foto e o vídeo do João (`public/lp/joao-abertura.webp` (terno) na abertura e `public/lp/joao-fundador.webp` (suéter) em "Quem te acompanha"; o vídeo entra em `public/lp/`). Os números ganharam "+100 planejadores formados".
+- **Novas seções:**
+  - Zevem × outros apps.
+  - Lançamentos pelo WhatsApp e orçamento a dois com o cônjuge.
+  - Comparativo de preço: R$ 15 mil/ano com um planejador contra R$ 27,90/mês no Zevem. O cartão do Zevem abre o pagamento.
+  - Seis depoimentos, por enquanto em branco.
+  - Orientação no WhatsApp: ilustração de um celular recebendo a mensagem "Esse final de semana você pode gastar R$ 400 com bares e restaurantes.", com a notificação chegando por cima.
+  - "O que é o Zevem": Curso de Planejamento Financeiro + Sistema de gestão de orçamento pessoal + Inteligência artificial para te orientar sobre gastos.
+  - Três pontos fortes logo após a abertura: proteja a qualidade de vida no presente, garanta a do futuro e acabe com a falta de clareza.
+  - FAQ com 13 perguntas, incluindo "Você vai me atender pessoalmente?". A resposta sobre o celular diz que o Zevem é feito para o computador e que, pelo celular, o cliente usa o WhatsApp.
+- **Assinatura sem formulário na página de venda.** Todos os botões de assinar abrem o checkout (`/checkout`). O endpoint `/assinar` do backend continua existindo, mas a página não o usa mais. No FAQ, "Como recebo o acesso?" e "Como funciona o pagamento?" agora dizem que o acesso sai na hora.
+- **Ícone do Zevem.** A maçã com o Z aparece no topo, no contraste e no rodapé. As cores seguem as da MEVEM.
+- **Garantia de 30 dias ou o dinheiro de volta.** No contraste, uma linha em destaque compara com os 7 dias que a lei exige dos outros. A garantia aparece num selo sobre a foto da abertura, no plano, no cartão de assinar, num selo grande depois do plano e no FAQ ("E se eu não gostar?"). O plano é anual, em 12x de R$ 27,90 no cartão, dito de forma discreta abaixo do preço e no FAQ ("Como funciona o pagamento?"). Saíram "Cancele quando quiser" e "Não tem fidelidade".
+- No contraste, o lado dos outros apps traz sempre "Você fica anotando gastos.", e as frases do Zevem ficaram mais curtas.
+
 ## [1.4.0] - 2026-11-17
 
 ### Funcionalidades

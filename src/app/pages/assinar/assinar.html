@@ -2,57 +2,53 @@
   <header class="topo">
     <div class="lp-largura topo-linha">
       <a class="marca" routerLink="/assinar" aria-label="Zevem">
+        <img class="marca-icone" src="/zevem-icone.png" alt="" />
         <span class="marca-ze">ze</span><span class="marca-vem">vem</span>
         <small>por MEVEM</small>
       </a>
       <nav class="topo-links">
         <button type="button" class="link" (click)="irPara('como-funciona')">Como funciona</button>
+        <button type="button" class="link" (click)="irPara('depoimentos')">Depoimentos</button>
         <a class="link" routerLink="/login">Já tenho conta</a>
-        <button type="button" class="btn btn-lima btn-pequeno" (click)="irPara('assinar')">Assinar</button>
+        <button type="button" class="btn btn-lima btn-pequeno" (click)="pagar()">Assinar</button>
       </nav>
     </div>
   </header>
 
-  <!-- Abertura -->
+  <!-- Abertura: frase, minha foto e meu vídeo -->
   <section class="hero">
     <div class="lp-largura hero-grade">
       <div class="hero-texto">
-        <span class="selo">Planejamento financeiro pessoal guiado</span>
-        <h1>Seu dinheiro com direção.<br><em>E alguém experiente ao seu lado.</em></h1>
+        <span class="selo">Seu planejador financeiro no bolso</span>
+        <h1>Você não precisa entender sobre dinheiro.<br><em>Eu serei seu planejador.</em></h1>
         <p class="hero-sub">
-          O Zevem une inteligência artificial, uma metodologia aprovada por 99,8% dos clientes e
-          10 anos de experiência em planejamento financeiro para você montar o seu próprio plano,
-          passo a passo, com orientação em cada etapa.
+          Eu sou o {{ fundador }}. Em 10 anos, liderei o atendimento de mais de 1.400 clientes e formei
+          mais de 100 planejadores financeiros. No Zevem, eu te ensino a montar o seu próprio planejamento,
+          passo a passo, e uma inteligência artificial treinada por mim te acompanha todos os dias.
         </p>
         <div class="hero-acoes">
-          <button type="button" class="btn btn-lima" (click)="irPara('assinar')">Assinar por R$ {{ preco }}/mês</button>
+          <button type="button" class="btn btn-lima" (click)="pagar()">Quero o meu planejador por <span class="sem-quebra">R$ {{ preco }}/mês</span></button>
           <button type="button" class="btn btn-contorno" (click)="irPara('como-funciona')">Como funciona</button>
         </div>
       </div>
 
-      <!-- Prévia ilustrativa do que o app mostra -->
-      <div class="hero-previa" aria-hidden="true">
-        <div class="previa-cartao">
-          <div class="previa-titulo">Este mês</div>
-          <div class="previa-item">
-            <span>Supermercado</span><strong>R$ 412 <small>livres</small></strong>
-            <div class="barra"><i style="width: 68%"></i></div>
-          </div>
-          <div class="previa-item">
-            <span>Lazer</span><strong>R$ 180 <small>livres</small></strong>
-            <div class="barra"><i style="width: 45%"></i></div>
-          </div>
-          <div class="previa-item">
-            <span>Transporte</span><strong class="alerta">R$ 35 <small>livres</small></strong>
-            <div class="barra"><i class="quase" style="width: 92%"></i></div>
-          </div>
-          <div class="previa-venc">
-            <span class="ponto"></span> Fatura do cartão vence <strong>dia 10</strong>
-          </div>
+      <div class="hero-midia">
+        <div class="midia-quadro">
+          @if (video) {
+            <video [src]="video" [poster]="fotoOk() ? foto : ''" controls playsinline preload="metadata"></video>
+          } @else if (fotoOk()) {
+            <img [src]="foto" [alt]="fundador" (error)="fotoOk.set(false)" />
+          } @else {
+            <div class="midia-vazia"><span>JG</span><small>Sua foto ou vídeo aqui</small></div>
+          }
         </div>
-        <div class="previa-meta">
-          <span>Meta de gastos do mês</span>
-          <strong>83%</strong>
+        <div class="midia-selo" aria-label="Garantia de 30 dias ou o seu dinheiro de volta">
+          <strong>30</strong>
+          <span>dias de<br>garantia</span>
+        </div>
+        <div class="midia-legenda">
+          <strong>{{ fundador }}</strong>
+          <span>Fundador da MEVEM e seu planejador no Zevem</span>
         </div>
       </div>
     </div>
@@ -67,28 +63,173 @@
     </div>
   </section>
 
-  <!-- Como funciona -->
-  <section class="secao" id="como-funciona">
+  <!-- Pontos fortes -->
+  <section class="fortes">
+    <div class="lp-largura fortes-grade">
+      @for (f of pontosFortes; track f; let i = $index) {
+        <div class="forte">
+          <div class="forte-topo">
+            <span class="forte-icone" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                @switch (i) {
+                  @case (0) { <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/> }
+                  @case (1) { <path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/> }
+                  @default { <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/> }
+                }
+              </svg>
+            </span>
+            <span class="forte-num">0{{ i + 1 }}</span>
+          </div>
+          <strong>{{ f }}</strong>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- O que é o Zevem: curso + sistema + IA -->
+  <section class="secao secao-escura">
     <div class="lp-largura">
-      <span class="secao-selo">Como funciona</span>
-      <h2>Você monta. O Zevem acompanha.</h2>
-      <div class="passos">
-        @for (p of passos; track p.titulo; let i = $index) {
-          <article class="passo">
-            <span class="passo-num">{{ i + 1 }}</span>
-            <h3>{{ p.titulo }}</h3>
-            <p>{{ p.texto }}</p>
+      <span class="secao-selo">O que é o Zevem</span>
+      <h2>Três coisas que nunca estiveram juntas. <em>Agora estão.</em></h2>
+      <div class="formula">
+        @for (f of formula; track f.titulo; let ultimo = $last) {
+          <article class="formula-item">
+            <span class="formula-icone" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                @switch (f.icone) {
+                  @case ('curso') { <rect x="2" y="4" width="20" height="14" rx="2"/><path d="m10 8 5 3-5 3z"/><path d="M8 21h8"/> }
+                  @case ('sistema') { <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/> }
+                  @default { <path d="M12 3l1.8 4.6L18.5 9l-4.7 1.6L12 15l-1.8-4.4L5.5 9l4.7-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/> }
+                }
+              </svg>
+            </span>
+            <h3>{{ f.titulo }}</h3>
+            <p>{{ f.texto }}</p>
           </article>
+          @if (!ultimo) { <span class="formula-mais" aria-hidden="true">+</span> }
         }
       </div>
     </div>
   </section>
 
-  <!-- Recursos -->
+  <!-- Como funciona, com a prévia do app -->
+  <section class="secao" id="como-funciona">
+    <div class="lp-largura">
+      <span class="secao-selo">Como funciona</span>
+      <h2>Eu te ensino. Você monta. <em>O Zevem acompanha.</em></h2>
+      <div class="como-grade">
+        <div class="passos">
+          @for (p of passos; track p.titulo; let i = $index) {
+            <article class="passo">
+              <span class="passo-num">{{ i + 1 }}</span>
+              <div>
+                <h3>{{ p.titulo }}</h3>
+                <p>{{ p.texto }}</p>
+              </div>
+            </article>
+          }
+        </div>
+
+        <!-- Prévia ilustrativa do que o app mostra -->
+        <div class="hero-previa" aria-hidden="true">
+          <div class="previa-cartao">
+            <div class="previa-titulo">Este mês</div>
+            <div class="previa-item">
+              <span>Supermercado</span><strong>R$ 412 <small>livres</small></strong>
+              <div class="barra"><i style="width: 68%"></i></div>
+            </div>
+            <div class="previa-item">
+              <span>Lazer</span><strong>R$ 180 <small>livres</small></strong>
+              <div class="barra"><i style="width: 45%"></i></div>
+            </div>
+            <div class="previa-item">
+              <span>Transporte</span><strong class="alerta">R$ 35 <small>livres</small></strong>
+              <div class="barra"><i class="quase" style="width: 92%"></i></div>
+            </div>
+            <div class="previa-venc">
+              <span class="ponto"></span> Fatura do cartão vence <strong>dia 10</strong>
+            </div>
+          </div>
+          <div class="previa-meta">
+            <span>Meta de gastos do mês</span>
+            <strong>83%</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contraste com os outros apps -->
   <section class="secao secao-escura">
     <div class="lp-largura">
+      <span class="secao-selo">Por que o Zevem é diferente</span>
+      <h2>Os outros apps anotam gastos.<br>No Zevem, <em>eu te ensino a planejar.</em></h2>
+      <div class="contraste">
+        <div class="contraste-cab">
+          <span class="cab-zevem"><img class="marca-icone" src="/zevem-icone.png" alt="" /><span><span class="marca-ze">ze</span><span class="marca-vem">vem</span></span></span>
+          <span class="cab-outros">Outros apps</span>
+        </div>
+        @for (c of contraste; track c) {
+          <div class="contraste-linha">
+            <p class="lado-zevem"><span class="sinal">✓</span>{{ c }}</p>
+            <p class="lado-outros"><span class="sinal">✕</span>{{ outrosApps }}</p>
+          </div>
+        }
+        <!-- Linha em destaque: a garantia -->
+        <div class="contraste-linha contraste-garantia">
+          <p class="lado-zevem"><span class="sinal">✓</span><span><b>Garantia:</b> Segurança para te dar 30 dias de garantia.</span></p>
+          <p class="lado-outros"><span class="sinal">✕</span><span><b>Garantia:</b> Cumpre o que a lei exige de 7 dias de garantia.</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Orientação pelo WhatsApp -->
+  <section class="secao zap">
+    <div class="lp-largura zap-grade">
+      <div>
+        <span class="secao-selo">Orientação no seu WhatsApp</span>
+        <h2>Eu te digo quanto pode gastar. <em>Antes de você gastar.</em></h2>
+        <p class="zap-texto">
+          O Zevem acompanha os seus números e manda no seu WhatsApp orientações práticas: quanto ainda cabe em
+          cada item, quando segurar e quando dá para aproveitar. Você não precisa abrir o app para saber o que fazer.
+        </p>
+        <ul class="zap-lista">
+          <li>Limites de cada item do orçamento</li>
+          <li>Lembretes dos vencimentos</li>
+          <li>Alertas antes de estourar uma meta</li>
+        </ul>
+      </div>
+
+      <!-- Ilustração: a mensagem chegando no celular -->
+      <div class="celular" aria-hidden="true">
+        <div class="celular-tela">
+          <div class="zap-topo">
+            <span class="zap-avatar"><span class="marca-ze">ze</span><span class="marca-vem">vem</span></span>
+            <span><strong>Zevem</strong><small>online</small></span>
+          </div>
+          <div class="zap-conversa">
+            <span class="zap-dia">Sexta-feira</span>
+            <div class="balao">
+              Esse final de semana você pode gastar <strong>R$ 400</strong> com bares e restaurantes. 🍻
+              <time>18:02</time>
+            </div>
+            <div class="balao balao-eu">Show! Vou aproveitar 😄 <time>18:05</time></div>
+          </div>
+        </div>
+        <div class="notificacao">
+          <span class="notificacao-icone">💬</span>
+          <span><strong>Zevem</strong>Esse final de semana você pode gastar R$ 400 com bares e restaurantes.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recursos -->
+  <section class="secao">
+    <div class="lp-largura">
       <span class="secao-selo">O que o Zevem faz por você</span>
-      <h2>Clareza para decidir. Todos os dias.</h2>
+      <h2>Clareza para decidir. <em>Todos os dias.</em></h2>
       <div class="recursos">
         @for (r of recursos; track r.titulo) {
           <article class="recurso">
@@ -98,85 +239,136 @@
           </article>
         }
       </div>
+
+      <!-- Do jeito que você vive: WhatsApp e cônjuge -->
+      <div class="destaques">
+        <article class="destaque">
+          <span class="destaque-icone">💬</span>
+          <div>
+            <h3>Lance tudo pelo WhatsApp</h3>
+            <p>Gastou? Manda uma mensagem e pronto: o gasto entra direto no seu orçamento, sem abrir o app.</p>
+          </div>
+        </article>
+        <article class="destaque">
+          <span class="destaque-icone">💍</span>
+          <div>
+            <h3>Orçamento a dois</h3>
+            <p>É casado? Adicione o seu cônjuge e vocês dois lançam e acompanham o mesmo orçamento, juntos.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparativo de preço -->
+  <section class="secao secao-escura">
+    <div class="lp-largura">
+      <span class="secao-selo">Faça as contas</span>
+      <h2>Um planejador experiente ao seu lado, por <em>menos de <span class="sem-quebra-h">R$ 1</span> por dia.</em></h2>
+      <div class="precos">
+        <div class="preco-cartao preco-caro">
+          <span class="preco-pergunta">Quanto custa ter um planejador experiente te orientando?</span>
+          <strong>R$ 15 mil<small>/ano</small></strong>
+          <span class="preco-nota">Consultoria individual tradicional</span>
+        </div>
+        <button type="button" class="preco-cartao preco-zevem" (click)="pagar()">
+          <span class="preco-pergunta">Quanto custa ter tudo isso no Zevem?</span>
+          <strong>R$ {{ preco }}<small>/mês</small></strong>
+          <span class="preco-nota">R$ {{ precoAno }} por ano · <u>Quero assinar</u></span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Depoimentos (6) -->
+  <section class="secao" id="depoimentos">
+    <div class="lp-largura">
+      <span class="secao-selo">Depoimentos</span>
+      <h2>Quem planejou comigo, <em>mudou de vida.</em></h2>
+      <div class="depoimentos">
+        @for (d of depoimentos; track $index) {
+          <figure class="depoimento" [class.vazio]="!d.texto">
+            <span class="aspas" aria-hidden="true">“</span>
+            <blockquote>{{ d.texto || 'Depoimento do cliente aqui.' }}</blockquote>
+            <figcaption>
+              <span class="avatar">{{ iniciais(d.nome) }}</span>
+              <span>
+                <strong>{{ d.nome || 'Nome do cliente' }}</strong>
+                <small>{{ d.detalhe || 'Cidade · profissão' }}</small>
+              </span>
+            </figcaption>
+          </figure>
+        }
+      </div>
     </div>
   </section>
 
   <!-- Quem acompanha -->
-  <section class="secao">
+  <section class="secao secao-escura">
     <div class="lp-largura fundador">
-      <div class="fundador-foto" aria-hidden="true">JG</div>
+      <div class="fundador-foto">
+        @if (fotoFundadorOk()) {
+          <img [src]="fotoFundador" [alt]="fundador" (error)="fotoFundadorOk.set(false)" />
+        } @else {
+          <span aria-hidden="true">JG</span>
+        }
+      </div>
       <div>
         <span class="secao-selo">Quem te acompanha</span>
         <blockquote>
-          “Durante 10 anos, liderei o atendimento de mais de 1.400 clientes e transformei esse aprendizado
-          em uma metodologia. No Zevem, eu estou com você em cada passo, mostrando como fazer o seu
-          próprio planejamento.”
+          “Durante 10 anos, liderei o atendimento de mais de 1.400 clientes e formei mais de 100 planejadores
+          financeiros. Transformei tudo isso numa metodologia aprovada por 99,8% dos meus clientes. No Zevem,
+          eu estou com você em cada passo, te ensinando a fazer o seu próprio planejamento.”
         </blockquote>
-        <p class="fundador-nome">João Gondim Neto <span>· fundador da MEVEM</span></p>
+        <p class="fundador-nome">{{ fundador }} <span>· fundador da MEVEM</span></p>
       </div>
     </div>
   </section>
 
   <!-- Plano e formulário -->
-  <section class="secao secao-escura" id="assinar">
+  <section class="secao" id="assinar">
     <div class="lp-largura plano-grade">
       <div class="plano">
         <span class="secao-selo">Plano Zevem</span>
         <div class="preco">
           <span class="moeda">R$</span><strong>{{ preco }}</strong><span class="periodo">/mês</span>
         </div>
+        <p class="preco-detalhe">Plano anual, em 12x no cartão.</p>
         <ul class="incluso">
           @for (item of incluso; track item) { <li>{{ item }}</li> }
         </ul>
       </div>
 
-      <div class="form-cartao">
-        @if (enviado) {
-          <div class="sucesso">
-            <span class="sucesso-icone">✓</span>
-            <h3>Pedido recebido!</h3>
-            <p>
-              Em breve você recebe no e-mail <strong>{{ email }}</strong> as instruções de pagamento.
-              Com o pagamento confirmado, chega o link para criar a sua conta e entrar no Zevem.
-            </p>
-          </div>
-        } @else {
-          <h3>Comece agora</h3>
-          <p class="form-sub">Preencha seus dados. O acesso chega no seu e-mail.</p>
-          <form (ngSubmit)="assinar()" novalidate>
-            <label>Nome completo
-              <input name="nome" [(ngModel)]="nome" autocomplete="name" maxlength="100" />
-            </label>
-            <label>E-mail
-              <input name="email" type="email" [(ngModel)]="email" autocomplete="email" maxlength="120" />
-            </label>
-            <div class="form-dupla">
-              <label>CPF
-                <input name="cpf" inputmode="numeric" [ngModel]="cpf" (ngModelChange)="cpf = mascaraCpf($event)" placeholder="000.000.000-00" />
-              </label>
-              <label>Telefone
-                <input name="telefone" inputmode="tel" [ngModel]="telefone" (ngModelChange)="telefone = mascaraTelefone($event)" placeholder="(00) 00000-0000" autocomplete="tel" />
-              </label>
-            </div>
-            <!-- Armadilha para robôs: invisível para pessoas -->
-            <input class="armadilha" name="site" [(ngModel)]="site" tabindex="-1" autocomplete="off" aria-hidden="true" />
-            <label class="aceite">
-              <input type="checkbox" name="aceite" [(ngModel)]="aceite" />
-              <span>Li e aceito os termos de uso e a política de privacidade.</span>
-            </label>
-            @if (erro) { <p class="erro">{{ erro }}</p> }
-            <button type="submit" class="btn btn-lima btn-cheio" [disabled]="enviando">
-              {{ enviando ? 'Enviando…' : 'Quero assinar o Zevem' }}
-            </button>
-            <p class="form-nota">R$ {{ preco }} por mês. Cancele quando quiser.</p>
-          </form>
-        }
+      <div class="form-cartao pagar-cartao">
+        <h3>Comece agora</h3>
+        <p class="form-sub">Assine em poucos cliques. Depois da confirmação do pagamento, o acesso chega no seu e-mail.</p>
+        <button type="button" class="btn btn-lima btn-cheio btn-grande" (click)="pagar()">Assinar agora</button>
+        <ul class="pagar-garantias">
+          <li>Pagamento seguro</li>
+          <li>Acesso liberado na hora</li>
+          <li>Garantia de 30 dias</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Garantia -->
+    <div class="lp-largura garantia">
+      <div class="garantia-selo" aria-hidden="true">
+        <strong>30</strong>
+        <span>dias de<br>garantia</span>
+      </div>
+      <div>
+        <h3>Garantia de 30 dias ou o seu dinheiro de volta</h3>
+        <p>
+          Assine, entre no Zevem e comece o seu planejamento comigo. Se em até 30 dias você sentir que não é para você,
+          é só pedir: eu devolvo 100% do valor pago. O risco é todo meu.
+        </p>
       </div>
     </div>
   </section>
 
   <!-- Perguntas -->
-  <section class="secao">
+  <section class="secao secao-escura">
     <div class="lp-largura lp-estreita">
       <span class="secao-selo">Perguntas frequentes</span>
       <h2>Ficou alguma dúvida?</h2>
@@ -189,14 +381,14 @@
         }
       </div>
       <div class="faq-cta">
-        <button type="button" class="btn btn-lima" (click)="irPara('assinar')">Assinar por R$ {{ preco }}/mês</button>
+        <button type="button" class="btn btn-lima" (click)="pagar()">Quero o meu planejador por <span class="sem-quebra">R$ {{ preco }}/mês</span></button>
       </div>
     </div>
   </section>
 
   <footer class="rodape">
     <div class="lp-largura rodape-linha">
-      <span><span class="marca-ze">ze</span><span class="marca-vem">vem</span> é um produto MEVEM</span>
+      <span><img class="marca-icone" src="/zevem-icone.png" alt="" /><span class="marca-ze">ze</span><span class="marca-vem">vem</span> é um produto MEVEM</span>
       <span>© {{ ano }}</span>
     </div>
   </footer>

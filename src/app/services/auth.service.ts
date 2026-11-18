@@ -142,6 +142,12 @@ export class AuthService {
     this.suporte.set(null);
   }
 
+  // Sessão que chega pronta de fora do login (checkout: pagou, criou a senha e entra na hora)
+  entrarComSessao(res: AuthPayload) {
+    this.limparSuporte();
+    this.salvarSessao(res);
+  }
+
   private salvarSessao(res: AuthPayload) {
     this.master.set(null); // outro usuário pode ter entrado: consulta o papel de novo
     this.planejador.set(false);

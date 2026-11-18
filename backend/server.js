@@ -2886,6 +2886,12 @@ adm.definirTemAssinatura(pagamentos.temAssinatura);
 convites = require('./convites')({ app, db, master: adm.master, enviarEmail, FRONTEND_URL, escaparHtml, normalizarEmail, loginLimiter });
 const planejadores = require('./planejadores')({ app, db, auth, master: adm.master, ehMaster: adm.ehMaster, convites, gerarTokenSuporte });
 podeAcessarCliente = planejadores.podeAcessarCliente;
+// Checkout da página de venda (/checkout): pagamento pelo Asaas e entrada na hora — ver checkout.js e asaas.js
+require('./checkout')({
+  app, db, pagamentos, gerarToken, bcrypt, crypto, cifrar, decifrar, indice, chaveTelefone, criarPessoaTitular,
+  cpfValido: convites.cpfValido, telefoneNormalizado: convites.telefoneNormalizado, normalizarEmail, emailValido, erroSenha,
+  enviarEmail, escaparHtml, FRONTEND_URL, limitador, agoraBrasilia,
+});
 
 // ── Página pública de venda (/assinar) ──
 // Enquanto o gateway de pagamento não está ligado, o pedido fica registrado e o master recebe um
