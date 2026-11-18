@@ -2887,6 +2887,66 @@ convites = require('./convites')({ app, db, master: adm.master, enviarEmail, FRO
 const planejadores = require('./planejadores')({ app, db, auth, master: adm.master, ehMaster: adm.ehMaster, convites, gerarTokenSuporte });
 podeAcessarCliente = planejadores.podeAcessarCliente;
 
+// ── Página pública de venda (/assinar) ──
+// Enquanto o gateway de pagamento não está ligado, o pedido fica registrado e o master recebe um
+// e-mail com os dados; depois do pagamento, o acesso sai pelo convite (Master › Enviar convite).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pedidos_assinatura (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    email TEXT NOT NULL,
+    cpf TEXT NOT NULL,                -- cifrado
+    telefone TEXT NOT NULL,           -- cifrado
+    plano TEXT NOT NULL,
+    valor_mensal REAL NOT NULL,
+    status TEXT NOT NULL DEFAULT 'novo',
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+const PLANO_VENDA = { nome: 'Zevem mensal', valor_mensal: 27.9 };
+
+app.post('/assinar', cadastroLimiter, async (req, res) => {
+  if (req.body.site) return res.status(201).json({ ok: true }); // campo-armadilha preenchido: robô
+  const nome = String(req.body.nome ?? '').trim().slice(0, 100);
+  const email = normalizarEmail(req.body.email);
+  const cpf = String(req.body.cpf ?? '').replace(/\D/g, '');
+  const telefone = convites.telefoneNormalizado(req.body.telefone);
+  if (!nome) return res.status(400).json({ erro: 'Informe o seu nome.' });
+  if (!emailValido(email)) return res.status(400).json({ erro: 'Informe um e-mail válido.' });
+  if (!convites.cpfValido(cpf)) return res.status(400).json({ erro: 'CPF inválido.' });
+  if (!telefone) return res.status(400).json({ erro: 'Informe o telefone com DDD.' });
+  if (req.body.aceite !== true) return res.status(400).json({ erro: 'Aceite os termos de uso e a política de privacidade.' });
+  if (db.prepare('SELECT 1 FROM usuarios WHERE lower(trim(email)) = ?').get(email)) {
+    return res.status(409).json({ erro: 'Este e-mail já tem conta no Zevem. Entre pelo login.' });
+  }
+
+  const r = db.prepare('INSERT INTO pedidos_assinatura (nome, email, cpf, telefone, plano, valor_mensal) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(nome, email, cifrar(cpf), cifrar(telefone), PLANO_VENDA.nome, PLANO_VENDA.valor_mensal);
+
+  // Aviso ao master (MASTER_EMAILS e contas com papel master). Falha no e-mail não atrapalha o cliente.
+  const destinos = new Set(String(process.env.MASTER_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean));
+  db.prepare("SELECT email FROM usuarios WHERE papel = 'master'").all().forEach((u) => destinos.add(String(u.email).toLowerCase()));
+  const valor = PLANO_VENDA.valor_mensal.toFixed(2).replace('.', ',');
+  const cpfFmt = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px 0;color:#181818;">
+      <h2 style="margin:0 0 12px;">Novo pedido de assinatura #${r.lastInsertRowid}</h2>
+      <p style="margin:0 0 16px;">${escaparHtml(PLANO_VENDA.nome)} · R$ ${valor}/mês</p>
+      <table style="font-size:14px;line-height:1.7;">
+        <tr><td><b>Nome</b></td><td>${escaparHtml(nome)}</td></tr>
+        <tr><td><b>E-mail</b></td><td>${escaparHtml(email)}</td></tr>
+        <tr><td><b>CPF</b></td><td>${cpfFmt}</td></tr>
+        <tr><td><b>Telefone</b></td><td>${telefone}</td></tr>
+      </table>
+      <p style="margin:16px 0 0;">Envie o link de pagamento e, depois da confirmação, o convite em Master › Enviar convite.</p>
+    </div>`;
+  for (const destino of destinos) {
+    try { await enviarEmail(destino, `Novo pedido de assinatura: ${nome}`, html); }
+    catch (e) { console.warn('[assinar] aviso ao master não saiu:', e.message); }
+  }
+  res.status(201).json({ ok: true });
+});
+
 // Erro não tratado numa rota: responde JSON (o app mostra a mensagem) e registra no log, sem expor detalhes
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);

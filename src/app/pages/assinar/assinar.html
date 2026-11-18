@@ -1,0 +1,203 @@
+<div class="lp">
+  <header class="topo">
+    <div class="lp-largura topo-linha">
+      <a class="marca" routerLink="/assinar" aria-label="Zevem">
+        <span class="marca-ze">ze</span><span class="marca-vem">vem</span>
+        <small>por MEVEM</small>
+      </a>
+      <nav class="topo-links">
+        <button type="button" class="link" (click)="irPara('como-funciona')">Como funciona</button>
+        <a class="link" routerLink="/login">Já tenho conta</a>
+        <button type="button" class="btn btn-lima btn-pequeno" (click)="irPara('assinar')">Assinar</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Abertura -->
+  <section class="hero">
+    <div class="lp-largura hero-grade">
+      <div class="hero-texto">
+        <span class="selo">Planejamento financeiro pessoal guiado</span>
+        <h1>Seu dinheiro com direção.<br><em>E alguém experiente ao seu lado.</em></h1>
+        <p class="hero-sub">
+          O Zevem une inteligência artificial, uma metodologia aprovada por 99,8% dos clientes e
+          10 anos de experiência em planejamento financeiro para você montar o seu próprio plano,
+          passo a passo, com orientação em cada etapa.
+        </p>
+        <div class="hero-acoes">
+          <button type="button" class="btn btn-lima" (click)="irPara('assinar')">Assinar por R$ {{ preco }}/mês</button>
+          <button type="button" class="btn btn-contorno" (click)="irPara('como-funciona')">Como funciona</button>
+        </div>
+      </div>
+
+      <!-- Prévia ilustrativa do que o app mostra -->
+      <div class="hero-previa" aria-hidden="true">
+        <div class="previa-cartao">
+          <div class="previa-titulo">Este mês</div>
+          <div class="previa-item">
+            <span>Supermercado</span><strong>R$ 412 <small>livres</small></strong>
+            <div class="barra"><i style="width: 68%"></i></div>
+          </div>
+          <div class="previa-item">
+            <span>Lazer</span><strong>R$ 180 <small>livres</small></strong>
+            <div class="barra"><i style="width: 45%"></i></div>
+          </div>
+          <div class="previa-item">
+            <span>Transporte</span><strong class="alerta">R$ 35 <small>livres</small></strong>
+            <div class="barra"><i class="quase" style="width: 92%"></i></div>
+          </div>
+          <div class="previa-venc">
+            <span class="ponto"></span> Fatura do cartão vence <strong>dia 10</strong>
+          </div>
+        </div>
+        <div class="previa-meta">
+          <span>Meta de gastos do mês</span>
+          <strong>83%</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="lp-largura numeros">
+      @for (n of numeros; track n.valor) {
+        <div class="numero">
+          <strong>{{ n.valor }}</strong>
+          <span>{{ n.texto }}</span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Como funciona -->
+  <section class="secao" id="como-funciona">
+    <div class="lp-largura">
+      <span class="secao-selo">Como funciona</span>
+      <h2>Você monta. O Zevem acompanha.</h2>
+      <div class="passos">
+        @for (p of passos; track p.titulo; let i = $index) {
+          <article class="passo">
+            <span class="passo-num">{{ i + 1 }}</span>
+            <h3>{{ p.titulo }}</h3>
+            <p>{{ p.texto }}</p>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Recursos -->
+  <section class="secao secao-escura">
+    <div class="lp-largura">
+      <span class="secao-selo">O que o Zevem faz por você</span>
+      <h2>Clareza para decidir. Todos os dias.</h2>
+      <div class="recursos">
+        @for (r of recursos; track r.titulo) {
+          <article class="recurso">
+            <span class="recurso-icone">{{ r.icone }}</span>
+            <h3>{{ r.titulo }}</h3>
+            <p>{{ r.texto }}</p>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Quem acompanha -->
+  <section class="secao">
+    <div class="lp-largura fundador">
+      <div class="fundador-foto" aria-hidden="true">JG</div>
+      <div>
+        <span class="secao-selo">Quem te acompanha</span>
+        <blockquote>
+          “Durante 10 anos, liderei o atendimento de mais de 1.400 clientes e transformei esse aprendizado
+          em uma metodologia. No Zevem, eu estou com você em cada passo, mostrando como fazer o seu
+          próprio planejamento.”
+        </blockquote>
+        <p class="fundador-nome">João Gondim Neto <span>· fundador da MEVEM</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Plano e formulário -->
+  <section class="secao secao-escura" id="assinar">
+    <div class="lp-largura plano-grade">
+      <div class="plano">
+        <span class="secao-selo">Plano Zevem</span>
+        <div class="preco">
+          <span class="moeda">R$</span><strong>{{ preco }}</strong><span class="periodo">/mês</span>
+        </div>
+        <ul class="incluso">
+          @for (item of incluso; track item) { <li>{{ item }}</li> }
+        </ul>
+      </div>
+
+      <div class="form-cartao">
+        @if (enviado) {
+          <div class="sucesso">
+            <span class="sucesso-icone">✓</span>
+            <h3>Pedido recebido!</h3>
+            <p>
+              Em breve você recebe no e-mail <strong>{{ email }}</strong> as instruções de pagamento.
+              Com o pagamento confirmado, chega o link para criar a sua conta e entrar no Zevem.
+            </p>
+          </div>
+        } @else {
+          <h3>Comece agora</h3>
+          <p class="form-sub">Preencha seus dados. O acesso chega no seu e-mail.</p>
+          <form (ngSubmit)="assinar()" novalidate>
+            <label>Nome completo
+              <input name="nome" [(ngModel)]="nome" autocomplete="name" maxlength="100" />
+            </label>
+            <label>E-mail
+              <input name="email" type="email" [(ngModel)]="email" autocomplete="email" maxlength="120" />
+            </label>
+            <div class="form-dupla">
+              <label>CPF
+                <input name="cpf" inputmode="numeric" [ngModel]="cpf" (ngModelChange)="cpf = mascaraCpf($event)" placeholder="000.000.000-00" />
+              </label>
+              <label>Telefone
+                <input name="telefone" inputmode="tel" [ngModel]="telefone" (ngModelChange)="telefone = mascaraTelefone($event)" placeholder="(00) 00000-0000" autocomplete="tel" />
+              </label>
+            </div>
+            <!-- Armadilha para robôs: invisível para pessoas -->
+            <input class="armadilha" name="site" [(ngModel)]="site" tabindex="-1" autocomplete="off" aria-hidden="true" />
+            <label class="aceite">
+              <input type="checkbox" name="aceite" [(ngModel)]="aceite" />
+              <span>Li e aceito os termos de uso e a política de privacidade.</span>
+            </label>
+            @if (erro) { <p class="erro">{{ erro }}</p> }
+            <button type="submit" class="btn btn-lima btn-cheio" [disabled]="enviando">
+              {{ enviando ? 'Enviando…' : 'Quero assinar o Zevem' }}
+            </button>
+            <p class="form-nota">R$ {{ preco }} por mês. Cancele quando quiser.</p>
+          </form>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Perguntas -->
+  <section class="secao">
+    <div class="lp-largura lp-estreita">
+      <span class="secao-selo">Perguntas frequentes</span>
+      <h2>Ficou alguma dúvida?</h2>
+      <div class="faq">
+        @for (q of perguntas; track q.p) {
+          <details>
+            <summary>{{ q.p }}</summary>
+            <p>{{ q.r }}</p>
+          </details>
+        }
+      </div>
+      <div class="faq-cta">
+        <button type="button" class="btn btn-lima" (click)="irPara('assinar')">Assinar por R$ {{ preco }}/mês</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="rodape">
+    <div class="lp-largura rodape-linha">
+      <span><span class="marca-ze">ze</span><span class="marca-vem">vem</span> é um produto MEVEM</span>
+      <span>© {{ ano }}</span>
+    </div>
+  </footer>
+</div>

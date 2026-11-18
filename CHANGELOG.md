@@ -3,6 +3,12 @@
 Todas as mudanças relevantes do Zevem (antigo Apple Green) ficam registradas aqui.
 Versionamento semântico: PATCH = correções e pequenos ajustes; MINOR = novas funcionalidades; MAJOR = mudanças estruturais.
 
+## [1.4.0] - 2026-11-17
+
+### Funcionalidades
+- **Página pública de venda `/assinar`.** Página comercial com a identidade da MEVEM (lima sobre quase-preto) e um plano só, R$ 27,90/mês. Mostra: abertura com uma prévia ilustrativa do app, os números (10 anos, +1.400 clientes, 99,8% de aprovação), "Como funciona" em 3 passos, 6 recursos, depoimento do fundador, plano com formulário e perguntas frequentes. Funciona sem login e se adapta ao celular.
+- **Pedido de assinatura.** O formulário (nome, e-mail, CPF, telefone e aceite dos termos) grava o pedido na nova tabela `pedidos_assinatura` (CPF e telefone cifrados) e manda um e-mail para os masters. Se o e-mail já tem conta, ele avisa. Tem limite de envios e uma armadilha para robôs. Enquanto não há gateway de pagamento, o master libera o acesso por Master › Enviar convite.
+
 ## [1.3.1] - 2026-11-17
 
 ### Alterado
