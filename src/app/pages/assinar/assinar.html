@@ -392,4 +392,54 @@
       <span>© {{ ano }}</span>
     </div>
   </footer>
+
+  <!-- Aba lateral de depoimentos: fica fixa na borda esquerda e abre a gaveta -->
+  @if (publicados.length) {
+    <button type="button" class="aba-depoimentos" (click)="abrirDepoimentos()" aria-controls="gaveta-depoimentos">
+      <span class="aba-depoimentos-estrela" aria-hidden="true">★</span>
+      <span>{{ publicados.length }} {{ publicados.length === 1 ? 'depoimento' : 'depoimentos' }}</span>
+    </button>
+    <div class="veu" [class.aberto]="gavetaDepoimentos()" (click)="fecharDepoimentos()"></div>
+    <aside class="gaveta" id="gaveta-depoimentos" [class.aberta]="gavetaDepoimentos()" [attr.aria-hidden]="!gavetaDepoimentos()"
+      aria-label="Depoimentos de clientes" [attr.inert]="gavetaDepoimentos() ? null : ''">
+      <div class="gaveta-topo">
+        <h2 class="gaveta-titulo">Depoimentos</h2>
+        <button type="button" class="gaveta-fechar" (click)="fecharDepoimentos()" aria-label="Fechar depoimentos">✕</button>
+      </div>
+      <div class="gaveta-corpo">
+        <div class="dep-resumo">
+          <span class="dep-nota">{{ nota(mediaEstrelas) }}</span>
+          <span>
+            <span class="estrelas estrelas-grande" [style.--nota]="mediaEstrelas" [attr.aria-label]="nota(mediaEstrelas) + ' de 5 estrelas'">★★★★★</span>
+            <span class="dep-total">Com base em {{ publicados.length }} {{ publicados.length === 1 ? 'depoimento' : 'depoimentos' }}</span>
+          </span>
+        </div>
+        @for (d of publicados.slice(0, quantosDepoimentos()); track $index) {
+          <article class="dep">
+            <div class="dep-topo">
+              <span class="dep-avatar" aria-hidden="true">{{ iniciais(d.nome) }}
+                @if (d.verificado) { <span class="dep-check">✓</span> }
+              </span>
+              <div class="dep-quem">
+                <p class="dep-nome">{{ d.nome }}</p>
+                <p class="dep-detalhe">{{ d.verificado ? 'Cliente Zevem verificado' : d.detalhe }}</p>
+              </div>
+              @if (d.data) { <time class="dep-data" [attr.datetime]="d.data">{{ dataBr(d.data) }}</time> }
+            </div>
+            <div class="dep-titulo">
+              <span class="estrelas" [style.--nota]="d.estrelas ?? 5" [attr.aria-label]="(d.estrelas ?? 5) + ' de 5 estrelas'">★★★★★</span>
+              @if (d.titulo) { <strong>{{ d.titulo }}</strong> }
+            </div>
+            <p class="dep-texto">{{ d.texto }}</p>
+            @if (d.verificado && d.detalhe) { <p class="dep-detalhe-rodape">{{ d.detalhe }}</p> }
+          </article>
+        }
+        @if (publicados.length > quantosDepoimentos()) {
+          <div class="dep-mais">
+            <button type="button" class="btn btn-contorno" (click)="quantosDepoimentos.set(quantosDepoimentos() + 8)">Ver mais</button>
+          </div>
+        }
+      </div>
+    </aside>
+  }
 </div>

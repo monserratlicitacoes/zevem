@@ -3,6 +3,14 @@
 Todas as mudanças relevantes do Zevem (antigo Apple Green) ficam registradas aqui.
 Versionamento semântico: PATCH = correções e pequenos ajustes; MINOR = novas funcionalidades; MAJOR = mudanças estruturais.
 
+## [Não publicado]
+
+### Adicionado
+- **Aba lateral de depoimentos na página de venda**, no mesmo desenho da aba de avaliações da loja da Aurora, nas cores do Zevem.
+  - Fica fixa na borda esquerda, com ★ e o total. Em telas até 1200 px, onde cobriria o texto, vira um botão no canto inferior esquerdo.
+  - Abre uma gaveta com a nota média, as estrelas e os depoimentos, 8 por vez com "Ver mais". Fecha com ✕, clicando fora ou com Esc.
+  - Usa os mesmos depoimentos da seção da página (`depoimentos` em assinar.ts). Campos opcionais novos: estrelas, título, data e "verificado". A aba só aparece com pelo menos um depoimento preenchido.
+
 ## [1.5.1] - 2026-11-18
 
 ### Alterado

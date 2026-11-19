@@ -624,3 +624,154 @@ blockquote { margin: 20px 0 16px; font-size: clamp(18px, 2.2vw, 22px); line-heig
 
 // Marca registrada (MEVEM®): símbolo pequeno, sem desalinhar a linha
 .reg { font-size: 0.6em; vertical-align: super; line-height: 0; margin-left: 1px; }
+
+// ── Aba lateral de depoimentos (mesmo desenho da aba de avaliações da loja da Aurora) ──
+.aba-depoimentos {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  z-index: 25;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 11px;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  background: $lima;
+  color: $preto;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transition: padding 0.2s, filter 0.2s;
+  &:hover { padding-left: 15px; filter: brightness(1.06); }
+}
+.aba-depoimentos-estrela { font-size: 1rem; letter-spacing: 0; }
+
+.veu {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  &.aberto { opacity: 1; pointer-events: auto; }
+}
+.gaveta {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 41;
+  width: min(620px, 100vw);
+  display: flex;
+  flex-direction: column;
+  background: $preto-2;
+  border-right: 1px solid $linha;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  transform: translateX(-100%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+  &.aberta { transform: none; }
+}
+.gaveta-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 18px 28px;
+  border-bottom: 1px solid $linha;
+}
+.gaveta-titulo { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; }
+.gaveta-fechar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid $linha;
+  background: transparent;
+  color: $texto;
+  font-size: 15px;
+  cursor: pointer;
+  &:hover { border-color: $suave; }
+}
+.gaveta-corpo { flex: 1; overflow-y: auto; padding: 26px 32px 40px; }
+
+.dep-resumo { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 26px; }
+.dep-nota { font-size: 4rem; font-weight: 900; line-height: 1; color: $lima; letter-spacing: -2px; }
+.dep-total { display: block; font-size: 0.82rem; color: $suave; margin-top: 4px; }
+.estrelas {
+  --nota: 5;
+  display: inline-block;
+  letter-spacing: 0.08em;
+  background: linear-gradient(90deg, $lima calc(var(--nota) / 5 * 100%), rgba(255, 255, 255, 0.15) 0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.estrelas-grande { font-size: 1.6rem; }
+
+.dep { padding: 24px 0; border-bottom: 1px solid $linha; }
+.dep-topo { display: flex; align-items: flex-start; gap: 14px; }
+.dep-avatar {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: $cartao;
+  border: 1px solid $linha;
+  color: $lima;
+  font-weight: 800;
+  font-size: 1rem;
+}
+.dep-check {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: $lima;
+  color: $preto;
+  border: 2px solid $preto-2;
+  font-size: 10px;
+  font-weight: 900;
+}
+.dep-quem { flex: 1; min-width: 0; }
+.dep-nome { margin: 0; font-size: 0.95rem; font-weight: 700; overflow-wrap: anywhere; }
+.dep-detalhe { margin: 2px 0 0; font-size: 0.76rem; color: $suave; }
+.dep-data { font-size: 0.78rem; color: $suave; white-space: nowrap; }
+.dep-titulo { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin-top: 14px; }
+.dep-titulo .estrelas { font-size: 1.05rem; }
+.dep-titulo strong { font-size: 1.1rem; font-weight: 800; }
+.dep-texto { margin: 8px 0 0; font-size: 0.9rem; line-height: 1.6; color: #d7dad3; white-space: pre-line; overflow-wrap: anywhere; }
+.dep-detalhe-rodape { margin: 10px 0 0; font-size: 0.78rem; color: $suave; }
+.dep-mais { display: flex; justify-content: center; margin-top: 24px; }
+
+// Sem margem para a aba vertical (ela cobriria o texto): vira um botão no canto inferior esquerdo
+@media (max-width: 1200px) {
+  .aba-depoimentos {
+    writing-mode: horizontal-tb;
+    top: auto;
+    bottom: 16px;
+    left: 16px;
+    transform: none;
+    padding: 11px 16px;
+    border-radius: 99px;
+    font-size: 0.68rem;
+    gap: 8px;
+    &:hover { padding-left: 16px; }
+  }
+}
+@media (max-width: 900px) {
+  .gaveta-corpo { padding: 20px 20px 32px; }
+  .dep-nota { font-size: 3.2rem; }
+}

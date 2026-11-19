@@ -1,9 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, HostListener, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 // Página pública de venda (/assinar), com a identidade visual da MEVEM (verde-limão sobre quase-preto).
 // Os botões de assinar abrem o checkout (/checkout): o cliente paga ali mesmo (Asaas) e entra no app na hora.
 // Textos, números e preço ficam aqui e no HTML para serem ajustados à vontade.
+interface Depoimento { texto: string; nome: string; detalhe: string; estrelas?: number; titulo?: string; data?: string; verificado?: boolean }
+
 @Component({
   selector: 'app-assinar',
   imports: [RouterLink],
@@ -73,8 +75,10 @@ export class Assinar {
     { icone: '★', titulo: 'Sonhos com prazo e valor', texto: 'Aposentadoria, imóvel, carro, viagem: quanto investir por mês para chegar lá.' },
   ];
 
-  // Depoimentos: preencha texto, nome e detalhe (ex.: 'Goiânia · médica'). Vazios aparecem como modelo.
-  readonly depoimentos = [
+  // Depoimentos: preencha texto, nome e detalhe (ex.: 'Goiânia · médica'). Vazios aparecem como modelo na seção
+  // da página e ficam fora da aba lateral. Opcionais: estrelas (1 a 5, padrão 5), titulo, data ('AAAA-MM-DD')
+  // e verificado (true = "Cliente Zevem verificado").
+  readonly depoimentos: Depoimento[] = [
     { texto: '', nome: '', detalhe: '' },
     { texto: '', nome: '', detalhe: '' },
     { texto: '', nome: '', detalhe: '' },
@@ -82,6 +86,28 @@ export class Assinar {
     { texto: '', nome: '', detalhe: '' },
     { texto: '', nome: '', detalhe: '' },
   ];
+
+  // ── Aba lateral de depoimentos (como a de avaliações da loja da Aurora) ──
+  // Só aparece quando há ao menos um depoimento preenchido. A gaveta mostra a média e 8 por vez.
+  readonly gavetaDepoimentos = signal(false);
+  readonly quantosDepoimentos = signal(8);
+  get publicados(): Depoimento[] { return this.depoimentos.filter((d) => d.texto.trim()); }
+  get mediaEstrelas(): number {
+    const p = this.publicados;
+    return p.length ? p.reduce((t, d) => t + (d.estrelas ?? 5), 0) / p.length : 0;
+  }
+  nota(n: number) { return n.toFixed(1).replace('.', ','); }
+  dataBr(iso?: string) { return iso ? iso.split('-').reverse().join('/') : ''; }
+  abrirDepoimentos() {
+    this.quantosDepoimentos.set(8);
+    this.gavetaDepoimentos.set(true);
+    document.body.style.overflow = 'hidden';
+  }
+  fecharDepoimentos() {
+    this.gavetaDepoimentos.set(false);
+    document.body.style.overflow = '';
+  }
+  @HostListener('document:keydown.escape') aoEsc() { if (this.gavetaDepoimentos()) this.fecharDepoimentos(); }
 
   readonly incluso = [
     'Acesso completo ao app Zevem',
