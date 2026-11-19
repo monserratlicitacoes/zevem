@@ -2890,7 +2890,7 @@ podeAcessarCliente = planejadores.podeAcessarCliente;
 require('./checkout')({
   app, db, pagamentos, gerarToken, bcrypt, crypto, cifrar, decifrar, indice, chaveTelefone, criarPessoaTitular,
   cpfValido: convites.cpfValido, telefoneNormalizado: convites.telefoneNormalizado, normalizarEmail, emailValido, erroSenha,
-  enviarEmail, escaparHtml, FRONTEND_URL, limitador, agoraBrasilia,
+  enviarEmail, escaparHtml, FRONTEND_URL, limitador, agoraBrasilia, master: adm.master,
 });
 
 // ── Página pública de venda (/assinar) ──

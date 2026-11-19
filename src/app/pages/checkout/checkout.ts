@@ -12,6 +12,8 @@ import { AuthService, AuthPayload } from '../../services/auth.service';
 // O id do checkout fica no sessionStorage: recarregar a página no meio do Pix não perde a compra.
 
 interface Plano { nome: string; valor_anual: number; parcelas: number; valor_parcela: number; disponivel: boolean }
+// Preço desta compra, com o cupom (se houver). O desconto vale só para o 1º ano.
+interface Preco { valor_anual: number; valor_parcela: number; parcelas: number; valor_cheio: number; cupom: { codigo: string; desconto: number } | null }
 type Etapa = 1 | 2 | 3 | 4;
 type Forma = 'cartao' | 'pix';
 
@@ -38,6 +40,22 @@ export class Checkout implements OnInit, OnDestroy {
 
   readonly etapa = signal<Etapa>(1);
   readonly plano = signal<Plano | null>(null);
+  readonly precoCupom = signal<Preco | null>(null);
+  // O que aparece na tela: com cupom, o preço com desconto; sem, o do plano
+  readonly valor = computed(() => {
+    const c = this.precoCupom();
+    const p = this.plano();
+    return {
+      valor_anual: c?.valor_anual ?? p?.valor_anual ?? 0,
+      valor_parcela: c?.valor_parcela ?? p?.valor_parcela ?? 0,
+      valor_cheio: c?.valor_cheio ?? p?.valor_anual ?? 0,
+      cupom: c?.cupom ?? null,
+    };
+  });
+  cupomAberto = false;
+  codigoCupom = '';
+  readonly erroCupom = signal('');
+  readonly aplicandoCupom = signal(false);
   readonly carregando = signal(false);
   readonly erro = signal('');
   readonly contaExiste = signal(false);
@@ -76,6 +94,7 @@ export class Checkout implements OnInit, OnDestroy {
           else if (s.status === 'ativado') { this.jaAtivado.set(true); this.irPara(4); }
           else if (s.status === 'aguardando_pix') { this.forma.set('pix'); this.irPara(3); this.gerarPix(); }
           else this.irPara(salvo.etapa === 3 ? 3 : 2);
+          this.http.get<Preco>(`${api}/checkout/${this.id}/preco`).subscribe({ next: (p) => this.precoCupom.set(p.cupom ? p : null) });
         },
         error: () => this.limparSalvo(),
       });
@@ -188,8 +207,31 @@ export class Checkout implements OnInit, OnDestroy {
         this.cartao = { numero: '', nome: '', validade: '', cvc: '' }; // nada do cartão fica na tela
         this.concluirPagamento(r.status);
       },
-      error: (e: HttpErrorResponse) => this.falhou(e, 'O pagamento não foi aprovado. Confira os dados ou use outro cartão.'),
+      error: (e: HttpErrorResponse) => { this.cupomCaiu(e); this.falhou(e, 'O pagamento não foi aprovado. Confira os dados ou use outro cartão.'); },
     });
+  }
+
+  // ── Cupom (etapa 2) ──
+  aplicarCupom(codigo = this.codigoCupom) {
+    this.erroCupom.set('');
+    if (!this.id) return;
+    const limpo = codigo.trim().toUpperCase().replace(/\s+/g, '');
+    if (codigo && !limpo) return this.erroCupom.set('Digite o código do cupom.');
+    this.aplicandoCupom.set(true);
+    this.http.post<Preco>(`${api}/checkout/${this.id}/cupom`, { codigo: limpo }).subscribe({
+      next: (p) => {
+        this.aplicandoCupom.set(false);
+        this.precoCupom.set(p.cupom ? p : null);
+        this.pix.set(null); // o valor mudou: um Pix já gerado não vale mais
+        if (!p.cupom) { this.codigoCupom = ''; this.cupomAberto = false; }
+      },
+      error: (e: HttpErrorResponse) => { this.aplicandoCupom.set(false); this.erroCupom.set(e.error?.erro || 'Não foi possível aplicar o cupom.'); },
+    });
+  }
+  tirarCupom() { this.aplicarCupom(''); }
+  // O cupom deixou de valer na hora de pagar (expirou, esgotou): volta o preço cheio e avisa
+  private cupomCaiu(e: HttpErrorResponse) {
+    if (e.error?.cupom_caiu) { this.precoCupom.set(null); this.codigoCupom = ''; }
   }
 
   gerarPix() {
@@ -202,7 +244,7 @@ export class Checkout implements OnInit, OnDestroy {
         this.pix.set({ qr: r.qr_imagem || '', copia: r.copia_e_cola || '' });
         this.esperarPix();
       },
-      error: (e: HttpErrorResponse) => this.falhou(e, 'Não foi possível gerar o Pix. Tente de novo.'),
+      error: (e: HttpErrorResponse) => { this.cupomCaiu(e); this.falhou(e, 'Não foi possível gerar o Pix. Tente de novo.'); },
     });
   }
 

@@ -297,6 +297,32 @@ input:not([type='checkbox']) {
 }
 .plano-renova { margin: 0; color: $suave; font-size: 12.5px; line-height: 1.5; }
 
+// Cupom de desconto (etapa 2)
+.cupom { margin: -4px 0 20px; display: flex; flex-direction: column; gap: 10px; .erro { margin: 0; } }
+.cupom-link {
+  align-self: flex-start; padding: 0; border: 0; background: none; color: $lima;
+  font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.cupom-form {
+  flex-direction: row; gap: 8px;
+  input { flex: 1; text-transform: uppercase; letter-spacing: 0.04em; }
+  button {
+    flex: 0 0 auto; padding: 0 20px; border: 1px solid $lima; border-radius: 12px; background: transparent;
+    color: $lima; font: inherit; font-weight: 800; cursor: pointer;
+    &:disabled { opacity: 0.55; cursor: default; }
+  }
+}
+.cupom-aplicado {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 14px; border-radius: 12px;
+  border: 1px dashed $lima; background: rgba(177, 247, 13, 0.06); font-size: 14px; font-weight: 600;
+}
+.cupom-codigo { padding: 3px 9px; border-radius: 6px; background: $lima; color: $preto; font-weight: 800; letter-spacing: 0.04em; font-size: 13px; }
+.cupom-tirar {
+  margin-left: auto; padding: 0; border: 0; background: none; color: $suave;
+  font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer;
+}
+.plano-total s { color: #6d716b; margin-right: 4px; }
+
 // Formas de pagamento
 .formas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px; }
 .formas button {

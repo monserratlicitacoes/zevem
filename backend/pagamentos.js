@@ -134,6 +134,7 @@ module.exports = function registrarPagamentos(ctx) {
   try { db.prepare('ALTER TABLE assinaturas ADD COLUMN provedor_parcelamento_id TEXT').run(); } catch {}
   try { db.prepare('ALTER TABLE assinaturas ADD COLUMN ip_origem TEXT').run(); } catch {}
   try { db.prepare('ALTER TABLE assinaturas ADD COLUMN aviso_renovacao_ciclo INTEGER').run(); } catch {}
+  try { db.prepare('ALTER TABLE assinaturas ADD COLUMN cupom_id INTEGER').run(); } catch {} // cupom usado na compra (checkout.js)
 
   const provedorAtual = () => process.env.PAGAMENTOS_PROVEDOR || 'manual';
   const hoje = () => agoraBrasilia().hoje;
@@ -163,11 +164,13 @@ module.exports = function registrarPagamentos(ctx) {
   }
 
   // Assinatura já paga no gateway (checkout): grava a assinatura e as cobranças do 1º ciclo
-  function registrarAssinaturaPaga({ usuarioId, plano, inicio, provedor, cliente_id, parcelamento_id, cartao_token, ip, cobrancas }) {
+  // valor: o que foi cobrado no 1º ciclo (com cupom, menos que o plano); as renovações voltam ao preço do plano
+  function registrarAssinaturaPaga({ usuarioId, plano, inicio, provedor, cliente_id, parcelamento_id, cartao_token, ip, cobrancas, valor, cupom_id }) {
     return db.transaction(() => {
       const r = db.prepare(`INSERT INTO assinaturas (usuario_id, plano_id, inicio_ciclo, fim_ciclo, valor_ciclo, provedor, provedor_cliente_id,
-        provedor_parcelamento_id, cartao_token, ip_origem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(usuarioId, plano.id, inicio, fimDoCiclo(inicio), plano.valor_anual, provedor, cliente_id ?? null, parcelamento_id ?? null, cartao_token ?? null, ip ?? null);
+        provedor_parcelamento_id, cartao_token, ip_origem, cupom_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(usuarioId, plano.id, inicio, fimDoCiclo(inicio), valor ?? plano.valor_anual, provedor, cliente_id ?? null, parcelamento_id ?? null,
+          cartao_token ?? null, ip ?? null, cupom_id ?? null);
       const a = db.prepare('SELECT * FROM assinaturas WHERE id = ?').get(r.lastInsertRowid);
       gravarCobrancas(a, 1, parcelasDoCiclo(plano.valor_anual, plano.parcelas, inicio), cobrancas);
       return a.id;

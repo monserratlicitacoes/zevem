@@ -43,6 +43,11 @@ export interface ClientePlanejador {
   ativo: boolean; bloqueado_em: string | null; bloqueado_pelo_master: boolean;
 }
 
+// Cupons de desconto do checkout (Master › Cupons): valem só para o 1º ano
+export interface Cupom {
+  id?: number; codigo: string; tipo: 'percentual' | 'valor'; valor: number; valido_ate: string | null; limite_usos: number | null;
+  descricao: string; ativo: boolean; usos?: number; receita?: number; preco_final?: number; parcela_final?: number; situacao?: string;
+}
 export interface Plano { id?: number; nome: string; valor_anual: number; parcelas: number; ativo: boolean | number; assinantes?: number; }
 
 export interface AssinaturaResumo {
@@ -110,6 +115,13 @@ export class AdminService {
   salvarPlano(p: Plano): Observable<Plano> {
     return p.id ? this.http.put<Plano>(`${this.api}/planos/${p.id}`, p) : this.http.post<Plano>(`${this.api}/planos`, p);
   }
+  cupons(): Observable<{ cupons: Cupom[]; plano: { nome: string; valor_anual: number; parcelas: number; valor_parcela: number } }> {
+    return this.http.get<{ cupons: Cupom[]; plano: { nome: string; valor_anual: number; parcelas: number; valor_parcela: number } }>(`${this.api}/cupons`);
+  }
+  salvarCupom(c: Cupom): Observable<{ ok: boolean }> {
+    return c.id ? this.http.put<{ ok: boolean }>(`${this.api}/cupons/${c.id}`, c) : this.http.post<{ ok: boolean }>(`${this.api}/cupons`, c);
+  }
+  excluirCupom(id: number): Observable<{ ok: boolean }> { return this.http.delete<{ ok: boolean }>(`${this.api}/cupons/${id}`); }
   criarAssinatura(usuarioId: number, planoId: number, inicio: string): Observable<{ id: number }> {
     return this.http.post<{ id: number }>(`${this.api}/assinaturas`, { usuario_id: usuarioId, plano_id: planoId, inicio });
   }

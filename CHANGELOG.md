@@ -3,13 +3,20 @@
 Todas as mudanças relevantes do Zevem (antigo Apple Green) ficam registradas aqui.
 Versionamento semântico: PATCH = correções e pequenos ajustes; MINOR = novas funcionalidades; MAJOR = mudanças estruturais.
 
-## [Não publicado]
+## [1.6.0] - 2026-11-19
 
 ### Adicionado
 - **Aba lateral de depoimentos na página de venda**, no mesmo desenho da aba de avaliações da loja da Aurora, nas cores do Zevem.
   - Fica fixa na borda esquerda, com ★ e o total. Em telas até 1200 px, onde cobriria o texto, vira um botão no canto inferior esquerdo.
   - Abre uma gaveta com a nota média, as estrelas e os depoimentos, 8 por vez com "Ver mais". Fecha com ✕, clicando fora ou com Esc.
   - Usa os mesmos depoimentos da seção da página (`depoimentos` em assinar.ts). Campos opcionais novos: estrelas, título, data e "verificado". A aba só aparece com pelo menos um depoimento preenchido.
+- **Cupons de desconto no checkout, criados em Master › Cupons.**
+  - No admin: código, desconto em % ou em R$ no ano, validade, limite de usos, anotação interna e ativo/inativo. A tela mostra quanto o cliente vai pagar com o cupom, os usos, a receita e a situação (valendo, esgotado ou vencido, desativado).
+  - Cupom já usado em vendas não pode ser excluído, só desativado.
+  - No checkout, a etapa "Seu plano" ganhou "Tem um cupom de desconto?". Com o cupom, o preço riscado, o desconto e os novos valores aparecem no plano, no cartão e no Pix.
+  - O desconto vale só para o 1º ano; a renovação volta ao preço do plano. O total nunca fica abaixo de R$ 5 por parcela (mínimo do Asaas).
+  - O cupom é conferido de novo na hora de pagar: se venceu ou esgotou nesse meio-tempo, o pagamento é recusado e o preço volta ao cheio. Trocar o cupom com um Pix já gerado cancela esse Pix.
+  - A assinatura guarda o valor pago no ciclo e o cupom usado.
 
 ## [1.5.1] - 2026-11-18
 

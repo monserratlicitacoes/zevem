@@ -1,0 +1,102 @@
+<div class="page">
+  <header class="page-header">
+    <div class="ph-texto">
+      <h1>Cupons</h1>
+      <p>Cupons de desconto do checkout da página de venda. O desconto vale só para o 1º ano; a renovação volta ao preço do plano.</p>
+    </div>
+  </header>
+
+  @if (carregando) {
+    <p class="aviso">Carregando...</p>
+  } @else if (erro) {
+    <p class="aviso aviso-erro">{{ erro }}</p>
+  } @else {
+    <section class="kpis">
+      <div class="kpi destaque"><span>Cupons valendo</span><strong>{{ valendo }}</strong><small>de {{ cupons.length }} cadastrados</small></div>
+      <div class="kpi"><span>Vendas com cupom</span><strong>{{ vendas }}</strong></div>
+      @if (plano) {
+        <div class="kpi"><span>Preço sem cupom</span><strong>{{ moeda(plano.valor_anual) }}</strong><small>{{ plano.parcelas }}x de {{ moeda(plano.valor_parcela) }}</small></div>
+      }
+    </section>
+
+    <section class="cartao">
+      <div class="topo">
+        <div>
+          <h2>Cupons de desconto</h2>
+          <p class="ajuda">O cliente digita o código na etapa "Seu plano" do checkout. Cupom já usado em vendas não pode ser excluído, só desativado.</p>
+        </div>
+        @if (!editando) { <button type="button" class="botao primario" (click)="novo()">+ Novo cupom</button> }
+      </div>
+
+      @if (editando; as c) {
+        <div class="editor">
+          <label class="campo"><span>Código</span>
+            <input name="cupom-codigo" [(ngModel)]="c.codigo" maxlength="30" placeholder="EX.: BEMVINDO20" class="codigo" />
+          </label>
+          <label class="campo"><span>Tipo de desconto</span>
+            <select name="cupom-tipo" [(ngModel)]="c.tipo">
+              <option value="percentual">Porcentagem (%)</option>
+              <option value="valor">Valor fixo no ano (R$)</option>
+            </select>
+          </label>
+          <label class="campo"><span>{{ c.tipo === 'valor' ? 'Desconto (R$)' : 'Desconto (%)' }}</span>
+            <input name="cupom-valor" type="number" min="0" [max]="c.tipo === 'valor' ? 100000 : 99" step="0.01" [(ngModel)]="c.valor" />
+          </label>
+          <label class="campo"><span>Válido até</span>
+            <input name="cupom-validade" type="date" [(ngModel)]="c.valido_ate" />
+            <small>Vazio: sem prazo</small>
+          </label>
+          <label class="campo"><span>Limite de usos</span>
+            <input name="cupom-limite" type="number" min="1" step="1" [(ngModel)]="c.limite_usos" placeholder="Sem limite" />
+          </label>
+          <label class="campo campo-largo"><span>Anotação interna</span>
+            <input name="cupom-descricao" [(ngModel)]="c.descricao" maxlength="200" placeholder="Ex.: parceria com o podcast X" />
+          </label>
+          <label class="opcao"><input type="checkbox" name="cupom-ativo" [(ngModel)]="c.ativo" /> Ativo</label>
+          @if (previa; as pv) {
+            <p class="previa">Com este cupom o cliente paga <strong>{{ moeda(pv.total) }}</strong> no 1º ano ({{ plano?.parcelas }}x de {{ moeda(pv.parcela) }}).</p>
+          }
+          @if (erroEdicao) { <p class="erro largura-toda">{{ erroEdicao }}</p> }
+          <div class="acoes">
+            <button type="button" class="botao" (click)="editando = null">Cancelar</button>
+            <button type="button" class="botao primario" (click)="salvar()" [disabled]="salvando">{{ salvando ? 'Salvando…' : 'Salvar cupom' }}</button>
+          </div>
+        </div>
+      }
+
+      @if (cupons.length) {
+        <div class="tabela-wrap">
+          <table class="grade">
+            <thead>
+              <tr><th>Código</th><th>Desconto</th><th class="num">Cliente paga</th><th>Válido até</th><th class="num">Usos</th><th class="num">Receita</th><th>Situação</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (c of cupons; track c.id) {
+                <tr [class.inativo]="!c.ativo">
+                  <td><strong class="codigo">{{ c.codigo }}</strong>@if (c.descricao) { <span class="sub">{{ c.descricao }}</span> }</td>
+                  <td>{{ desconto(c) }}</td>
+                  <td class="num">{{ moeda(c.preco_final) }}<span class="sub">{{ plano?.parcelas }}x de {{ moeda(c.parcela_final) }}</span></td>
+                  <td>{{ data(c.valido_ate) }}</td>
+                  <td class="num">{{ c.usos }}{{ c.limite_usos ? ' / ' + c.limite_usos : '' }}</td>
+                  <td class="num">{{ moeda(c.receita) }}</td>
+                  <td>
+                    <span class="selo" [class.ok]="c.situacao === 'valendo'" [class.atencao]="c.situacao === 'esgotado ou vencido'">
+                      {{ c.situacao === 'valendo' ? 'Valendo' : c.situacao === 'desativado' ? 'Desativado' : 'Esgotado ou vencido' }}
+                    </span>
+                  </td>
+                  <td class="num acoes-linha">
+                    <button type="button" class="botao" (click)="editar(c)">Editar</button>
+                    <button type="button" class="botao" (click)="alternar(c)">{{ c.ativo ? 'Desativar' : 'Ativar' }}</button>
+                    @if (!c.usos) { <button type="button" class="botao perigo" (click)="excluir(c)">Excluir</button> }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (!editando) {
+        <p class="aviso">Nenhum cupom ainda. Crie o primeiro em "+ Novo cupom".</p>
+      }
+    </section>
+  }
+</div>

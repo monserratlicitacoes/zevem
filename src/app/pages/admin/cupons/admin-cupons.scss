@@ -1,0 +1,15 @@
+@use 'tokens' as *;
+.topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.editor {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 12px; background: #fafcf8; border: 1px solid $borda; border-radius: 12px; margin-bottom: 12px;
+  .campo { min-width: 150px; }
+  .campo-largo { flex: 1 1 260px; }
+  .acoes { display: flex; gap: 8px; margin-left: auto; }
+}
+.opcao { display: flex; gap: 8px; align-items: center; font-size: 12px; color: $profundo; padding-bottom: 8px;
+  input { accent-color: $floresta; } }
+.previa { width: 100%; margin: 0; font-size: 12px; color: $floresta; font-weight: 600; strong { color: $profundo; } }
+.largura-toda { width: 100%; margin: 0; }
+.codigo { font-family: ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: .04em; text-transform: uppercase; }
+.acoes-linha { display: flex; gap: 6px; justify-content: flex-end; }
+tr.inativo td { opacity: .6; }

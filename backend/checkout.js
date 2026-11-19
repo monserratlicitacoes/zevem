@@ -22,7 +22,7 @@ const DIAS_AVISO_RENOVACAO = 7;
 module.exports = function registrarCheckout(ctx) {
   const {
     app, db, pagamentos, gerarToken, bcrypt, crypto, cifrar, decifrar, indice, chaveTelefone, criarPessoaTitular, cpfValido, telefoneNormalizado,
-    normalizarEmail, emailValido, erroSenha, enviarEmail, escaparHtml, FRONTEND_URL, limitador, agoraBrasilia,
+    normalizarEmail, emailValido, erroSenha, enviarEmail, escaparHtml, FRONTEND_URL, limitador, agoraBrasilia, master,
   } = ctx;
 
   db.exec(`
@@ -45,7 +45,20 @@ module.exports = function registrarCheckout(ctx) {
       ativado_em DATETIME
     );
     CREATE INDEX IF NOT EXISTS idx_checkouts_pagamento ON checkouts(asaas_pagamento_id);
+    -- Cupons de desconto (Master › Cupons): valem só para o 1º ano; a renovação volta ao preço do plano
+    CREATE TABLE IF NOT EXISTS cupons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      codigo TEXT NOT NULL UNIQUE,              -- maiúsculas, sem espaços
+      tipo TEXT NOT NULL DEFAULT 'percentual',  -- percentual | valor
+      valor REAL NOT NULL,                      -- % (ex.: 20) ou R$ de desconto no ano
+      valido_ate TEXT,                          -- AAAA-MM-DD (inclusive); vazio = sem prazo
+      limite_usos INTEGER,                      -- vazio = sem limite
+      descricao TEXT NOT NULL DEFAULT '',       -- anotação interna (ex.: parceria, campanha)
+      ativo INTEGER NOT NULL DEFAULT 1,
+      criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
+  try { db.prepare('ALTER TABLE checkouts ADD COLUMN cupom_id INTEGER').run(); } catch {}
 
   // Plano vendido no checkout: o master pode mudar o preço em Master › Planos (mesmo nome)
   function plano() {
@@ -70,6 +83,40 @@ module.exports = function registrarCheckout(ctx) {
     const parcela = Math.round((p.valor_anual / p.parcelas) * 100) / 100;
     return { nome: p.nome, valor_anual: p.valor_anual, parcelas: p.parcelas, valor_parcela: parcela, disponivel: asaas.configurado() };
   };
+
+  // ── Cupons ──
+  // O Asaas exige parcela de no mínimo R$ 5: o total com desconto nunca fica abaixo de parcelas × R$ 5.
+  const PARCELA_MINIMA = 5;
+  const centavos = (v) => Math.round(v * 100) / 100;
+  const normalizarCodigo = (c) => String(c || '').trim().toUpperCase().replace(/\s+/g, '');
+  const usosDoCupom = (id) => db.prepare("SELECT COUNT(*) AS n FROM checkouts WHERE cupom_id = ? AND status IN ('pago', 'ativado')").get(id).n;
+  function valorComCupom(p, cupom) {
+    if (!cupom) return p.valor_anual;
+    const desconto = cupom.tipo === 'valor' ? cupom.valor : (p.valor_anual * cupom.valor) / 100;
+    return centavos(Math.max(p.valor_anual - desconto, p.parcelas * PARCELA_MINIMA));
+  }
+  // Motivo de o cupom não valer agora (ou null se vale)
+  function problemaCupom(cupom) {
+    if (!cupom || !cupom.ativo) return 'Cupom inválido.';
+    if (cupom.valido_ate && cupom.valido_ate < agoraBrasilia().hoje) return 'Este cupom expirou.';
+    if (cupom.limite_usos && usosDoCupom(cupom.id) >= cupom.limite_usos) return 'Este cupom já foi usado o número máximo de vezes.';
+    return null;
+  }
+  // Preço desta compra: plano + cupom (se ainda valer)
+  function precoDo(ck) {
+    const p = plano();
+    const cupom = ck.cupom_id ? db.prepare('SELECT * FROM cupons WHERE id = ?').get(ck.cupom_id) : null;
+    const vale = cupom && !problemaCupom(cupom);
+    const total = valorComCupom(p, vale ? cupom : null);
+    return {
+      plano: p, total, parcela: centavos(total / p.parcelas), cupom: vale ? cupom : null,
+      cupomCaiu: !!cupom && !vale ? problemaCupom(cupom) : null,
+    };
+  }
+  const resumoPreco = (pr) => ({
+    valor_anual: pr.total, valor_parcela: pr.parcela, parcelas: pr.plano.parcelas, valor_cheio: pr.plano.valor_anual,
+    cupom: pr.cupom ? { codigo: pr.cupom.codigo, tipo: pr.cupom.tipo, valor: pr.cupom.valor, desconto: centavos(pr.plano.valor_anual - pr.total) } : null,
+  });
 
   app.get('/checkout/plano', limCheckout, (req, res) => res.json(resumoPlano(plano())));
 
@@ -116,7 +163,9 @@ module.exports = function registrarCheckout(ctx) {
     const resultado = db.transaction(() => {
       const ck = buscar(ckId);
       if (!ck || ['pago', 'ativado'].includes(ck.status)) return null;
-      const p = plano();
+      const pr = precoDo(ck);
+      const p = pr.plano;
+      const pago = centavos((cobrancas || []).reduce((t, c) => t + Number(c.valor || 0), 0)) || pr.total;
       let usuario = db.prepare('SELECT id FROM usuarios WHERE lower(trim(email)) = ?').get(ck.email);
       const contaNova = !usuario;
       if (contaNova) {
@@ -130,7 +179,7 @@ module.exports = function registrarCheckout(ctx) {
       }
       pagamentos.registrarAssinaturaPaga({
         usuarioId: usuario.id, plano: p, inicio: agoraBrasilia().hoje, provedor: 'asaas', cliente_id: ck.asaas_cliente_id,
-        parcelamento_id, cartao_token, ip: ck.ip, cobrancas,
+        parcelamento_id, cartao_token, ip: ck.ip, cobrancas, valor: pago, cupom_id: ck.cupom_id,
       });
       // Conta que já existia (raro: criada durante a compra) não troca de senha pelo checkout
       db.prepare("UPDATE checkouts SET status = ?, forma = ?, usuario_id = ?, pago_em = CURRENT_TIMESTAMP WHERE id = ?")
@@ -157,6 +206,93 @@ module.exports = function registrarCheckout(ctx) {
       </div>`;
     enviarEmail(ck.email, 'Seu acesso ao Zevem está liberado', html).catch((e) => console.error('[checkout] boas-vindas:', e.message));
   }
+
+  // ── 2. Cupom de desconto (na etapa do plano) ──
+  // Aplica ou tira (código vazio). Se já houver um Pix gerado, ele é apagado: o valor mudou.
+  app.post('/checkout/:id/cupom', limCheckout, async (req, res) => {
+    const ck = buscar(req.params.id);
+    if (!valido(ck)) return erro(res, 404, 'Este checkout expirou. Recomece a assinatura.');
+    if (!['iniciado', 'aguardando_pix'].includes(ck.status)) return erro(res, 409, 'O pagamento já foi feito.');
+    const codigo = normalizarCodigo(req.body.codigo);
+    let cupomId = null;
+    if (codigo) {
+      const cupom = db.prepare('SELECT * FROM cupons WHERE codigo = ?').get(codigo);
+      const problema = problemaCupom(cupom);
+      if (problema) return erro(res, 400, problema);
+      cupomId = cupom.id;
+    }
+    if (ck.status === 'aguardando_pix' && ck.asaas_pagamento_id && cupomId !== ck.cupom_id) {
+      const pix = await asaas.consultarPagamento(ck.asaas_pagamento_id).catch(() => null);
+      if (pix && asaas.PAGO.includes(pix.status)) return erro(res, 409, 'O Pix já foi pago.');
+      await asaas.cancelarCobranca(ck.asaas_pagamento_id).catch(() => {});
+      db.prepare("UPDATE checkouts SET status = 'iniciado', asaas_pagamento_id = NULL, pix_qr = NULL, pix_copia_e_cola = NULL WHERE id = ?").run(ck.id);
+    }
+    db.prepare('UPDATE checkouts SET cupom_id = ? WHERE id = ?').run(cupomId, ck.id);
+    res.json(resumoPreco(precoDo(buscar(ck.id))));
+  });
+  app.get('/checkout/:id/preco', limStatus, (req, res) => {
+    const ck = buscar(req.params.id);
+    if (!ck) return erro(res, 404, 'Checkout não encontrado.');
+    res.json(resumoPreco(precoDo(ck)));
+  });
+
+  // ── Master › Cupons ──
+  function lerCupom(b, atual = {}) {
+    const codigo = normalizarCodigo(b.codigo ?? atual.codigo);
+    const tipo = (b.tipo ?? atual.tipo) === 'valor' ? 'valor' : 'percentual';
+    const valor = centavos(Number(b.valor ?? atual.valor));
+    const validoAte = (b.valido_ate ?? atual.valido_ate) || null;
+    const limite = b.limite_usos === undefined ? atual.limite_usos ?? null : (parseInt(b.limite_usos, 10) || null);
+    const descricao = String(b.descricao ?? atual.descricao ?? '').trim().slice(0, 200);
+    const ativo = b.ativo === undefined ? (atual.ativo ?? 1) : (b.ativo ? 1 : 0);
+    if (!/^[A-Z0-9_-]{3,30}$/.test(codigo)) return { erro: 'O código precisa ter de 3 a 30 letras, números, - ou _ (sem espaços).' };
+    if (!(valor > 0)) return { erro: 'Informe o desconto.' };
+    if (tipo === 'percentual' && valor >= 100) return { erro: 'O desconto em % precisa ser menor que 100.' };
+    if (validoAte && !/^\d{4}-\d{2}-\d{2}$/.test(validoAte)) return { erro: 'Data de validade inválida.' };
+    if (limite !== null && limite < 1) return { erro: 'O limite de usos precisa ser 1 ou mais (ou vazio, sem limite).' };
+    return { codigo, tipo, valor, valido_ate: validoAte, limite_usos: limite, descricao, ativo };
+  }
+  function listarCupons() {
+    const p = plano();
+    return db.prepare('SELECT * FROM cupons ORDER BY ativo DESC, id DESC').all().map((c) => {
+      const usos = db.prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(a.valor_ciclo), 0) AS receita FROM checkouts ck
+        LEFT JOIN assinaturas a ON a.usuario_id = ck.usuario_id AND a.cupom_id = ck.cupom_id
+        WHERE ck.cupom_id = ? AND ck.status IN ('pago', 'ativado')`).get(c.id);
+      const total = valorComCupom(p, c);
+      return {
+        ...c, ativo: !!c.ativo, usos: usos.n, receita: centavos(usos.receita),
+        preco_final: total, parcela_final: centavos(total / p.parcelas), situacao: problemaCupom(c) ? (c.ativo ? 'esgotado ou vencido' : 'desativado') : 'valendo',
+      };
+    });
+  }
+  app.get('/admin/cupons', master(), (req, res) => res.json({ cupons: listarCupons(), plano: resumoPlano(plano()) }));
+  app.post('/admin/cupons', master(), (req, res) => {
+    const c = lerCupom(req.body || {});
+    if (c.erro) return erro(res, 400, c.erro);
+    if (db.prepare('SELECT 1 FROM cupons WHERE codigo = ?').get(c.codigo)) return erro(res, 409, 'Já existe um cupom com esse código.');
+    db.prepare('INSERT INTO cupons (codigo, tipo, valor, valido_ate, limite_usos, descricao, ativo) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(c.codigo, c.tipo, c.valor, c.valido_ate, c.limite_usos, c.descricao, c.ativo);
+    res.status(201).json({ ok: true });
+  });
+  app.put('/admin/cupons/:id', master(), (req, res) => {
+    const atual = db.prepare('SELECT * FROM cupons WHERE id = ?').get(req.params.id);
+    if (!atual) return erro(res, 404, 'Cupom não encontrado.');
+    const c = lerCupom(req.body || {}, atual);
+    if (c.erro) return erro(res, 400, c.erro);
+    if (db.prepare('SELECT 1 FROM cupons WHERE codigo = ? AND id <> ?').get(c.codigo, atual.id)) return erro(res, 409, 'Já existe um cupom com esse código.');
+    db.prepare('UPDATE cupons SET codigo = ?, tipo = ?, valor = ?, valido_ate = ?, limite_usos = ?, descricao = ?, ativo = ? WHERE id = ?')
+      .run(c.codigo, c.tipo, c.valor, c.valido_ate, c.limite_usos, c.descricao, c.ativo, atual.id);
+    res.json({ ok: true });
+  });
+  // Excluir só cupom nunca usado; usado, desativa (o histórico das vendas guarda o cupom)
+  app.delete('/admin/cupons/:id', master(), (req, res) => {
+    const c = db.prepare('SELECT * FROM cupons WHERE id = ?').get(req.params.id);
+    if (!c) return erro(res, 404, 'Cupom não encontrado.');
+    if (usosDoCupom(c.id)) return erro(res, 409, 'Este cupom já foi usado em vendas. Desative em vez de excluir.');
+    db.prepare('UPDATE checkouts SET cupom_id = NULL WHERE cupom_id = ?').run(c.id);
+    db.prepare('DELETE FROM cupons WHERE id = ?').run(c.id);
+    res.json({ ok: true });
+  });
 
   // ── 3a. Cartão: 12x, aprovado na hora ──
   app.post('/checkout/:id/cartao', limCartao, async (req, res) => {
@@ -201,10 +337,16 @@ module.exports = function registrarCheckout(ctx) {
         await asaas.cancelarCobranca(ck.asaas_pagamento_id).catch(() => {});
         db.prepare("UPDATE checkouts SET asaas_pagamento_id = NULL, pix_qr = NULL, pix_copia_e_cola = NULL WHERE id = ?").run(ck.id);
       }
+      const pr = precoDo(buscar(ck.id));
+      if (pr.cupomCaiu) {
+        db.prepare('UPDATE checkouts SET cupom_id = NULL WHERE id = ?').run(ck.id);
+        voltar();
+        return erro(res, 409, `${pr.cupomCaiu} O valor voltou para o preço normal. Confira e tente de novo.`, { cupom_caiu: true });
+      }
       const cliente = await clienteAsaas(buscar(ck.id));
-      const p = plano();
+      const p = pr.plano;
       const r = await asaas.cobrarCartaoParcelado({
-        cliente, total: p.valor_anual, parcelas: p.parcelas, descricao: `${p.nome} — 1º ano`, referencia: `checkout:${ck.id.slice(0, 12)}`,
+        cliente, total: pr.total, parcelas: p.parcelas, descricao: `${p.nome} — 1º ano${pr.cupom ? ` (cupom ${pr.cupom.codigo})` : ''}`, referencia: `checkout:${ck.id.slice(0, 12)}`,
         cartao: { numero, nome: nomeCartao, mes, ano, cvc },
         titular: { nome: nomeCartao, email: ck.email, cpf: cpfTitular, cep, numero: numeroEndereco, telefone: decifrar(ck.telefone) },
         ip: req.ip,
@@ -237,8 +379,15 @@ module.exports = function registrarCheckout(ctx) {
     if (!trava.changes) return erro(res, 409, 'Seu pagamento já está sendo processado. Aguarde um instante.');
     try {
       const cliente = await clienteAsaas(ck);
-      const p = plano();
-      const pix = await asaas.cobrarPix({ cliente, valor: p.valor_anual, descricao: `${p.nome} — 1º ano (Pix)`, referencia: `checkout:${ck.id.slice(0, 12)}` });
+      const pr = precoDo(ck);
+      if (pr.cupomCaiu) {
+        db.prepare("UPDATE checkouts SET cupom_id = NULL, status = 'iniciado' WHERE id = ?").run(ck.id);
+        return erro(res, 409, `${pr.cupomCaiu} O valor voltou para o preço normal. Confira e tente de novo.`, { cupom_caiu: true });
+      }
+      const p = pr.plano;
+      const pix = await asaas.cobrarPix({
+        cliente, valor: pr.total, descricao: `${p.nome} — 1º ano (Pix)${pr.cupom ? ` · cupom ${pr.cupom.codigo}` : ''}`, referencia: `checkout:${ck.id.slice(0, 12)}`,
+      });
       db.prepare("UPDATE checkouts SET status = 'aguardando_pix', forma = 'pix', asaas_pagamento_id = ?, pix_qr = ?, pix_copia_e_cola = ? WHERE id = ?")
         .run(pix.pagamento_id, pix.qr_imagem, pix.copia_e_cola, ck.id);
       res.json({ status: 'aguardando_pix', qr_imagem: pix.qr_imagem, copia_e_cola: pix.copia_e_cola });
@@ -264,7 +413,7 @@ module.exports = function registrarCheckout(ctx) {
     const hoje = agoraBrasilia().hoje;
     confirmarPagamento(ck.id, {
       forma: 'pix',
-      cobrancas: [{ provedor_cobranca_id: ck.asaas_pagamento_id, valor: p.value ?? plano().valor_anual, vencimento: hoje, status: 'paga', pago_em: p.paymentDate || hoje, forma: 'pix' }],
+      cobrancas: [{ provedor_cobranca_id: ck.asaas_pagamento_id, valor: p.value ?? precoDo(ck).total, vencimento: hoje, status: 'paga', pago_em: p.paymentDate || hoje, forma: 'pix' }],
     });
   }
 

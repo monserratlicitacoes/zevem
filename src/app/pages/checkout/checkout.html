@@ -88,9 +88,13 @@
               <span class="plano-tag">Mais escolhido</span>
             </div>
             <p class="plano-preco">
-              <small>12x de</small> R$ {{ moeda(plano()?.valor_parcela) }}
+              <small>12x de</small> R$ {{ moeda(valor().valor_parcela) }}
             </p>
-            <p class="plano-total">R$ {{ moeda(plano()?.valor_anual) }} por ano · ou à vista no Pix</p>
+            @if (valor().cupom) {
+              <p class="plano-total"><s>R$ {{ moeda(valor().valor_cheio) }}</s> R$ {{ moeda(valor().valor_anual) }} no 1º ano · ou à vista no Pix</p>
+            } @else {
+              <p class="plano-total">R$ {{ moeda(valor().valor_anual) }} por ano · ou à vista no Pix</p>
+            }
             <ul class="plano-lista">
               <li>Curso de planejamento financeiro, em vídeos</li>
               <li>Sistema de orçamento, metas, dívidas e sonhos</li>
@@ -99,6 +103,25 @@
               <li>Orçamento compartilhado com o cônjuge</li>
             </ul>
             <p class="plano-renova">Renova automaticamente a cada ano. Você pode cancelar a renovação quando quiser.</p>
+          </div>
+
+          <!-- Cupom de desconto -->
+          <div class="cupom">
+            @if (valor().cupom; as cp) {
+              <div class="cupom-aplicado">
+                <span class="cupom-codigo">{{ cp.codigo }}</span>
+                <span>−R$ {{ moeda(cp.desconto) }} no 1º ano</span>
+                <button type="button" class="cupom-tirar" (click)="tirarCupom()" [disabled]="aplicandoCupom()">Remover</button>
+              </div>
+            } @else if (!cupomAberto) {
+              <button type="button" class="cupom-link" (click)="cupomAberto = true">Tem um cupom de desconto?</button>
+            } @else {
+              <form class="cupom-form" (ngSubmit)="aplicarCupom()" novalidate>
+                <input name="cupom" [(ngModel)]="codigoCupom" placeholder="Código do cupom" autocomplete="off" aria-label="Código do cupom" />
+                <button type="submit" [disabled]="aplicandoCupom()">{{ aplicandoCupom() ? 'Aplicando…' : 'Aplicar' }}</button>
+              </form>
+            }
+            @if (erroCupom()) { <p class="erro" role="alert">{{ erroCupom() }}</p> }
           </div>
           <div class="acoes">
             <button class="btn-voltar" type="button" (click)="voltar()">Voltar</button>
@@ -115,12 +138,12 @@
             <button type="button" role="tab" [class.ativa]="forma() === 'cartao'" [attr.aria-selected]="forma() === 'cartao'" (click)="escolher('cartao')">
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2.5" /><path d="M3 10h18M7 15h4" /></svg>
               Cartão de crédito
-              <small>12x de R$ {{ moeda(plano()?.valor_parcela) }}</small>
+              <small>12x de R$ {{ moeda(valor().valor_parcela) }}</small>
             </button>
             <button type="button" role="tab" [class.ativa]="forma() === 'pix'" [attr.aria-selected]="forma() === 'pix'" (click)="escolher('pix')">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 4-4 4-4-4 4-4zM12 13l4 4-4 4-4-4 4-4zM3 12l4-4 4 4-4 4-4-4zM13 12l4-4 4 4-4 4-4-4z" /></svg>
               Pix
-              <small>R$ {{ moeda(plano()?.valor_anual) }} à vista</small>
+              <small>R$ {{ moeda(valor().valor_anual) }} à vista</small>
             </button>
           </div>
 
@@ -172,7 +195,7 @@
               <div class="acoes">
                 <button class="btn-voltar" type="button" (click)="voltar()" [disabled]="carregando()">Voltar</button>
                 <button class="btn-principal" type="submit" [disabled]="carregando() || !plano()?.disponivel">
-                  {{ carregando() ? 'Processando o pagamento…' : 'Pagar 12x de R$ ' + moeda(plano()?.valor_parcela) }}
+                  {{ carregando() ? 'Processando o pagamento…' : 'Pagar 12x de R$ ' + moeda(valor().valor_parcela) }}
                 </button>
               </div>
             </form>
@@ -180,7 +203,7 @@
             <div class="pix">
               @if (pix(); as p) {
                 <img class="pix-qr" [src]="'data:image/png;base64,' + p.qr" alt="QR Code do Pix" />
-                <p class="pix-valor">R$ {{ moeda(plano()?.valor_anual) }}</p>
+                <p class="pix-valor">R$ {{ moeda(valor().valor_anual) }}</p>
                 <p class="pix-instrucao">Abra o app do seu banco, escolha <b>Pix › Ler QR Code</b> ou use o código abaixo.</p>
                 <div class="pix-copia">
                   <input readonly [value]="p.copia" aria-label="Código Pix copia e cola" />

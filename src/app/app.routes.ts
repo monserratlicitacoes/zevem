@@ -33,6 +33,7 @@ export const routes: Routes = [
   { path: 'admin/anuncios', loadComponent: () => import('./pages/admin/anuncios/admin-anuncios').then((m) => m.AdminAnuncios), canActivate: [authGuard, masterGuard] },
   { path: 'admin/videos', loadComponent: () => import('./pages/admin/videos/admin-videos').then((m) => m.AdminVideos), canActivate: [authGuard, masterGuard] },
   { path: 'admin/financeiro', loadComponent: () => import('./pages/admin/financeiro/admin-financeiro').then((m) => m.AdminFinanceiro), canActivate: [authGuard, masterGuard] },
+  { path: 'admin/cupons', loadComponent: () => import('./pages/admin/cupons/admin-cupons').then((m) => m.AdminCupons), canActivate: [authGuard, masterGuard] },
   { path: 'admin/indicadores', loadComponent: () => import('./pages/admin/indicadores/admin-indicadores').then((m) => m.AdminIndicadores), canActivate: [authGuard, masterGuard] },
 
   // Área do planejador financeiro associado
