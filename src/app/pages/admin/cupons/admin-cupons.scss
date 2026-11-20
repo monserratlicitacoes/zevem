@@ -1,10 +1,12 @@
 @use 'tokens' as *;
 .topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .editor {
-  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 12px; background: #fafcf8; border: 1px solid $borda; border-radius: 12px; margin-bottom: 12px;
-  .campo { min-width: 150px; }
+  display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px; padding: 12px; background: #fafcf8; border: 1px solid $borda; border-radius: 12px; margin-bottom: 12px;
+  // Todos os campos com a mesma altura e o rótulo na mesma linha; a dica ("Vazio: sem prazo") fica embaixo, sem empurrar o resto
+  .campo { min-width: 150px; input, select { box-sizing: border-box; height: 36px; } }
+  .opcao { height: 36px; margin-top: 21px; padding-bottom: 0; }
   .campo-largo { flex: 1 1 260px; }
-  .acoes { display: flex; gap: 8px; margin-left: auto; }
+  .acoes { display: flex; gap: 8px; margin-left: auto; align-self: flex-end; }
 }
 .opcao { display: flex; gap: 8px; align-items: center; font-size: 12px; color: $profundo; padding-bottom: 8px;
   input { accent-color: $floresta; } }

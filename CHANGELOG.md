@@ -3,6 +3,11 @@
 Todas as mudanças relevantes do Zevem (antigo Apple Green) ficam registradas aqui.
 Versionamento semântico: PATCH = correções e pequenos ajustes; MINOR = novas funcionalidades; MAJOR = mudanças estruturais.
 
+## [1.6.1] - 2026-11-20
+
+### Corrigido
+- **Master › Cupons:** o editor de cupom estava desalinhado. Os rótulos agora ficam na mesma linha, todos os campos têm a mesma altura e o "Vazio: sem prazo" da validade não empurra mais os outros campos.
+
 ## [1.6.0] - 2026-11-19
 
 ### Adicionado
