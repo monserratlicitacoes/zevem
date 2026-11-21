@@ -1324,7 +1324,9 @@ function interpretarMensagem(texto) {
     valor = Number(/,\d{1,2}$/.test(bruto) || /\.\d{3}/.test(bruto) ? bruto.replace(/\./g, '').replace(',', '.') : bruto.replace(',', '.'));
     resto = resto.replace(mValor[0], ' ');
   }
-  const hoje = new Date();
+  // "Hoje" no fuso de Brasília: o servidor roda em UTC e, entre 21h e 0h, já estaria no dia seguinte
+  const [anoBr, mesBr, diaBr] = agoraBrasilia().hoje.split('-').map(Number);
+  const hoje = new Date(anoBr, mesBr - 1, diaBr);
   let data = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
   const mData = resto.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
   if (mData) {
@@ -2672,6 +2674,7 @@ if (process.env.DEV_SEM_LOGIN === '1') {
 const adm = require('./admin')({ app, db, auth, componentesOrcamento, nivelSaude, grauComprometimento, agoraBrasilia, DATA_DIR });
 const pagamentos = require('./pagamentos')({ app, db, auth, master: adm.master, agoraBrasilia, dividirEmParcelas, somarMeses });
 adm.definirTemAssinatura(pagamentos.temAssinatura);
+wpp.definirTemAssinatura(pagamentos.temAssinatura);
 convites = require('./convites')({ app, db, master: adm.master, enviarEmail, FRONTEND_URL, escaparHtml, normalizarEmail, loginLimiter });
 
 app.listen(PORT, () => console.log(`API rodando na porta ${PORT}`));

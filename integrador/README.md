@@ -17,7 +17,7 @@ WhatsApp ──webhook──▶ integrador ──POST /mensagens──▶ backen
   na hora. Em seguida, em série: marca como lida, transcreve o áudio (se houver), chama
   `/mensagens` e envia a resposta. Imagem, documento e outros tipos recebem uma resposta padrão sem
   passar pelo Zevem; reações e eventos de sistema são ignorados.
-- **Repetição segura**: falha no Zevem (rede, timeout, 5xx) ou no envio tenta de novo até 6 vezes
+- **Repetição segura**: falha no Zevem (rede, timeout, 5xx, ou 409 quando a mesma mensagem ainda está em processamento) ou no envio tenta de novo até 6 vezes
   (2 s, 10 s, 30 s, 1 min, 2 min) com a mesma `mensagem_id`. A resposta já entregue nunca é reenviada
   e a mesma mensagem reentregue pelo provedor é ignorada. Se desistir antes de o Zevem responder, o
   usuário recebe "tive um problema, tente de novo".

@@ -25,6 +25,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test -- --watch=false
+      - name: Testar backend
+        run: npm ci && npm test
+        working-directory: backend
       - name: Testar integrador WhatsApp
         run: npm test
         working-directory: integrador

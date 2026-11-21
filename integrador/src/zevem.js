@@ -20,8 +20,9 @@ module.exports = function criarZevem({ url, token, timeoutMs }) {
     if (!r.ok) {
       const erro = new Error(`Zevem ${metodo} ${caminho}: ${r.status} ${dados?.erro || ''}`.trim());
       erro.status = r.status;
-      // 5xx, 429 e 503 (integração desligada) podem passar; 4xx de validação não
-      erro.temporario = r.status >= 500 || r.status === 429;
+      // 5xx, 429, 503 (integração desligada) e 409 (mesma mensagem ainda em processamento) podem passar;
+      // 4xx de validação não
+      erro.temporario = r.status >= 500 || r.status === 429 || r.status === 409;
       throw erro;
     }
     return dados;

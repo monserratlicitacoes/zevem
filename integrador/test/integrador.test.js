@@ -138,6 +138,18 @@ test('Zevem fora do ar: tenta de novo com a mesma mensagem_id', async () => {
   assert.equal(envios().length, 1);
 });
 
+test('Zevem ainda processando a mesma mensagem (409): tenta de novo', async () => {
+  let n = 0;
+  comportamento.mensagem = () => (++n === 1 ? { status: 409, corpo: { erro: 'em processamento' } } : { status: 200, corpo: { acao: 'lancado', resposta: 'ok', repetida: true } });
+  await postarWebhook(eventoMeta([msgTexto('wamid.409', 'uber 20')]));
+  await app.entrada.processarPendentes();
+  assert.equal(app.estado.entrada('wamid.409').estado, 'recebida');
+  app.estado.db.prepare('UPDATE entrada SET proximo_em = 0').run();
+  await app.entrada.processarPendentes();
+  assert.equal(app.estado.entrada('wamid.409').estado, 'respondida');
+  assert.equal(envios().length, 1);
+});
+
 test('falha ao enviar a resposta: reenvia a resposta guardada sem chamar o Zevem de novo', async () => {
   let n = 0;
   comportamento.enviar = () => (++n === 1 ? { status: 500, corpo: { error: { code: 131000 } } } : { status: 200, corpo: { messages: [{ id: 'wamid.r' }] } });

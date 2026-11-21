@@ -10,7 +10,7 @@ interface MensagemChat { de: 'pessoa' | 'app'; texto: string; nome?: string; }
 const ANTECEDENCIAS = [7, 5, 3, 2, 1, 0];
 const STATUS_AVISO: Record<string, string> = {
   pendente: 'Na fila', reservado: 'Enviando', enviado: 'Enviado', falhou: 'Falhou',
-  sem_canal: 'Só no app', sem_destino: 'Sem telefone', expirado: 'Expirado',
+  sem_canal: 'Só no app', sem_assinatura: 'Sem assinatura', sem_destino: 'Sem telefone', expirado: 'Expirado',
 };
 
 @Component({

@@ -181,7 +181,26 @@ module.exports = function registrarWhatsapp(ctx) {
   try { db.prepare('ALTER TABLE avisos ADD COLUMN reservado_em DATETIME').run(); } catch {}
   try { db.prepare('ALTER TABLE avisos ADD COLUMN mensagem_id_provedor TEXT').run(); } catch {}
 
+  // Opt-out: a pessoa mandou SAIR e não recebe mais avisos automáticos (a conversa continua)
+  try { db.prepare('ALTER TABLE pessoas ADD COLUMN whatsapp_optout_em DATETIME').run(); } catch {}
+
   const integracaoAtiva = () => !!process.env.WHATSAPP_INTEGRACAO_TOKEN;
+
+  // ── Quem pode usar o WhatsApp ──
+  // Assinatura ativa (ou inadimplente, dentro da tolerância), período de teste desde o cadastro ou master.
+  // WHATSAPP_EXIGE_ASSINATURA=0 libera para todas as contas.
+  let temAssinatura = () => false; // definido por pagamentos.js (carregado depois), ver definirTemAssinatura
+  function podeUsarWhatsapp(usuarioId) {
+    if (process.env.WHATSAPP_EXIGE_ASSINATURA === '0') return true;
+    const u = usuarioId && db.prepare('SELECT * FROM usuarios WHERE id = ?').get(usuarioId);
+    if (!u) return false;
+    const masters = String(process.env.MASTER_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+    if (u.papel === 'master' || masters.includes(String(u.email).toLowerCase())) return true;
+    if (temAssinatura(usuarioId)) return true;
+    const diasTeste = Number(process.env.WHATSAPP_DIAS_TESTE ?? 7);
+    const criado = Date.parse(`${String(u.criado_em || '').replace(' ', 'T')}Z`);
+    return Number.isFinite(criado) && Date.now() - criado < diasTeste * 86_400_000;
+  }
 
   db.exec(`CREATE TABLE IF NOT EXISTS config_app (chave TEXT PRIMARY KEY, valor TEXT NOT NULL, atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP)`);
   // Textos personalizados pelo master: { tipo: texto }
@@ -190,13 +209,17 @@ module.exports = function registrarWhatsapp(ctx) {
   };
 
   // ── Telefones ──
-  // Só telefone confirmado (a pessoa mandou o código pelo próprio WhatsApp) identifica quem escreve e
-  // recebe alertas. A busca é pelo índice (HMAC), o número fica cifrado no banco.
+  // O telefone cadastrado em Configurações identifica quem escreve. O telefone confirmado (a pessoa
+  // mandou o código pelo próprio WhatsApp) vale como opt-in: só ele recebe avisos automáticos e tem
+  // prioridade se o mesmo número estiver cadastrado, sem confirmação, em outra conta.
+  // A busca é pelo índice (HMAC), o número fica cifrado no banco.
   function pessoaPorTelefone(telefone) {
     const chave = chaveTelefone(telefone);
     if (!chave) return [];
-    return db.prepare('SELECT id, usuario_id, nome, telefone FROM pessoas WHERE telefone_indice = ? AND telefone_verificado = 1').all(indice(chave))
+    const todas = db.prepare('SELECT id, usuario_id, nome, telefone, telefone_verificado FROM pessoas WHERE telefone_indice = ?').all(indice(chave))
       .map((p) => ({ ...p, telefone: decifrar(p.telefone) }));
+    const confirmadas = todas.filter((p) => p.telefone_verificado);
+    return confirmadas.length ? confirmadas : todas;
   }
 
   // ── Configuração dos alertas ──
@@ -214,9 +237,10 @@ module.exports = function registrarWhatsapp(ctx) {
     }));
   }
 
-  // Pessoas que recebem um alerta (só quem tem telefone)
+  // Pessoas que recebem um alerta (só telefone confirmado e sem SAIR)
   function destinatariosAlerta(usuarioId, cfg) {
-    const pessoas = db.prepare("SELECT id, nome, telefone FROM pessoas WHERE usuario_id = ? AND telefone_verificado = 1 AND TRIM(COALESCE(telefone, '')) <> '' ORDER BY id").all(usuarioId);
+    const pessoas = db.prepare(`SELECT id, nome, telefone FROM pessoas WHERE usuario_id = ? AND telefone_verificado = 1 AND whatsapp_optout_em IS NULL
+      AND TRIM(COALESCE(telefone, '')) <> '' ORDER BY id`).all(usuarioId);
     const lista = Array.isArray(cfg.destinatarios) ? new Set(cfg.destinatarios.map(Number)) : null;
     return pessoas.filter((p) => !lista || lista.has(p.id)).map((p) => ({ ...p, telefone: decifrar(p.telefone), destino: decifrar(p.telefone).replace(/\D/g, '') }));
   }
@@ -598,13 +622,20 @@ Preencha todos os campos; use listas vazias, 0 e "" no que não se aplicar.`;
     return { acao: 'ajuda', intencao: 'outro', via: 'ia', uso, resposta: r.resposta_livre?.trim() || AJUDA };
   }
 
-  function registrarMensagem(dados, saida) {
+  // Grava a mensagem no histórico. Com `reservaId`, completa o registro reservado na chegada.
+  function registrarMensagem(dados, saida, reservaId = null) {
     const u = saida.uso || {};
-    const r = db.prepare(`INSERT INTO whatsapp_mensagens (usuario_id, pessoa_id, telefone, mensagem_id, canal, tipo, texto, intencao, acao, resposta, detalhes,
-      modelo, tokens_entrada, tokens_saida, tokens_cache, custo_usd) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(dados.usuarioId ?? null, dados.pessoa?.id ?? null, cifrar(dados.telefone || ''), dados.mensagemId || null, dados.canal || 'whatsapp', dados.tipo || 'texto',
-        String(dados.texto || ''), saida.intencao ?? null, saida.acao, saida.resposta, JSON.stringify(saida.detalhes ?? null),
-        u.modelo || null, u.tokens_entrada || 0, u.tokens_saida || 0, u.tokens_cache || 0, u.custo_usd || 0);
+    const valores = [dados.usuarioId ?? null, dados.pessoa?.id ?? null, cifrar(dados.telefone || ''), dados.canal || 'whatsapp', dados.tipo || 'texto',
+      String(dados.texto || ''), saida.intencao ?? null, saida.acao, saida.resposta, JSON.stringify(saida.detalhes ?? null),
+      u.modelo || null, u.tokens_entrada || 0, u.tokens_saida || 0, u.tokens_cache || 0, u.custo_usd || 0];
+    if (reservaId) {
+      db.prepare(`UPDATE whatsapp_mensagens SET usuario_id = ?, pessoa_id = ?, telefone = ?, canal = ?, tipo = ?, texto = ?, intencao = ?, acao = ?, resposta = ?,
+        detalhes = ?, modelo = ?, tokens_entrada = ?, tokens_saida = ?, tokens_cache = ?, custo_usd = ? WHERE id = ?`).run(...valores, reservaId);
+      return reservaId;
+    }
+    const r = db.prepare(`INSERT INTO whatsapp_mensagens (usuario_id, pessoa_id, telefone, canal, tipo, texto, intencao, acao, resposta, detalhes,
+      modelo, tokens_entrada, tokens_saida, tokens_cache, custo_usd, mensagem_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(...valores, dados.mensagemId || null);
     return Number(r.lastInsertRowid);
   }
 
@@ -612,9 +643,11 @@ Preencha todos os campos; use listas vazias, 0 e "" no que não se aplicar.`;
   // Grava um aviso por destinatário (sem repetir a mesma chave). Status 'pendente' = na fila de saída.
   const inserirAviso = db.prepare(`INSERT OR IGNORE INTO avisos (usuario_id, tipo, chave, data_ref, titulo, mensagem, destino, status, pessoa_id, template, variaveis)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-  function statusInicial(destino) {
+  function statusInicial(destino, usuarioId = null) {
     if (!destino) return 'sem_destino';
-    return integracaoAtiva() ? 'pendente' : 'sem_canal';
+    if (!integracaoAtiva()) return 'sem_canal';
+    // Sem assinatura: o aviso fica no histórico do app, mas não sai pelo WhatsApp
+    return usuarioId && !podeUsarWhatsapp(usuarioId) ? 'sem_assinatura' : 'pendente';
   }
   // A Meta recusa parâmetro de template vazio ou com quebra de linha: as variáveis saem sempre limpas
   const variaveisTemplate = (v) => Object.fromEntries(Object.entries(v).map(([k, x]) => {
@@ -628,7 +661,7 @@ Preencha todos os campos; use listas vazias, 0 e "" no que não se aplicar.`;
       if (excetoPessoaId && p.id === excetoPessoaId) continue;
       const vars = { nome: primeiroNome(p.nome), ...(a.variaveis || {}) };
       const mensagem = textoMaster ? preencherTexto(textoMaster, vars) : a.mensagem;
-      const r = inserirAviso.run(usuarioId, a.tipo, `${a.chave}:p${p.id}`, a.data_ref, a.titulo, mensagem, cifrar(p.destino), statusInicial(p.destino),
+      const r = inserirAviso.run(usuarioId, a.tipo, `${a.chave}:p${p.id}`, a.data_ref, a.titulo, mensagem, cifrar(p.destino), statusInicial(p.destino, usuarioId),
         p.id, TIPOS_ALERTA[a.tipo]?.template || '', JSON.stringify(variaveisTemplate(vars)));
       if (r.changes) criados.push({ id: Number(r.lastInsertRowid), usuario_id: usuarioId, pessoa_id: p.id, ...a });
     }
@@ -702,35 +735,101 @@ Preencha todos os campos; use listas vazias, 0 e "" no que não se aplicar.`;
     res.json({ ok: true, ia: !!process.env.ANTHROPIC_API_KEY, modelo: process.env.WHATSAPP_MODELO_IA || MODELO_PADRAO, hora: new Date().toISOString() });
   });
 
+  // Limite de mensagens por número em 1 hora (contém custo de IA). Fica na memória do processo.
+  const recentesPorTelefone = new Map();
+  function passouDoLimite(telefone) {
+    const limite = Number(process.env.WHATSAPP_LIMITE_HORA) || 60;
+    const agora = Date.now();
+    const chave = chaveTelefone(telefone) || String(telefone);
+    const lista = (recentesPorTelefone.get(chave) || []).filter((t) => agora - t < 3_600_000);
+    lista.push(agora);
+    recentesPorTelefone.set(chave, lista);
+    if (recentesPorTelefone.size > 10_000) {
+      for (const [k, v] of recentesPorTelefone) if (!v.some((t) => agora - t < 3_600_000)) recentesPorTelefone.delete(k);
+    }
+    return lista.length > limite;
+  }
+
+  // SAIR / VOLTAR: desliga e religa os avisos automáticos do número (a conversa continua funcionando)
+  function comandoAvisos(texto) {
+    const t = normalizarTexto(texto).replace(/[^a-z]/g, '');
+    if (['sair', 'parar', 'stop'].includes(t)) return 'sair';
+    if (t === 'voltar') return 'voltar';
+    return null;
+  }
+  function alterarAvisos(pessoas, comando) {
+    const ids = pessoas.map((p) => p.id);
+    const marcar = ids.map(() => '?').join(',');
+    if (comando === 'sair') {
+      db.prepare(`UPDATE pessoas SET whatsapp_optout_em = CURRENT_TIMESTAMP WHERE id IN (${marcar})`).run(...ids);
+      return { acao: 'avisos_desligados', resposta: 'Pronto, você não vai mais receber avisos automáticos por aqui. Pode continuar mandando seus gastos e perguntas. Para voltar a receber, mande VOLTAR.' };
+    }
+    db.prepare(`UPDATE pessoas SET whatsapp_optout_em = NULL WHERE id IN (${marcar})`).run(...ids);
+    if (pessoas.some((p) => p.telefone_verificado)) {
+      return { acao: 'avisos_ligados', resposta: 'Pronto, os avisos automáticos voltaram a ser enviados por aqui.' };
+    }
+    return { acao: 'avisos_sem_confirmacao', resposta: 'Para receber avisos por aqui, confirme seu número no Zevem em Configurações › Pessoas, tocando em "Confirmar WhatsApp".' };
+  }
+
+  const MENSAGEM_SEM_ASSINATURA = 'O WhatsApp do Zevem faz parte da assinatura. Para continuar lançando e consultando por aqui, ative sua assinatura no app.';
+
   app.post('/integracao/whatsapp/mensagens', authIntegracao, async (req, res) => {
     const { mensagem_id, telefone, tipo = 'texto', texto = '' } = req.body || {};
     if (!telefone) return res.status(400).json({ erro: 'Informe o telefone de quem enviou' });
     if (!['texto', 'audio'].includes(tipo)) return res.status(400).json({ erro: 'tipo deve ser "texto" ou "audio"' });
-    // Mesma mensagem entregue de novo pelo provedor: devolve a resposta já dada, sem lançar outra vez
+
+    // Mesma mensagem entregue de novo pelo provedor: devolve a resposta já dada, sem lançar outra vez.
+    // A mensagem é reservada antes de qualquer espera (IA): uma chamada simultânea com o mesmo id recebe
+    // 409 e tenta de novo depois. Reserva com mais de 2 min = processamento interrompido; processa de novo.
+    let reservaId = null;
     if (mensagem_id) {
       const ja = db.prepare('SELECT * FROM whatsapp_mensagens WHERE mensagem_id = ?').get(String(mensagem_id));
-      if (ja) return res.json({ id: ja.id, mensagem_id: ja.mensagem_id, acao: ja.acao, intencao: ja.intencao, resposta: ja.resposta, repetida: true });
+      if (ja && ja.acao !== 'processando') {
+        return res.json({ id: ja.id, mensagem_id: ja.mensagem_id, acao: ja.acao, intencao: ja.intencao, resposta: ja.resposta, repetida: true });
+      }
+      if (ja) {
+        const recente = db.prepare("SELECT 1 FROM whatsapp_mensagens WHERE id = ? AND criado_em > datetime('now', '-2 minutes')").get(ja.id);
+        if (recente) return res.status(409).json({ erro: 'Mensagem ainda em processamento. Tente de novo em instantes.' });
+        db.prepare('DELETE FROM whatsapp_mensagens WHERE id = ?').run(ja.id);
+      }
+      reservaId = Number(db.prepare(`INSERT INTO whatsapp_mensagens (mensagem_id, telefone, tipo, texto, acao) VALUES (?, ?, ?, ?, 'processando')`)
+        .run(String(mensagem_id), cifrar(telefone), tipo, String(texto)).lastInsertRowid);
     }
-    // "ZEVEM 123456": confirma que este WhatsApp é da pessoa que gerou o código em Configurações
-    const codigo = String(texto).match(/\bzevem\s*(\d{6})\b/i)?.[1];
-    if (codigo) {
-      const saida = confirmarTelefone(telefone, codigo);
-      const id = registrarMensagem({ usuarioId: saida.pessoa?.usuario_id, pessoa: saida.pessoa, telefone, mensagemId: mensagem_id, tipo, texto }, saida);
-      return res.json({ id, mensagem_id: mensagem_id || null, acao: saida.acao, resposta: saida.resposta, intencao: null });
+    const responder = (dados, saida) => {
+      const id = registrarMensagem({ telefone, mensagemId: mensagem_id, tipo, texto, ...dados }, saida, reservaId);
+      res.json({ id, mensagem_id: mensagem_id || null, acao: saida.acao, intencao: saida.intencao ?? null, resposta: saida.resposta, detalhes: saida.detalhes ?? null });
+    };
+
+    try {
+      if (passouDoLimite(telefone)) {
+        return responder({}, { acao: 'limite', resposta: 'Recebi muitas mensagens em pouco tempo. Espere alguns minutos e mande de novo.' });
+      }
+      // "ZEVEM 123456": confirma que este WhatsApp é da pessoa que gerou o código em Configurações (opt-in)
+      const codigo = String(texto).match(/\bzevem\s*(\d{6})\b/i)?.[1];
+      if (codigo) {
+        const saida = confirmarTelefone(telefone, codigo);
+        return responder({ usuarioId: saida.pessoa?.usuario_id, pessoa: saida.pessoa }, saida);
+      }
+      const candidatos = pessoaPorTelefone(telefone);
+      const contas = new Set(candidatos.map((p) => p.usuario_id));
+      if (contas.size !== 1) {
+        return responder({}, contas.size === 0
+          ? { acao: 'numero_desconhecido', resposta: 'Este número não está ligado a uma conta do Zevem. Cadastre-o em Configurações › Pessoas.' }
+          : { acao: 'numero_ambiguo', resposta: 'Este número está ligado a mais de uma conta do Zevem. Confirme-o em Configurações › Pessoas, tocando em "Confirmar WhatsApp", ou fale com o suporte.' });
+      }
+      const pessoa = candidatos[0];
+      const comando = comandoAvisos(texto);
+      if (comando) return responder({ usuarioId: pessoa.usuario_id, pessoa }, alterarAvisos(candidatos, comando));
+      if (!podeUsarWhatsapp(pessoa.usuario_id)) {
+        return responder({ usuarioId: pessoa.usuario_id, pessoa }, { acao: 'sem_assinatura', resposta: MENSAGEM_SEM_ASSINATURA });
+      }
+      const saida = await processarMensagem({ usuarioId: pessoa.usuario_id, pessoa, texto, tipo });
+      responder({ usuarioId: pessoa.usuario_id, pessoa }, saida);
+    } catch (e) {
+      // Libera a reserva para a próxima tentativa do integrador
+      if (reservaId) db.prepare("DELETE FROM whatsapp_mensagens WHERE id = ? AND acao = 'processando'").run(reservaId);
+      throw e;
     }
-    const candidatos = pessoaPorTelefone(telefone);
-    const contas = new Set(candidatos.map((p) => p.usuario_id));
-    if (contas.size !== 1) {
-      const saida = contas.size === 0
-        ? { acao: 'numero_desconhecido', resposta: 'Este número não está ligado a uma conta do Zevem. Cadastre-o em Configurações › Pessoas e toque em "Confirmar WhatsApp".' }
-        : { acao: 'numero_ambiguo', resposta: 'Este número está ligado a mais de uma conta do Zevem. Fale com o suporte.' };
-      const id = registrarMensagem({ telefone, mensagemId: mensagem_id, tipo, texto }, saida);
-      return res.json({ id, mensagem_id: mensagem_id || null, ...saida, intencao: null });
-    }
-    const pessoa = candidatos[0];
-    const saida = await processarMensagem({ usuarioId: pessoa.usuario_id, pessoa, texto, tipo });
-    const id = registrarMensagem({ usuarioId: pessoa.usuario_id, pessoa, telefone, mensagemId: mensagem_id, tipo, texto }, saida);
-    res.json({ id, mensagem_id: mensagem_id || null, acao: saida.acao, intencao: saida.intencao, resposta: saida.resposta, detalhes: saida.detalhes ?? null });
   });
 
   function confirmarTelefone(telefone, codigo) {
@@ -741,8 +840,9 @@ Preencha todos os campos; use listas vazias, 0 e "" no que não se aplicar.`;
     if (db.prepare('SELECT 1 FROM pessoas WHERE telefone_indice = ? AND telefone_verificado = 1 AND usuario_id <> ?').get(chave, pessoa.usuario_id)) {
       return { acao: 'numero_ambiguo', resposta: 'Este número já está confirmado em outra conta do Zevem. Fale com o suporte.' };
     }
-    db.prepare('UPDATE pessoas SET telefone_verificado = 1, telefone_codigo = NULL, telefone_codigo_expira = NULL WHERE id = ?').run(pessoa.id);
-    return { pessoa, acao: 'telefone_confirmado', resposta: `Pronto, ${pessoa.nome.split(' ')[0]}! Seu WhatsApp está ligado ao Zevem.` };
+    // Confirmar o número é o opt-in: também desfaz um SAIR anterior
+    db.prepare('UPDATE pessoas SET telefone_verificado = 1, telefone_codigo = NULL, telefone_codigo_expira = NULL, whatsapp_optout_em = NULL WHERE id = ?').run(pessoa.id);
+    return { pessoa, acao: 'telefone_confirmado', resposta: `Pronto, ${pessoa.nome.split(' ')[0]}! Seu WhatsApp está ligado ao Zevem e você vai receber os avisos por aqui. Para parar de receber, mande SAIR.` };
   }
 
   // Fila de saída: entrega os avisos pendentes e os reserva por 10 min (se não houver confirmação, voltam)
@@ -773,13 +873,14 @@ Preencha todos os campos; use listas vazias, 0 e "" no que não se aplicar.`;
   // ── Rotas do app ──
   app.get('/alertas/config', auth(), (req, res) => {
     const cfg = configAlertas(req.user.id);
-    const pessoas = db.prepare('SELECT id, nome, telefone, telefone_verificado FROM pessoas WHERE usuario_id = ? ORDER BY id').all(req.user.id)
+    const pessoas = db.prepare('SELECT id, nome, telefone, telefone_verificado, whatsapp_optout_em FROM pessoas WHERE usuario_id = ? ORDER BY id').all(req.user.id)
       .map((p) => ({ ...p, telefone: decifrar(p.telefone) }));
     res.json({
       integracao_ativa: integracaoAtiva(),
       ia_ativa: !!process.env.ANTHROPIC_API_KEY,
       pessoas: pessoas.map((p) => ({ id: p.id, nome: p.nome, telefone: p.telefone || '', tem_telefone: !!chaveTelefone(p.telefone) && !!p.telefone_verificado,
-        telefone_pendente: !!chaveTelefone(p.telefone) && !p.telefone_verificado })),
+        telefone_pendente: !!chaveTelefone(p.telefone) && !p.telefone_verificado, avisos_desligados: !!p.whatsapp_optout_em })),
+      whatsapp_liberado: podeUsarWhatsapp(req.user.id),
       tipos: Object.entries(TIPOS_ALERTA).map(([tipo, d]) => ({ tipo, titulo: d.titulo, descricao: d.descricao, template: d.template, ...cfg[tipo] })),
       // Para escolher os itens do alerta "Quanto ainda posso gastar"
       itens: (() => {
@@ -819,7 +920,8 @@ Preencha todos os campos; use listas vazias, 0 e "" no que não se aplicar.`;
       FROM whatsapp_mensagens m LEFT JOIN pessoas p ON p.id = m.pessoa_id WHERE m.usuario_id = ? ORDER BY m.criado_em DESC, m.id DESC LIMIT ?`).all(req.user.id, limite));
   });
 
-  return { configAlertas, gravarAviso, avisosConfiguraveis, chaveTelefone, pessoaPorTelefone, statusInicial };
+  return { configAlertas, gravarAviso, avisosConfiguraveis, chaveTelefone, pessoaPorTelefone, statusInicial, podeUsarWhatsapp,
+    definirTemAssinatura: (fn) => { temAssinatura = fn; } };
 };
 
 module.exports.TIPOS_ALERTA = TIPOS_ALERTA;

@@ -27,12 +27,13 @@ export interface ConfigAlerta {
   destinatarios: 'todos' | number[];
 }
 
-export interface PessoaWhatsapp { id: number; nome: string; telefone: string; tem_telefone: boolean; telefone_pendente?: boolean; }
+export interface PessoaWhatsapp { id: number; nome: string; telefone: string; tem_telefone: boolean; telefone_pendente?: boolean; avisos_desligados?: boolean; }
 export interface ItemAlerta { id: number; descricao: string; categoria: string; categoria_nome: string; meta: number; }
 
 export interface ConfigAlertas {
   integracao_ativa: boolean;
   ia_ativa: boolean;
+  whatsapp_liberado?: boolean; // assinatura ativa, período de teste ou master
   pessoas: PessoaWhatsapp[];
   tipos: ConfigAlerta[];
   itens: ItemAlerta[];
@@ -51,7 +52,7 @@ export interface Aviso {
   tipo: string;
   titulo: string;
   mensagem: string;
-  status: string; // pendente | reservado | enviado | falhou | sem_canal | sem_destino | expirado
+  status: string; // pendente | reservado | enviado | falhou | sem_canal | sem_destino | sem_assinatura | expirado
   pessoa: string | null;
   data_ref: string;
   criado_em: string;

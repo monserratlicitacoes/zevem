@@ -31,12 +31,13 @@
         <strong>Números que conversam com o app</strong>
         <div class="numeros">
           @for (p of pessoasComTelefone; track p.id) {
-            <span class="numero">{{ p.nome.split(' ')[0] }} · {{ p.telefone }}</span>
+            <span class="numero">{{ p.nome.split(' ')[0] }} · {{ p.telefone }}{{ p.avisos_desligados ? ' · avisos desligados (mandou SAIR)' : '' }}</span>
           }
           @for (p of pessoasSemTelefone; track p.id) {
-            <a class="numero numero-falta" routerLink="/configuracoes">{{ p.nome.split(' ')[0] }} · {{ p.telefone_pendente ? 'WhatsApp não confirmado' : 'sem telefone' }}</a>
+            <a class="numero numero-falta" routerLink="/configuracoes">{{ p.nome.split(' ')[0] }} · {{ p.telefone_pendente ? 'confirme o WhatsApp para receber avisos' : 'sem telefone' }}</a>
           }
           @if (!dados.pessoas.length) { <a class="numero numero-falta" routerLink="/configuracoes">Cadastre as pessoas em Configurações</a> }
+          @if (dados.whatsapp_liberado === false) { <span class="numero numero-falta">O WhatsApp faz parte da assinatura: ative-a para conversar e receber avisos</span> }
         </div>
       </div>
     </section>
