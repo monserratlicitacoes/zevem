@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avaliação: integração WhatsApp do Zevem (Apple Green)</title>
+<style>
+:root{--fg:#1c2420;--mut:#5b6660;--bg:#f6f7f5;--card:#fff;--line:#dfe4e0;--acc:#1f7a4d;--code:#eef2ef}
+@media (prefers-color-scheme:dark){:root{--fg:#e6ebe8;--mut:#9aa6a0;--bg:#141816;--card:#1c211e;--line:#2e3632;--acc:#5fcf94;--code:#262d29}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:1.9rem;line-height:1.25;margin:0 0 12px}
+h2{font-size:1.4rem;margin:44px 0 12px;padding-top:16px;border-top:2px solid var(--line)}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p,li{max-width:80ch}
+a{color:var(--acc)}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font:0.86em ui-monospace,Consolas,monospace;overflow-wrap:anywhere}
+nav{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 20px;margin:20px 0}
+nav strong{display:block;margin-bottom:4px}
+nav ol{margin:0;padding-left:20px;columns:2;column-gap:32px}
+nav li{list-style:none;margin-left:-20px}
+.tabela{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:0.92rem}
+th,td{padding:8px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{background:var(--code);font-weight:600;white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td:first-child{font-weight:500}
+@media (max-width:700px){nav ol{columns:1}}
+@media print{body{background:#fff}.tabela{overflow:visible}h2{break-after:avoid}tr{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+<h1 id="avaliacao-integracao-whatsapp-do-zevem-apple-green">Avaliação: integração WhatsApp do Zevem (Apple Green)</h1>
+<p>Data da avaliação: 21/11/2026. Base: PDF "Apple Green — Integração WhatsApp" (21/10/2026, 15 páginas, também versionado em <code>docs/Apple Green - Integracao WhatsApp.pdf</code>) e o código do worktree na branch <code>glauco-pacto/avaliacao-integracao-whatsapp-zevem</code> (commit <code>1ecf05c</code>).</p>
+<p>Convenções: referências no formato <code>caminho/arquivo:linha</code>. Complexidade: <strong>P</strong> (até 1 dia), <strong>M</strong> (2 a 4 dias), <strong>G</strong> (1 semana ou mais). Tudo que não está no PDF nem no código está marcado como <strong>suposição</strong>. Nada foi executado: a análise é por leitura de código.</p>
+<nav><strong>Sumário</strong><ol><li><a href="#1-resumo-executivo">1. Resumo executivo</a></li><li><a href="#2-o-que-o-pdf-pede">2. O que o PDF pede</a></li><li><a href="#3-estado-atual-do-zevem">3. Estado atual do Zevem</a></li><li><a href="#4-gap-analysis">4. Gap analysis</a></li><li><a href="#5-mudancas-tecnicas-propostas">5. Mudanças técnicas propostas</a></li><li><a href="#6-plano-em-fases">6. Plano em fases</a></li><li><a href="#7-duvidas-em-aberto">7. Dúvidas em aberto</a></li><li><a href="#8-riscos-e-dependencias">8. Riscos e dependências</a></li></ol></nav>
+<h2 id="1-resumo-executivo">1. Resumo executivo</h2>
+<ul><li>O Zevem <strong>é</strong> o Apple Green (rebrand registrado em <code>CHANGELOG.md:24</code>). O lado "Apple Green" do contrato do PDF <strong>já está implementado</strong>: as quatro rotas <code>/integracao/whatsapp/*</code>, a interpretação por IA, a fila de avisos, o agendador, o simulador e a tela de Alertas estão em <code>backend/whatsapp.js</code> e <code>backend/server.js</code>.</li>
+<li>O que <strong>não existe em lugar nenhum do repositório</strong> é o lado "Integrador": receber o webhook da Meta/BSP, baixar e transcrever áudio, enviar a resposta, buscar a fila a cada minuto, enviar templates e confirmar o envio. Esse é o grosso do trabalho.</li>
+<li>Também faltam itens de produto e operação no próprio Zevem: o menu Alertas hoje só aparece para o master, não há termo de consentimento (opt-in), a variável <code>WHATSAPP_NUMERO</code> não está documentada, não há testes de backend e não há monitoramento de <code>/saude</code>.</li>
+<li>A leitura do código encontrou <strong>dois defeitos prováveis</strong> que afetam o aceite: lançamento duplicado em chamadas concorrentes com a mesma <code>mensagem_id</code> e data errada no atalho sem IA entre 21h e 0h (servidor em UTC).</li>
+<li>Há <strong>divergências entre o PDF e o código</strong> que o integrador precisa conhecer: o telefone só vale depois de confirmado com "ZEVEM &lt;código&gt;", existem valores de <code>acao</code> fora da lista do PDF e a URL real em produção tem o prefixo <code>/api</code>.</li>
+<li><strong>Tamanho estimado:</strong> 2 a 3 semanas de um desenvolvedor (cerca de 10 a 15 dias úteis) para integrador, ajustes no Zevem, infra e testes. Fora dessa conta fica o prazo externo de verificação do negócio e aprovação dos 7 templates na Meta, que não depende de código.</li>
+<li><strong>Bloqueios externos:</strong> escolha entre Meta Cloud API direta e BSP, número do WhatsApp Business, acesso à conta Meta, chave do provedor de transcrição e chave da Anthropic.</li></ul>
+<h2 id="2-o-que-o-pdf-pede">2. O que o PDF pede</h2>
+<h3 id="2-1-divisao-de-responsabilidades-paginas-1-e-2">2.1 Divisão de responsabilidades (páginas 1 e 2)</h3>
+<div class="tabela"><table><thead><tr><th>Responsabilidade</th><th>Integrador</th><th>Apple Green (Zevem)</th></tr></thead><tbody><tr><td>Número WhatsApp Business e webhook da Meta/BSP</td><td>Sim</td><td></td></tr>
+<tr><td>Baixar e transcrever áudios</td><td>Sim</td><td></td></tr>
+<tr><td>Enviar a resposta de cada mensagem recebida</td><td>Sim</td><td></td></tr>
+<tr><td>Buscar a fila de avisos e enviá-los como template</td><td>Sim</td><td></td></tr>
+<tr><td>Cadastrar e aprovar os templates na Meta</td><td>Sim</td><td>Define textos e variáveis</td></tr>
+<tr><td>Identificar a pessoa pelo telefone</td><td></td><td>Sim</td></tr>
+<tr><td>Entender a mensagem, classificar, lançar, responder</td><td></td><td>Sim</td></tr>
+<tr><td>Decidir quais alertas gerar, quando e para quem</td><td></td><td>Sim</td></tr>
+<tr><td>Guardar histórico, custos de IA e status de envio</td><td></td><td>Sim</td></tr></tbody></table></div>
+<h3 id="2-2-contrato-das-quatro-rotas-paginas-3-a-6">2.2 Contrato das quatro rotas (páginas 3 a 6)</h3>
+<div class="tabela"><table><thead><tr><th>Rota</th><th>Quando chamar</th><th>Pontos principais</th></tr></thead><tbody><tr><td><code>POST /integracao/whatsapp/mensagens</code></td><td>A cada mensagem recebida</td><td>Corpo: <code>mensagem_id</code> (wamid), <code>telefone</code>, <code>tipo</code> (<code>texto</code> ou <code>audio</code>), <code>texto</code>, <code>recebida_em</code>. Resposta síncrona em 2 a 6 s com <code>resposta</code> a enviar exatamente como veio. Repetição devolve <code>repetida: true</code></td></tr>
+<tr><td><code>GET /integracao/whatsapp/saida</code></td><td>A cada 1 minuto (sugestão)</td><td>Devolve avisos e os reserva por 10 min; <code>?limite=50</code> (máx. 100); telefone só com dígitos, normalmente sem 55</td></tr>
+<tr><td><code>POST /integracao/whatsapp/saida/:id/status</code></td><td>Depois de cada tentativa</td><td><code>enviado</code> (com <code>mensagem_id_provedor</code>) ou <code>falhou</code> (com <code>erro</code>); confirmação repetida devolve 404</td></tr>
+<tr><td><code>GET /integracao/whatsapp/saude</code></td><td>Monitoramento</td><td><code>ok</code>, <code>ia</code>, <code>modelo</code>, <code>hora</code></td></tr></tbody></table></div>
+<p>Autenticação: <code>Authorization: Bearer &lt;WHATSAPP_INTEGRACAO_TOKEN&gt;</code>; 401 se errado, 503 se a variável não existe. Erros de validação: 400 com <code>{"erro": "..."}</code>.</p>
+<h3 id="2-3-regras-que-recaem-sobre-o-integrador">2.3 Regras que recaem sobre o integrador</h3>
+<ul><li>Timeout de 30 s em <code>/mensagens</code>; em erro de rede ou 5xx, repetir com a mesma <code>mensagem_id</code>; nunca reenviar ao usuário uma resposta já entregue.</li>
+<li>Áudio: baixar a mídia, transcrever em pt-BR e enviar o texto com <code>tipo: "audio"</code>; texto vazio significa "não consegui entender".</li>
+<li>Fila: buscar, enviar, confirmar. Fora da janela de 24h, enviar o template (<code>template</code> + <code>variaveis</code>, na ordem da tabela); dentro, pode enviar o texto de <code>mensagem</code>. Acrescentar o código do país ao telefone.</li>
+<li>Sete templates categoria Utility, idioma <code>pt_BR</code>: <code>ag_conta_vencendo</code>, <code>ag_fatura_fecha</code>, <code>ag_melhor_dia_compra</code>, <code>ag_fatura_vence</code>, <code>ag_meta_atingida</code>, <code>ag_limite_programado</code>, <code>ag_lancamento_outra_pessoa</code>.</li>
+<li>Checklist de go-live (páginas 14 e 15): HTTPS, token, chave da Anthropic, número verificado, transcrição funcionando, 7 templates aprovados, busca da fila a cada minuto, telefones cadastrados, cenários de aceite, monitoramento de <code>/saude</code> e da taxa de erros, termo de uso e opt-in.</li></ul>
+<h3 id="2-4-implantacao-descrita-no-pdf-paginas-12-a-14">2.4 Implantação descrita no PDF (páginas 12 a 14)</h3>
+<p>Frontend Angular estático e backend Node.js com SQLite em uma única instância, com disco persistente e backup diário. Essa parte já está resolvida de outra forma no repositório (Docker Compose em VPS, ver seção 3.4).</p>
+<h2 id="3-estado-atual-do-zevem">3. Estado atual do Zevem</h2>
+<h3 id="3-1-stack-e-arquitetura">3.1 Stack e arquitetura</h3>
+<ul><li>Frontend Angular 22 e TypeScript 6 (<code>package.json</code>), servido por Nginx em container (<code>Dockerfile</code>, <code>deploy/frontend.conf</code>).</li>
+<li>Backend Node.js 24, Express 5, better-sqlite3, SDK da Anthropic, googleapis para envio de e-mail (<code>backend/package.json</code>). Um único processo; agendadores com <code>setInterval</code> dentro do processo (<code>backend/server.js:2647-2648</code>).</li>
+<li>Banco SQLite em arquivo (<code>apple-green.db</code> em <code>DATA_DIR</code>). Não há migrations: as tabelas são criadas com <code>CREATE TABLE IF NOT EXISTS</code> e as colunas com <code>ALTER TABLE</code> dentro de <code>try/catch</code> na subida (ex.: <code>backend/whatsapp.js:141-182</code>).</li>
+<li>Multi-conta por <code>usuario_id</code>; cada conta tem até 2 pessoas (<code>backend/server.js:637</code>). Não há fila, cache ou broker externos.</li>
+<li>Dados pessoais (CPF, e-mail, telefone) cifrados com AES-256-GCM e índice HMAC para busca por telefone (<code>backend/cripto.js</code>).</li></ul>
+<h3 id="3-2-o-que-ja-existe-da-integracao-whatsapp">3.2 O que já existe da integração WhatsApp</h3>
+<div class="tabela"><table><thead><tr><th>Tema</th><th>Onde está</th><th>Observação</th></tr></thead><tbody><tr><td>Autenticação por token, 401 e 503</td><td><code>backend/whatsapp.js:692-699</code></td><td>Comparação em tempo constante</td></tr>
+<tr><td><code>GET /saude</code></td><td><code>backend/whatsapp.js:701-703</code></td><td>Igual ao PDF</td></tr>
+<tr><td><code>POST /mensagens</code></td><td><code>backend/whatsapp.js:705-734</code></td><td>Idempotência por <code>mensagem_id</code> em <code>:710-713</code>, índice único em <code>:171</code></td></tr>
+<tr><td>Identificação por telefone (DDD + 8 dígitos)</td><td><code>backend/whatsapp.js:125-130</code>, <code>:195-200</code></td><td>Exige <code>telefone_verificado = 1</code></td></tr>
+<tr><td>Confirmação do número ("ZEVEM 123456")</td><td><code>backend/server.js:680-692</code>, <code>backend/whatsapp.js:715-720</code>, <code>:736-746</code></td><td>Não descrita no PDF</td></tr>
+<tr><td>Telefone único entre contas</td><td><code>backend/server.js:626-631</code></td><td>409 no cadastro</td></tr>
+<tr><td>Atalho sem IA (termos aprendidos)</td><td><code>backend/whatsapp.js:557-564</code>, <code>backend/server.js:1318-1345</code></td><td></td></tr>
+<tr><td>Interpretação por IA, cache, custo por mensagem</td><td><code>backend/whatsapp.js:382-412</code></td><td>Modelo por <code>WHATSAPP_MODELO_IA</code></td></tr>
+<tr><td>Lançamento, parcelas, suspenso</td><td><code>backend/whatsapp.js:418-479</code></td><td></td></tr>
+<tr><td>Consultas (saldo e total gasto)</td><td><code>backend/whatsapp.js:482-545</code>, <code>:251-267</code></td><td></td></tr>
+<tr><td>Histórico de mensagens, tokens e custo</td><td><code>backend/whatsapp.js:151-172</code>, <code>:601-609</code></td><td>Tabela <code>whatsapp_mensagens</code></td></tr>
+<tr><td>Tipos de alerta e nomes dos 7 templates</td><td><code>backend/whatsapp.js:44-87</code></td><td>Nomes iguais aos do PDF</td></tr>
+<tr><td>Agendador de hora em hora a partir das 8h</td><td><code>backend/server.js:2547-2648</code></td><td>Fuso de Brasília</td></tr>
+<tr><td>Alertas configuráveis (meta, limite programado)</td><td><code>backend/whatsapp.js:642-689</code></td><td></td></tr>
+<tr><td>Aviso para a outra pessoa</td><td><code>backend/whatsapp.js:470-476</code></td><td></td></tr>
+<tr><td>Variáveis de template sem vazio e sem quebra de linha</td><td><code>backend/whatsapp.js:620-623</code></td><td>Vazio vira "—"</td></tr>
+<tr><td><code>GET /saida</code> com reserva de 10 min e expiração de 24h</td><td><code>backend/whatsapp.js:749-762</code></td><td></td></tr>
+<tr><td><code>POST /saida/:id/status</code></td><td><code>backend/whatsapp.js:764-771</code></td><td>404 em repetição</td></tr>
+<tr><td>Configuração dos alertas por usuário</td><td><code>backend/whatsapp.js:774-801</code>, tabela <code>alertas_config</code> em <code>:142-150</code></td><td></td></tr>
+<tr><td>Simulador "Testar conversa"</td><td><code>backend/whatsapp.js:804-814</code>, <code>src/app/pages/alertas/alertas.html:186-222</code></td><td>Lança de verdade</td></tr>
+<tr><td>Histórico de avisos na tela</td><td><code>backend/server.js:2651-2655</code>, <code>src/app/pages/alertas/alertas.html:224-246</code></td><td></td></tr>
+<tr><td>Textos de alerta editáveis pelo master</td><td><code>backend/admin.js:290-310</code></td><td></td></tr>
+<tr><td>Simulação do agendador (só local)</td><td><code>backend/server.js:2658-2669</code></td><td><code>DEV_SEM_LOGIN=1</code></td></tr>
+<tr><td>Botão "Confirmar WhatsApp"</td><td><code>src/app/pages/configuracoes/configuracoes.html:58-65</code></td><td>Usa <code>WHATSAPP_NUMERO</code> para o link <code>wa.me</code></td></tr>
+<tr><td>Exportar e excluir conta (LGPD) inclui mensagens e avisos</td><td><code>backend/server.js:468-496</code></td><td>Qualquer tabela com <code>usuario_id</code></td></tr>
+<tr><td>Variáveis de ambiente</td><td><code>backend/.env.example</code></td><td>Falta <code>WHATSAPP_NUMERO</code></td></tr></tbody></table></div>
+<p>Conferência dos parâmetros dos 7 templates: os nomes das variáveis gerados pelo código batem com a tabela do PDF em todos os tipos (<code>backend/server.js:2559-2620</code>, <code>backend/whatsapp.js:474</code>, <code>:660</code>, <code>:684</code>). O código envia chaves extras (<code>quando</code>, <code>lista</code>) que o integrador deve ignorar.</p>
+<h3 id="3-3-o-que-nao-existe">3.3 O que não existe</h3>
+<ul><li>Nenhum código que fale com a Meta ou com um BSP: não há webhook de entrada, cliente da Graph API, download de mídia, transcrição, envio de mensagem nem leitor da fila. A busca por <code>graph.facebook</code>, <code>whisper</code>, <code>openai</code> e afins no repositório não retorna nada.</li>
+<li>Nenhum teste de backend. O único teste é <code>src/app/app.spec.ts</code>. O CI roda <code>npm test</code> do frontend e sobe os containers para checar <code>/health</code> (<code>.github/workflows/deploy.yml</code>).</li>
+<li>Nenhum termo de uso ou consentimento no cadastro ou em Configurações (busca por termo, consentimento e opt-in no <code>src/</code> sem resultado relacionado a WhatsApp).</li>
+<li>Nenhum painel de custos de IA ou de taxa de falha de envio para o master. Os dados são gravados, mas <code>backend/admin.js:342</code> só usa a contagem de mensagens no índice de utilização.</li></ul>
+<h3 id="3-4-infra-e-deploy">3.4 Infra e deploy</h3>
+<ul><li>VPS com Docker Compose: <code>frontend</code> em <code>127.0.0.1:3201</code> e <code>backend</code> em <code>127.0.0.1:3202</code>, volume <code>zevem-data</code> em <code>/data</code> (<code>compose.yaml</code>).</li>
+<li>Nginx do host atende <code>app.zevem.com.br</code> e encaminha <code>/api/</code> para o backend removendo o prefixo (<code>deploy/nginx-host/zevem-https.conf:22-28</code>). Portanto, a URL pública das rotas é <code>https://app.zevem.com.br/api/integracao/whatsapp/*</code>.</li>
+<li>Variáveis de produção em <code>/opt/zevem/.env.production</code>, lidas por <code>env_file</code> no serviço <code>backend</code>. O passo 3 de <code>deploy/README.md</code> cria o arquivo só com <code>FRONTEND_URL</code>, <code>JWT_SECRET</code>, <code>DADOS_KEY</code> e <code>MASTER_EMAILS</code>.</li>
+<li>Deploy por GitHub Actions via SSH com rollback de containers (<code>deploy/deploy.sh</code>), notificação no Telegram e backup diário local e no R2 (<code>deploy/backup.sh</code>, <code>deploy/r2-backup.sh</code>).</li>
+<li>O item "Pendente" do changelog confirma o que falta: "templates do WhatsApp na Meta" (<code>CHANGELOG.md:27</code>).</li></ul>
+<h2 id="4-gap-analysis">4. Gap analysis</h2>
+<h3 id="4-1-lado-do-integrador-nao-existe">4.1 Lado do integrador (não existe)</h3>
+<div class="tabela"><table><thead><tr><th>#</th><th>Requisito do PDF</th><th>Existe?</th><th>O que fazer</th><th>Compl.</th></tr></thead><tbody><tr><td>I1</td><td>Número WhatsApp Business e conta na Meta ou BSP</td><td>Não</td><td>Definir provedor, criar app e WABA, verificar o negócio, registrar o número, gerar token permanente</td><td>M (externo)</td></tr>
+<tr><td>I2</td><td>Webhook de entrada</td><td>Não</td><td>Endpoint público com verificação do desafio (GET) e validação da assinatura (POST); responder rápido e processar em segundo plano</td><td>M</td></tr>
+<tr><td>I3</td><td>Repassar texto para <code>/mensagens</code></td><td>Não</td><td>Cliente HTTP com Bearer, timeout de 30 s, repetição com a mesma <code>mensagem_id</code> em erro de rede ou 5xx</td><td>P</td></tr>
+<tr><td>I4</td><td>Enviar <code>resposta</code> como mensagem de sessão</td><td>Não</td><td>Envio de texto livre pela API do provedor, preservando quebras de linha e emojis</td><td>P</td></tr>
+<tr><td>I5</td><td>Não reenviar resposta já entregue</td><td>Não</td><td>Estado local por <code>wamid</code> (recebida, respondida) no integrador</td><td>P</td></tr>
+<tr><td>I6</td><td>Baixar e transcrever áudio em pt-BR</td><td>Não</td><td>Download da mídia, chamada ao provedor de transcrição, envio com <code>tipo: "audio"</code>; transcrição vazia em caso de falha</td><td>M</td></tr>
+<tr><td>I7</td><td>Buscar a fila a cada 1 min</td><td>Não</td><td>Laço de busca em <code>/saida</code> sem sobreposição de execuções</td><td>P</td></tr>
+<tr><td>I8</td><td>Enviar aviso como template com parâmetros na ordem</td><td>Não</td><td>Mapa fixo template → lista ordenada de variáveis; idioma <code>pt_BR</code>; acrescentar 55 ao telefone</td><td>M</td></tr>
+<tr><td>I9</td><td>Texto livre dentro da janela de 24h</td><td>Não</td><td>Guardar o horário da última mensagem recebida por telefone; opcional na primeira versão</td><td>P</td></tr>
+<tr><td>I10</td><td>Confirmar <code>enviado</code> ou <code>falhou</code></td><td>Não</td><td><code>POST /saida/:id/status</code> com o <code>wamid</code> ou o erro do provedor</td><td>P</td></tr>
+<tr><td>I11</td><td>Cadastrar e aprovar os 7 templates</td><td>Não</td><td>Submeter na Meta com os textos sugeridos; ajustar se houver recusa e alinhar com o dono do produto</td><td>M (externo)</td></tr>
+<tr><td>I12</td><td>Monitorar <code>/saude</code> e taxa de erros de envio</td><td>Não</td><td>Verificação periódica e alerta; dá para reaproveitar o bot do Telegram do deploy</td><td>P</td></tr>
+<tr><td>I13</td><td>Tipos de mensagem fora do contrato (imagem, documento, figurinha, localização)</td><td>Não previsto no PDF</td><td>Definir resposta padrão do integrador; ver dúvida D7</td><td>P</td></tr></tbody></table></div>
+<h3 id="4-2-lado-do-zevem-existe-com-lacunas">4.2 Lado do Zevem (existe, com lacunas)</h3>
+<div class="tabela"><table><thead><tr><th>#</th><th>Requisito do PDF</th><th>Situação</th><th>O que fazer</th><th>Compl.</th></tr></thead><tbody><tr><td>Z1</td><td>Quatro rotas e autenticação</td><td>Implementado (<code>backend/whatsapp.js:692-771</code>)</td><td>Nada; validar com os cenários de aceite</td><td>-</td></tr>
+<tr><td>Z2</td><td>Idempotência por <code>mensagem_id</code></td><td>Implementado, com falha em concorrência (ver 4.3, A1)</td><td>Reservar a <code>mensagem_id</code> antes de processar</td><td>P</td></tr>
+<tr><td>Z3</td><td>Identificação por telefone cadastrado</td><td>Implementado com regra mais rígida: exige confirmação do número (<code>backend/whatsapp.js:198</code>)</td><td>Decidir se a regra fica e atualizar a documentação (ver D3)</td><td>P</td></tr>
+<tr><td>Z4</td><td>Duas pessoas por conta, alerta por pessoa</td><td>Implementado (<code>backend/server.js:637</code>, <code>backend/whatsapp.js:218-222</code>)</td><td>Nada</td><td>-</td></tr>
+<tr><td>Z5</td><td>"O usuário escolhe quais no menu Alertas"</td><td>Tela pronta, mas restrita ao master (<code>src/app/app.routes.ts:40</code>, <code>src/app/shared/sidebar/sidebar.html:121-169</code>)</td><td>Liberar a rota e o item de menu para clientes; esconder a edição de textos, que é do master</td><td>P</td></tr>
+<tr><td>Z6</td><td>Simulador "Testar conversa"</td><td>Implementado, dentro da tela restrita ao master</td><td>Sai junto com Z5</td><td>-</td></tr>
+<tr><td>Z7</td><td>Agendador, reserva, expiração, chave única</td><td>Implementado (<code>backend/server.js:2628-2648</code>, <code>backend/whatsapp.js:749-762</code>)</td><td>Tratar avisos criados com a integração desligada (ver A4)</td><td>P</td></tr>
+<tr><td>Z8</td><td>Aviso para a outra pessoa</td><td>Implementado (<code>backend/whatsapp.js:470-476</code>)</td><td>Nada</td><td>-</td></tr>
+<tr><td>Z9</td><td>Histórico, tokens e custo por mensagem</td><td>Gravado (<code>backend/whatsapp.js:601-609</code>); sem tela de consulta para o master</td><td>Opcional: painel de custo e falhas no master</td><td>M</td></tr>
+<tr><td>Z10</td><td>Variáveis <code>WHATSAPP_INTEGRACAO_TOKEN</code>, <code>ANTHROPIC_API_KEY</code>, <code>WHATSAPP_MODELO_IA</code></td><td>Documentadas em <code>backend/.env.example</code>; ausentes do <code>.env.production</code></td><td>Preencher em produção; documentar <code>WHATSAPP_NUMERO</code> (<code>backend/server.js:689</code>)</td><td>P</td></tr>
+<tr><td>Z11</td><td>Backend público com HTTPS</td><td>Atendido em <code>https://app.zevem.com.br/api/</code></td><td>Informar a URL com <code>/api</code> ao integrador; se o integrador rodar na mesma VPS, usar a rede interna</td><td>-</td></tr>
+<tr><td>Z12</td><td>Termo de uso e opt-in (checklist de go-live)</td><td>Não existe</td><td>Texto de consentimento no fluxo "Confirmar WhatsApp" com data do aceite gravada; forma de sair (ver D8)</td><td>M</td></tr>
+<tr><td>Z13</td><td>Cenários de aceite</td><td>Sem testes automatizados de backend</td><td>Testes de API cobrindo os 10 cenários da página 10</td><td>M</td></tr>
+<tr><td>Z14</td><td>Backup diário de <code>DATA_DIR</code></td><td>Atendido (<code>deploy/backup.sh</code>, <code>deploy/r2-backup.sh</code>)</td><td>Se o integrador tiver estado próprio, incluir no backup ou aceitar perda</td><td>P</td></tr>
+<tr><td>Z15</td><td>Uma única instância, reinício automático</td><td>Atendido (<code>compose.yaml</code>, <code>restart: unless-stopped</code>)</td><td>Nada</td><td>-</td></tr></tbody></table></div>
+<h3 id="4-3-achados-da-leitura-do-codigo">4.3 Achados da leitura do código</h3>
+<p>Itens que não são requisitos novos, mas que afetam o aceite ou a operação. Nenhum foi reproduzido em execução.</p>
+<div class="tabela"><table><thead><tr><th>#</th><th>Achado</th><th>Evidência</th><th>Impacto</th><th>Correção</th><th>Compl.</th></tr></thead><tbody><tr><td>A1</td><td>Lançamento duplicado em chamadas concorrentes com a mesma <code>mensagem_id</code></td><td>A checagem (<code>backend/whatsapp.js:710-713</code>) ocorre antes do <code>await</code> da IA (<code>:731</code>); o registro só é gravado depois (<code>:732</code>). Duas chamadas simultâneas passam pela checagem, as duas lançam e a segunda falha no índice único (<code>:171</code>) com erro 500</td><td>Reentrega do webhook ou nova tentativa por timeout enquanto a primeira ainda roda pode duplicar o gasto. Quebra o cenário de aceite de idempotência</td><td>Inserir o registro (reserva) antes de processar e atualizar ao final; no integrador, processar em série por <code>mensagem_id</code></td><td>P</td></tr>
+<tr><td>A2</td><td>Data do atalho sem IA usa o relógio do servidor</td><td><code>interpretarMensagem</code> usa <code>new Date()</code> local (<code>backend/server.js:1327</code>); o container não define fuso (<code>compose.yaml</code>), logo roda em UTC</td><td>Entre 21h e 0h de Brasília, "almoço 45" pelo atalho de termos aprendidos é lançado com a data do dia seguinte. Contradiz "o fuso do servidor não importa"</td><td>Usar <code>agoraBrasilia()</code> na função ou definir <code>TZ=America/Sao_Paulo</code> no serviço</td><td>P</td></tr>
+<tr><td>A3</td><td>Valores de <code>acao</code> fora da lista do PDF</td><td><code>telefone_confirmado</code>, <code>codigo_invalido</code> (<code>backend/whatsapp.js:740-745</code>) e <code>vazia</code> (<code>:552</code>)</td><td>Só métricas e logs do integrador; ele deve aceitar valores desconhecidos</td><td>Atualizar a documentação</td><td>P</td></tr>
+<tr><td>A4</td><td>Avisos gerados com a integração desligada nunca entram na fila</td><td>Status inicial <code>sem_canal</code> (<code>backend/whatsapp.js:615-618</code>); a fila só lê <code>pendente</code> e <code>reservado</code> (<code>:754-755</code>)</td><td>Esperado para avisos antigos. Atenção na ordem do go-live: ligar o token antes da primeira rodada do dia</td><td>Documentar; nenhuma mudança obrigatória</td><td>-</td></tr>
+<tr><td>A5</td><td>Texto acima de 5.000 caracteres devolve 413, não 400</td><td>Middleware global (<code>backend/server.js:89-94</code>)</td><td>Transcrição de áudio muito longa é recusada com código fora do contrato</td><td>Integrador limita a duração do áudio ou corta o texto</td><td>P</td></tr>
+<tr><td>A6</td><td>Rotas da integração sem limite de requisições e sem limite de IA por usuário</td><td><code>iaLimiter</code> só é aplicado ao simulador (<code>backend/whatsapp.js:804</code>); <code>/mensagens</code> não tem limitador</td><td>Um número confirmado pode gerar custo de IA sem teto</td><td>Limite por telefone no integrador ou no backend</td><td>P</td></tr>
+<tr><td>A7</td><td>Falha de entrega posterior não pode ser registrada</td><td>Depois de <code>enviado</code>, novo status devolve 404 (<code>backend/whatsapp.js:767-769</code>)</td><td>O provedor costuma informar falha de entrega depois de aceitar a mensagem (<strong>suposição</strong>, a confirmar na documentação do provedor); o histórico mostraria "Enviado"</td><td>Combinar com o dono do produto se o contrato aceita <code>falhou</code> depois de <code>enviado</code> (ver D6)</td><td>P</td></tr>
+<tr><td>A8</td><td>Chave do aviso "a outra pessoa lançou" usa o horário</td><td><code>lanc:${g.id}:${Date.now()}</code> (<code>backend/whatsapp.js:473</code>)</td><td>Diverge da regra "tipo + item + data + pessoa" do PDF; na prática é intencional, pois cada lançamento gera um aviso. Somado a A1, pode duplicar o aviso</td><td>Resolvido junto com A1</td><td>-</td></tr>
+<tr><td>A9</td><td>Mensagens e avisos valem para qualquer conta, com ou sem assinatura</td><td><code>/mensagens</code> não consulta assinatura; o agendador percorre todos os usuários (<code>backend/server.js:2629</code>)</td><td>Custo de IA e de template para contas sem pagamento</td><td>Decisão de produto (ver D9)</td><td>P</td></tr>
+<tr><td>A10</td><td>Parâmetros da API de IA e identificadores de modelo</td><td><code>backend/whatsapp.js:24-32</code>, <code>:387-399</code></td><td>Não foram validados nesta avaliação</td><td>Validar em homologação com <code>/saude</code> e o simulador antes do go-live</td><td>P</td></tr></tbody></table></div>
+<h2 id="5-mudancas-tecnicas-propostas">5. Mudanças técnicas propostas</h2>
+<h3 id="5-1-onde-colocar-o-integrador">5.1 Onde colocar o integrador</h3>
+<div class="tabela"><table><thead><tr><th>Opção</th><th>Descrição</th><th>Prós</th><th>Contras</th></tr></thead><tbody><tr><td>A (recomendada)</td><td>Serviço separado no mesmo repositório (<code>integrador/</code>), terceiro serviço do <code>compose.yaml</code>, chamando <code>http://backend:3200/integracao/whatsapp/*</code> pela rede interna do Docker</td><td>Respeita o contrato do PDF sem mexer no backend; segredos da Meta isolados; <code>/integracao/*</code> não precisa de acesso externo; deploy e rollback já existentes</td><td>Um container a mais; estado próprio pequeno</td></tr>
+<tr><td>B</td><td>Módulo dentro do backend (<code>backend/whatsapp-canal.js</code>)</td><td>Menos peças</td><td>Mistura o canal com o produto, que tem outro responsável segundo o PDF; exige corpo bruto para validar a assinatura, e hoje <code>express.json()</code> é global (<code>backend/server.js:81</code>)</td></tr>
+<tr><td>C</td><td>BSP com automação pronta ou ferramenta de fluxo</td><td>Menos código</td><td>Custo mensal, dependência do fornecedor, idempotência e repetição difíceis de garantir</td></tr></tbody></table></div>
+<p>A recomendação é uma <strong>suposição de arquitetura</strong>, a confirmar com quem decide o provedor (ver D1). As seções seguintes consideram a opção A.</p>
+<h3 id="5-2-servico-integrador">5.2 Serviço integrador</h3>
+<p>Componentes (nomes sugeridos):</p>
+<ul><li><code>GET /webhook</code>: verificação do desafio do provedor com um token de verificação.</li>
+<li><code>POST /webhook</code>: valida a assinatura sobre o corpo bruto, grava o evento e responde 200 de imediato; o processamento segue em segundo plano.</li>
+<li>Processador de entrada: para texto, chama <code>/mensagens</code>; para áudio, baixa a mídia, transcreve e chama <code>/mensagens</code> com <code>tipo: "audio"</code>; para outros tipos, responde um texto padrão. Depois envia <code>resposta</code> e marca o evento como respondido.</li>
+<li>Laço da fila: a cada 60 s chama <code>GET /saida?limite=50</code>, envia cada aviso (template ou texto conforme a janela) e chama <code>POST /saida/:id/status</code>.</li>
+<li>Verificador de saúde: chama <code>/saude</code> periodicamente e alerta em caso de falha ou de <code>ia: false</code>.</li></ul>
+<p>Mapa de templates (ordem dos parâmetros, página 7 e 8 do PDF):</p>
+<div class="tabela"><table><thead><tr><th>Template</th><th>Parâmetros em ordem</th></tr></thead><tbody><tr><td><code>ag_conta_vencendo</code></td><td>nome, conta, vencimento, valor</td></tr>
+<tr><td><code>ag_fatura_fecha</code></td><td>nome, cartao, fechamento</td></tr>
+<tr><td><code>ag_melhor_dia_compra</code></td><td>nome, cartao, pagamento</td></tr>
+<tr><td><code>ag_fatura_vence</code></td><td>nome, cartao, vencimento</td></tr>
+<tr><td><code>ag_meta_atingida</code></td><td>nome, item, percentual, realizado, meta, disponivel</td></tr>
+<tr><td><code>ag_limite_programado</code></td><td>nome, total, por_dia, mes</td></tr>
+<tr><td><code>ag_lancamento_outra_pessoa</code></td><td>nome, pessoa, valor, item, saldo</td></tr></tbody></table></div>
+<p>Cuidados de implementação:</p>
+<ul><li>Telefone de saída: a fila entrega só dígitos como cadastrado. Acrescentar 55 quando vier com 10 ou 11 dígitos. Guardar o identificador do WhatsApp recebido na última mensagem de cada número e preferi-lo no envio, por causa do nono dígito (<strong>suposição</strong> sobre o comportamento do provedor).</li>
+<li>Valores das variáveis não devem ser reformatados. O valor pode vir como "não informado" (<code>backend/server.js:2562</code>) e o saldo negativo vem com sinal tipográfico (<code>backend/whatsapp.js:289</code>).</li>
+<li>Aviso sem confirmação volta à fila em 10 min: confirmar sempre, mesmo em falha, para não reenviar.</li>
+<li>Aviso com <code>falhou</code> não volta sozinho. Definir política de nova tentativa (sugestão: até 2 tentativas para erros temporários, nenhuma para número inválido).</li></ul>
+<h3 id="5-3-modelo-de-dados">5.3 Modelo de dados</h3>
+<p>No Zevem, nenhuma tabela nova é obrigatória. Alterações sugeridas, seguindo o padrão do projeto (<code>ALTER TABLE</code> em <code>try/catch</code> na subida):</p>
+<div class="tabela"><table><thead><tr><th>Tabela</th><th>Mudança</th><th>Motivo</th></tr></thead><tbody><tr><td><code>whatsapp_mensagens</code></td><td>Permitir registro em andamento (<code>acao</code> nula ou <code>processando</code>) inserido antes da IA</td><td>Correção de A1</td></tr>
+<tr><td><code>pessoas</code></td><td><code>whatsapp_optin_em</code> (data e hora) e <code>whatsapp_optin_versao</code></td><td>Z12, prova do consentimento</td></tr>
+<tr><td><code>pessoas</code></td><td><code>whatsapp_optout_em</code></td><td>Saída a pedido do usuário, se adotada (D8)</td></tr></tbody></table></div>
+<p>No integrador (SQLite próprio em volume do serviço, <strong>suposição</strong>):</p>
+<div class="tabela"><table><thead><tr><th>Tabela</th><th>Campos</th><th>Uso</th></tr></thead><tbody><tr><td><code>entrada</code></td><td><code>wamid</code> (chave), telefone, tipo, estado (recebida, processada, respondida, falhou), resposta, tentativas, horários</td><td>Não perder mensagem em reinício e nunca reenviar resposta entregue</td></tr>
+<tr><td><code>contatos</code></td><td>chave do telefone, identificador do WhatsApp, última mensagem recebida</td><td>Janela de 24h e número de envio</td></tr>
+<tr><td><code>envios</code></td><td>id do aviso, tentativa, resultado, erro</td><td>Métrica de taxa de erro</td></tr></tbody></table></div>
+<h3 id="5-4-endpoints">5.4 Endpoints</h3>
+<div class="tabela"><table><thead><tr><th>Onde</th><th>Endpoint</th><th>Situação</th></tr></thead><tbody><tr><td>Zevem</td><td>As quatro rotas <code>/integracao/whatsapp/*</code></td><td>Existem; só a correção de A1</td></tr>
+<tr><td>Zevem</td><td><code>POST /pessoas/:id/telefone/codigo</code></td><td>Existe; acrescentar o registro do aceite do termo (Z12)</td></tr>
+<tr><td>Integrador</td><td><code>GET</code> e <code>POST /webhook</code></td><td>Criar</td></tr>
+<tr><td>Integrador</td><td><code>GET /health</code></td><td>Criar, para o healthcheck do Compose</td></tr></tbody></table></div>
+<h3 id="5-5-frontend">5.5 Frontend</h3>
+<ul><li>Liberar <code>/alertas</code> para clientes: tirar <code>masterGuard</code> de <code>src/app/app.routes.ts:40</code> e mover o item de menu para fora do grupo Master em <code>src/app/shared/sidebar/sidebar.html:162</code>. Manter a edição de textos restrita ao master (as rotas <code>/admin/textos-alertas</code> já exigem master em <code>backend/admin.js:293-301</code>).</li>
+<li>Termo de consentimento no fluxo "Confirmar WhatsApp" de <code>src/app/pages/configuracoes/configuracoes.html:58-65</code>.</li>
+<li>Opcional: painel master com custo de IA por período e taxa de falha de envio.</li></ul>
+<h3 id="5-6-configuracao-e-segredos">5.6 Configuração e segredos</h3>
+<p>Backend (<code>/opt/zevem/.env.production</code>):</p>
+<div class="tabela"><table><thead><tr><th>Variável</th><th>Situação</th></tr></thead><tbody><tr><td><code>WHATSAPP_INTEGRACAO_TOKEN</code></td><td>Gerar com <code>openssl rand -hex 32</code></td></tr>
+<tr><td><code>ANTHROPIC_API_KEY</code></td><td>Fornecida pelo dono do produto (página 12 do PDF)</td></tr>
+<tr><td><code>WHATSAPP_MODELO_IA</code></td><td>Opcional; decidir o modelo (D10)</td></tr>
+<tr><td><code>WHATSAPP_NUMERO</code></td><td>Número do Zevem com DDI; usada no link <code>wa.me</code> da confirmação (<code>backend/server.js:689</code>). Acrescentar a <code>backend/.env.example</code></td></tr></tbody></table></div>
+<p>Integrador (nomes sugeridos, <strong>suposição</strong>): URL interna do backend, o mesmo <code>WHATSAPP_INTEGRACAO_TOKEN</code>, identificador do número e da conta no provedor, token de acesso, segredo do app para a assinatura, token de verificação do webhook, chave do provedor de transcrição e intervalo da fila.</p>
+<h3 id="5-7-infra-e-deploy">5.7 Infra e deploy</h3>
+<ul><li>Novo serviço <code>integrador</code> em <code>compose.yaml</code>, com porta em <code>127.0.0.1</code> e healthcheck.</li>
+<li>Nova <code>location</code> em <code>deploy/nginx-host/zevem-https.conf</code> apontando o caminho do webhook para o integrador. Avaliar bloquear <code>/api/integracao/</code> externamente se o integrador ficar na rede interna.</li>
+<li>Atualizar <code>deploy/README.md</code> (variáveis e passos do provedor), <code>deploy/deploy.sh</code> (checagem de saúde do integrador) e o job de validação em <code>.github/workflows/deploy.yml</code>.</li>
+<li>Backup: incluir o banco do integrador em <code>deploy/backup.sh</code> ou registrar que ele pode ser perdido.</li></ul>
+<h3 id="5-8-testes">5.8 Testes</h3>
+<ul><li>Backend: testes de API para os 10 cenários de aceite da página 10 do PDF, com a IA simulada. Hoje não há estrutura de testes no backend; o executor nativo do Node 24 evita dependência nova.</li>
+<li>Integrador: testes com o provedor e o Zevem simulados para assinatura do webhook, repetição com a mesma <code>mensagem_id</code>, não reenvio de resposta, ordem dos parâmetros dos 7 templates e reserva da fila.</li>
+<li>Homologação: número de teste do provedor, as duas pessoas de uma conta e um áudio real em português.</li></ul>
+<h2 id="6-plano-em-fases">6. Plano em fases</h2>
+<div class="tabela"><table><thead><tr><th>Fase</th><th>Tarefa</th><th>Compl.</th><th>Depende de</th></tr></thead><tbody><tr><td>0. Decisões e acessos</td><td>Escolher provedor (D1), obter número, acessos e chaves</td><td>M (externo)</td><td>Cliente</td></tr>
+<tr><td>0</td><td>Submeter os 7 templates para aprovação</td><td>M (externo)</td><td>Provedor definido</td></tr>
+<tr><td>1. Zevem pronto para o canal</td><td>Corrigir A1 (idempotência concorrente)</td><td>P</td><td>-</td></tr>
+<tr><td>1</td><td>Corrigir A2 (fuso no atalho sem IA)</td><td>P</td><td>-</td></tr>
+<tr><td>1</td><td>Documentar <code>WHATSAPP_NUMERO</code> e preencher variáveis de produção</td><td>P</td><td>Fase 0</td></tr>
+<tr><td>1</td><td>Testes de API dos cenários de aceite</td><td>M</td><td>-</td></tr>
+<tr><td>2. Integrador: conversa</td><td>Esqueleto do serviço, webhook com verificação e assinatura, estado local</td><td>M</td><td>Fase 0</td></tr>
+<tr><td>2</td><td>Fluxo de texto: repasse, resposta, repetição e não reenvio</td><td>P</td><td>-</td></tr>
+<tr><td>2</td><td>Fluxo de áudio: download e transcrição</td><td>M</td><td>Chave de transcrição</td></tr>
+<tr><td>2</td><td>Resposta padrão para tipos não suportados</td><td>P</td><td>D7</td></tr>
+<tr><td>3. Integrador: avisos</td><td>Laço da fila, envio de template, confirmação de status</td><td>M</td><td>Templates aprovados</td></tr>
+<tr><td>3</td><td>Janela de 24h com texto livre (otimização de custo)</td><td>P</td><td>-</td></tr>
+<tr><td>3</td><td>Política de nova tentativa para <code>falhou</code></td><td>P</td><td>-</td></tr>
+<tr><td>4. Produto</td><td>Liberar menu Alertas para clientes (Z5)</td><td>P</td><td>Decisão do cliente</td></tr>
+<tr><td>4</td><td>Termo de consentimento e registro do aceite (Z12)</td><td>M</td><td>Texto jurídico do cliente</td></tr>
+<tr><td>4</td><td>Saída a pedido do usuário, se adotada (D8)</td><td>P</td><td>Decisão do cliente</td></tr>
+<tr><td>5. Infra e operação</td><td>Serviço no Compose, Nginx, deploy, CI</td><td>M</td><td>Fase 2</td></tr>
+<tr><td>5</td><td>Monitoramento de <code>/saude</code> e taxa de erro com alerta</td><td>P</td><td>-</td></tr>
+<tr><td>5</td><td>Limite de mensagens por telefone (A6)</td><td>P</td><td>-</td></tr>
+<tr><td>6. Aceite e go-live</td><td>Rodar os 10 cenários em homologação e o checklist das páginas 14 e 15</td><td>M</td><td>Tudo acima</td></tr>
+<tr><td>Opcional</td><td>Painel master de custo de IA e falhas de envio (Z9)</td><td>M</td><td>-</td></tr></tbody></table></div>
+<p>Total estimado: cerca de 10 a 15 dias úteis de um desenvolvedor, sem os itens opcionais e sem o prazo de aprovação da Meta. As fases 1 e 4 podem andar em paralelo com a fase 0.</p>
+<h2 id="7-duvidas-em-aberto">7. Dúvidas em aberto</h2>
+<p>Para o cliente Apple Green (dono do produto):</p>
+<div class="tabela"><table><thead><tr><th>#</th><th>Dúvida</th></tr></thead><tbody><tr><td>D1</td><td>Meta Cloud API direta ou BSP? Qual? O PDF cita os dois sem decidir (páginas 1, 11 e 12). Quem é o titular da conta e quem paga?</td></tr>
+<tr><td>D2</td><td>O número do WhatsApp Business já existe e está verificado? É um número novo ou um que já é usado em aplicativo?</td></tr>
+<tr><td>D3</td><td>O PDF diz que basta o telefone cadastrado em Configurações; o código exige a confirmação "ZEVEM &lt;código&gt;". Qual é a regra oficial? A documentação será atualizada?</td></tr>
+<tr><td>D4</td><td>O menu Alertas será liberado para clientes já no go-live? Hoje é só do master.</td></tr>
+<tr><td>D5</td><td>Quem mantém o backend daqui em diante? As correções A1 e A2 podem ser feitas por quem fizer o integrador?</td></tr>
+<tr><td>D6</td><td>O contrato pode aceitar <code>falhou</code> depois de <code>enviado</code> e, eventualmente, estados de entregue e lido?</td></tr>
+<tr><td>D7</td><td>O que responder a imagem, documento, figurinha, localização e contato? Foto de comprovante é uma demanda futura?</td></tr>
+<tr><td>D8</td><td>Qual é o texto do termo de uso e do opt-in? Haverá palavra de saída (ex.: "SAIR")? Hoje ela cairia na IA como "outro".</td></tr>
+<tr><td>D9</td><td>WhatsApp vale para qualquer conta ou só para assinatura ativa? E no período de teste?</td></tr>
+<tr><td>D10</td><td>Qual modelo usar em produção? O PDF recomenda testar o mais barato com mensagens reais antes de trocar. Existe orçamento mensal de IA?</td></tr>
+<tr><td>D11</td><td>Qual provedor de transcrição? O PDF lista alternativas sem escolher (página 11). Há restrição de enviar áudio de usuários a esse fornecedor (LGPD)?</td></tr>
+<tr><td>D12</td><td>Os avisos devem ter horário limite de envio à noite? O agendador roda de hora em hora a partir das 8h e não tem teto de horário, exceto o alerta programado (8h a 22h, <code>backend/whatsapp.js:236</code>).</td></tr>
+<tr><td>D13</td><td>Nome de exibição e perfil do número (marca Zevem ou Apple Green)? Os templates usam o prefixo <code>ag_</code>.</td></tr>
+<tr><td>D14</td><td>Ambiente de homologação: haverá um segundo backend e um número de teste, ou os testes serão em produção com contas de teste?</td></tr></tbody></table></div>
+<p>Para o provedor WhatsApp (Meta ou BSP):</p>
+<div class="tabela"><table><thead><tr><th>#</th><th>Dúvida</th></tr></thead><tbody><tr><td>P1</td><td>Preço atual de template Utility no Brasil e regra de cobrança de respostas dentro da janela. O PDF avisa que os valores vieram de terceiros e pede confirmação na tabela oficial (página 11).</td></tr>
+<tr><td>P2</td><td>Os 7 textos passam como Utility? Risco maior em <code>ag_melhor_dia_compra</code> e <code>ag_limite_programado</code>, que podem ser lidos como promocionais (<strong>suposição</strong>).</td></tr>
+<tr><td>P3</td><td>Limite diário de conversas iniciadas para número novo e como ele sobe.</td></tr>
+<tr><td>P4</td><td>Formato do webhook, forma de validar a assinatura, política de reentrega e prazo para responder.</td></tr>
+<tr><td>P5</td><td>Formato e validade do link de mídia de áudio e tamanho máximo.</td></tr>
+<tr><td>P6</td><td>Formato do número brasileiro no envio e no recebimento (nono dígito).</td></tr>
+<tr><td>P7</td><td>Taxa do BSP, se houver: por mensagem ou mensalidade (o PDF deixa fora da conta, página 11).</td></tr></tbody></table></div>
+<h2 id="8-riscos-e-dependencias">8. Riscos e dependências</h2>
+<div class="tabela"><table><thead><tr><th>Risco</th><th>Probabilidade</th><th>Impacto</th><th>Mitigação</th></tr></thead><tbody><tr><td>Prazo de verificação do negócio e aprovação de templates na Meta</td><td>Média</td><td>Atrasa o go-live dos avisos</td><td>Iniciar a fase 0 já; a conversa (fase 2) não depende de template</td></tr>
+<tr><td>Template recusado ou reclassificado como Marketing</td><td>Média</td><td>Custo maior ou retrabalho de texto e de código</td><td>Submeter cedo; manter os mesmos parâmetros; avisar o dono do produto se mudar ordem</td></tr>
+<tr><td>Lançamento duplicado (A1)</td><td>Média</td><td>Erro financeiro visível ao usuário</td><td>Corrigir antes do go-live; integrador processa em série por mensagem</td></tr>
+<tr><td>Data errada à noite (A2)</td><td>Alta para quem usa termos aprendidos</td><td>Gasto no dia errado</td><td>Corrigir na fase 1</td></tr>
+<tr><td>Custo de IA sem teto (A6, A9)</td><td>Baixa a média</td><td>Gasto inesperado</td><td>Limite por telefone; decisão sobre assinatura; alerta de custo</td></tr>
+<tr><td>Resposta da IA acima de 30 s ou indisponibilidade</td><td>Baixa</td><td>Usuário sem resposta</td><td>O backend já responde com mensagem de erro ou suspenso (<code>backend/whatsapp.js:580-588</code>); integrador repete com a mesma <code>mensagem_id</code></td></tr>
+<tr><td>Backend único com SQLite</td><td>Baixa</td><td>Indisponibilidade derruba conversa e avisos</td><td>Reinício automático já existe; avisos não confirmados voltam à fila; avisos com mais de 24h expiram</td></tr>
+<tr><td>Token único e sem rotação</td><td>Baixa</td><td>Vazamento dá acesso a lançar gastos em qualquer conta com número confirmado</td><td>Manter <code>/integracao/*</code> só na rede interna; trocar o token em caso de suspeita</td></tr>
+<tr><td>LGPD: áudio e texto financeiro enviados a terceiros (transcrição e IA)</td><td>Média</td><td>Exigência legal</td><td>Termo de consentimento claro (Z12); o texto das mensagens fica em claro em <code>whatsapp_mensagens.texto</code>, só o telefone é cifrado (<code>backend/whatsapp.js:605</code>)</td></tr>
+<tr><td>Qualidade do número cai por bloqueios de usuários</td><td>Baixa</td><td>Limite de envio reduzido</td><td>Opt-in explícito, forma de sair, alertas configuráveis por pessoa</td></tr>
+<tr><td>Ausência de testes de backend</td><td>Alta</td><td>Regressão silenciosa em regras financeiras</td><td>Fase 1: testes de API dos cenários de aceite</td></tr></tbody></table></div>
+<p>Dependências externas: decisão de provedor, número e conta Meta, chave da Anthropic com cobrança ativa, chave do provedor de transcrição, texto jurídico do opt-in e aprovação dos templates.</p>
+</main>
+</body>
+</html>

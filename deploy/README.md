@@ -100,6 +100,40 @@ docker compose exec -T backend node -e '
 location.assign('/api/auth/google?token=' + encodeURIComponent(localStorage.getItem('token')));
 ```
 
+## Integração WhatsApp
+
+O serviço `integrador` (porta local `127.0.0.1:3203`) recebe o webhook do
+WhatsApp em `https://app.zevem.com.br/whatsapp/webhook` e fala com o backend
+pela rede interna do Docker. As rotas `/api/integracao/` ficam bloqueadas no
+Nginx do host. Sem as variáveis abaixo, o serviço sobe desligado e o deploy
+segue normal.
+
+Acrescente em `/opt/zevem/.env.production` (detalhes em
+`integrador/.env.example` e passo a passo da Meta em `integrador/README.md`):
+
+```bash
+WHATSAPP_INTEGRACAO_TOKEN=   # openssl rand -hex 32; vale para backend e integrador
+ANTHROPIC_API_KEY=
+WHATSAPP_NUMERO=             # ex.: 5511999998888
+WHATSAPP_PROVEDOR=meta
+META_TOKEN=
+META_PHONE_NUMBER_ID=
+META_APP_SECRET=
+META_VERIFY_TOKEN=
+TRANSCRICAO_PROVEDOR=openai
+TRANSCRICAO_CHAVE=
+```
+
+Depois de alterar o vhost, reinstale `zevem-https.conf` (passo 5) e confira:
+
+```bash
+curl -fsS http://127.0.0.1:3203/health
+docker compose logs --tail=50 integrador
+```
+
+O estado do integrador fica no volume `zevem_zevem-integrador` e não entra no
+backup: só guarda mensagens em andamento e os últimos envios.
+
 ## Backup local e Cloudflare R2
 
 O timer roda às 03:40 no horário de São Paulo. O arquivo local mais recente

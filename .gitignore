@@ -56,3 +56,9 @@ backend/google_token.json
 /.env.production
 /.deploy.lock
 /.last-successful-deploy
+
+# Integrador WhatsApp
+integrador/.env
+integrador/*.db
+integrador/*.db-shm
+integrador/*.db-wal

@@ -25,6 +25,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test -- --watch=false
+      - name: Testar integrador WhatsApp
+        run: npm test
+        working-directory: integrador
       - name: Validar containers
         run: |
           bash -n deploy/deploy.sh
@@ -34,6 +37,7 @@ jobs:
           docker compose config --quiet
           docker compose up -d --build --wait --wait-timeout 120
           test "$(curl -fsS http://127.0.0.1:3202/health)" = '{"status":"ok"}'
+          curl -fsS http://127.0.0.1:3203/health | grep '"status":"ok"'
           curl -fsS http://127.0.0.1:3201/login | grep '<app-root'
       - run: docker compose logs --tail=100
         if: failure()
